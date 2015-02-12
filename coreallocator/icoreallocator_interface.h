@@ -116,7 +116,7 @@ namespace EA
             /// @sa
             /// Free
 
-            virtual void *Alloc(size_t size, const char *name, unsigned int flags) = 0;
+            virtual void *alloc(size_t size, const char *name, unsigned int flags) = 0;
 
             /// @param size:    size of the requested block.
             /// @param name:    name of the block (normally used for debugging purposes)
@@ -140,7 +140,7 @@ namespace EA
             /// @sa
             /// Free
 
-            virtual void *Alloc(size_t size, const char *name, unsigned int flags,
+            virtual void *alloc(size_t size, const char *name, unsigned int flags,
                 unsigned int align, unsigned int alignOffset = 0) = 0;
 
             /// @param block:   pointer to the block to be freed.
@@ -159,7 +159,7 @@ namespace EA
             /// @sa
             /// Alloc
 
-            virtual void Free(void *block, size_t size=0) = 0;
+            virtual void free(void *block, size_t size=0) = 0;
 
             /// @remarks
             /// Holds name, file, and line number to be associated with an allocation.
@@ -194,9 +194,9 @@ namespace EA
             /// @remarks
             /// This is just a version of alloc that allows the user to supply additional debug information associated with the allocation.
 
-            virtual void *AllocDebug(size_t size, const DebugParams debugParams, unsigned int flags)
+            virtual void *allocDebug(size_t size, const DebugParams debugParams, unsigned int flags)
             {
-                return Alloc(size,debugParams.mName,flags);
+                return alloc(size,debugParams.mName,flags);
             }
 
             /// @param size:    size of the requested block.
@@ -214,17 +214,17 @@ namespace EA
             /// @remarks
             /// This is just a version of alloc that supports alignment and allows the user to supply additional debug information associated with the allocation.
 
-            virtual void *AllocDebug(size_t size, const DebugParams debugParams, unsigned int flags, unsigned int align, unsigned int alignOffset = 0)
+            virtual void *allocDebug(size_t size, const DebugParams debugParams, unsigned int flags, unsigned int align, unsigned int alignOffset = 0)
             {
-                return Alloc(size,debugParams.mName,flags,align,alignOffset);
+                return alloc(size,debugParams.mName,flags,align,alignOffset);
             }
 
             /// The user is responsible for providing an implementation of
-            /// EA::Allocator::ICoreAllocator::GetDefaultAllocator in their
+            /// EA::Allocator::ICoreAllocator::getDefaultAllocator in their
             /// applications' codebase.  The package contains
             /// implementations of operator new and delete which call this
             /// function.  Library authors should not call this function.
-            static ICOREALLOCATOR_INTERFACE_API ICoreAllocator *GetDefaultAllocator();
+            static ICOREALLOCATOR_INTERFACE_API ICoreAllocator *getDefaultAllocator();
         };
     }
 }

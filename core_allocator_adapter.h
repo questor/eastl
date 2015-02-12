@@ -141,7 +141,7 @@ namespace EA
 
         template<class AllocatorType>
         inline CoreAllocatorAdapter<AllocatorType>::CoreAllocatorAdapter(const char* EASTL_NAME(pName))
-            : mpCoreAllocator(AllocatorType::GetDefaultAllocator()), mnFlags(0)
+            : mpCoreAllocator(AllocatorType::getDefaultAllocator()), mnFlags(0)
         {
             #if EASTL_NAME_ENABLED
                 mpName = pName ? pName : EASTL_ALLOCATOR_DEFAULT_NAME;

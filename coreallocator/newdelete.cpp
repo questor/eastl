@@ -35,7 +35,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /// this source file into their project.  By overriding standard new and
 /// delete, all heap allocation goes through the default allocator.  The
 /// executable creator is responsible for providing a function called
-/// EA::Allocator::ICoreAllocator::GetDefaultAllocator
+/// EA::Allocator::ICoreAllocator::getDefaultAllocator
 ///
 /// This module cannot be in a library - it must be explicitly linked into
 /// the executable.  If this module is in a library, the linker may decide
@@ -46,25 +46,25 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // scalar new
 void *operator new(size_t size)
 {
-    return EA::Allocator::ICoreAllocator::GetDefaultAllocator()->Alloc(
+    return EA::Allocator::ICoreAllocator::getDefaultAllocator()->alloc(
         size, "Unnamed block", EA::Allocator::MEM_PERM);
 }
 
 // scalar delete
 void operator delete(void *p)
 {
-    EA::Allocator::ICoreAllocator::GetDefaultAllocator()->Free(p);
+    EA::Allocator::ICoreAllocator::getDefaultAllocator()->free(p);
 }
 
 // array new
 void *operator new[](size_t size)
 {
-    return EA::Allocator::ICoreAllocator::GetDefaultAllocator()->Alloc(
+    return EA::Allocator::ICoreAllocator::getDefaultAllocator()->alloc(
         size, "Unnamed block", EA::Allocator::MEM_PERM);
 }
 
 // array delete
 void operator delete[](void *p)
 {
-    EA::Allocator::ICoreAllocator::GetDefaultAllocator()->Free(p);
+    EA::Allocator::ICoreAllocator::getDefaultAllocator()->free(p);
 }

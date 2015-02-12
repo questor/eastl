@@ -59,22 +59,22 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /// delete operations use a consistent memory manager.
 inline void *operator new(size_t size, const char *name, unsigned int flags)
 {
-	return EA::Allocator::ICoreAllocator::GetDefaultAllocator()->Alloc(size, name, flags);
+	return EA::Allocator::ICoreAllocator::getDefaultAllocator()->alloc(size, name, flags);
 }
 
 inline void *operator new(size_t size, const char *name, unsigned int flags, unsigned int align)
 {
-	return EA::Allocator::ICoreAllocator::GetDefaultAllocator()->Alloc(size, name, flags, align);
+	return EA::Allocator::ICoreAllocator::getDefaultAllocator()->alloc(size, name, flags, align);
 }
 
 inline void *operator new[](size_t size, const char *name, unsigned int flags)
 {
-	return EA::Allocator::ICoreAllocator::GetDefaultAllocator()->Alloc(size, name, flags);
+	return EA::Allocator::ICoreAllocator::getDefaultAllocator()->alloc(size, name, flags);
 }
 
 inline void *operator new[](size_t size, const char *name, unsigned int flags, unsigned int align)
 {
-	return EA::Allocator::ICoreAllocator::GetDefaultAllocator()->Alloc(size, name, flags, align);
+	return EA::Allocator::ICoreAllocator::getDefaultAllocator()->alloc(size, name, flags, align);
 }
 
 #endif

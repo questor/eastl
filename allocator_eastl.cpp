@@ -52,12 +52,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         EASTL_API allocator   gDefaultAllocator;
         EASTL_API allocator* gpDefaultAllocator = &gDefaultAllocator;
 
-        EASTL_API allocator* GetDefaultAllocator()
+        EASTL_API allocator* getDefaultAllocator()
         {
             return gpDefaultAllocator;
         }
 
-        EASTL_API allocator* SetDefaultAllocator(allocator* pAllocator)
+        EASTL_API allocator* setDefaultAllocator(allocator* pAllocator)
         {
             allocator* const pPrevAllocator = gpDefaultAllocator;
             gpDefaultAllocator = pAllocator;

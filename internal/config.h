@@ -1420,7 +1420,7 @@ typedef EASTL_SSIZE_T eastl_ssize_t; // Signed version of eastl_size_t. Concept 
 //         void        setName(const char* pName);
 //     };
 //
-//     allocator* GetDefaultAllocator(); // This is used for anonymous allocations.
+//     allocator* getDefaultAllocator(); // This is used for anonymous allocations.
 // }
 
 #ifndef EASTLAlloc // To consider: Instead of calling through pAllocator, just go directly to operator new, since that's what allocator does.
@@ -1453,7 +1453,7 @@ typedef EASTL_SSIZE_T eastl_ssize_t; // Signed version of eastl_size_t. Concept 
     // used when EASTL needs to allocate memory internally. There are very few cases where 
     // EASTL allocates memory internally, and in each of these it is for a sensible reason 
     // that is documented to behave as such.
-    #define EASTLAllocatorDefault eastl::GetDefaultAllocator
+    #define EASTLAllocatorDefault eastl::getDefaultAllocator
 #endif
 
 

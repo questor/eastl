@@ -134,8 +134,8 @@ namespace eastl
     /// Currently this Default Allocator applies only to CoreAllocatorAdapter.
     /// To consider: This naming of this function is too similar to getDefaultAllocator
     /// and instead should be named something like GetStaticDefaultAllocator.
-    EASTL_API allocator* GetDefaultAllocator();
-    EASTL_API allocator* SetDefaultAllocator(allocator* pAllocator);
+    EASTL_API allocator* getDefaultAllocator();
+    EASTL_API allocator* setDefaultAllocator(allocator* pAllocator);
 
 
     /// getDefaultAllocator
@@ -290,7 +290,7 @@ namespace eastl
             #if EASTL_DLL
                 // We currently have no support for implementing flags when 
                 // using the C runtime library operator new function. The user 
-                // can use SetDefaultAllocator to override the default allocator.
+                // can use setDefaultAllocator to override the default allocator.
                 (void)flags;
                 return ::new char[n];
             #elif (EASTL_DEBUGPARAMS_LEVEL <= 0)
@@ -308,7 +308,7 @@ namespace eastl
             #if EASTL_DLL
                 // We have a problem here. We cannot support alignment, as we don't have access
                 // to a memory allocator that can provide aligned memory. The C++ standard doesn't
-                // recognize such a thing. The user will need to call SetDefaultAllocator to 
+                // recognize such a thing. The user will need to call setDefaultAllocator to 
                 // provide an alloator which supports alignment.
                 EASTL_ASSERT(alignment <= 8); // 8 (sizeof(double)) is the standard alignment returned by operator new.
                 (void)alignment; (void)offset; (void)flags;
