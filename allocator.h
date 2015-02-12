@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2009-2010 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2009,2010,2012 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -26,12 +26,6 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-///////////////////////////////////////////////////////////////////////////////
-// EASTL/allocator.h
-//
-// Copyright (c) 2005, Electronic Arts. All rights reserved.
-// Written and maintained by Paul Pedriana.
-///////////////////////////////////////////////////////////////////////////////
 
 
 #ifndef EASTL_ALLOCATOR_H
@@ -46,6 +40,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #pragma warning(push)
     #pragma warning(disable: 4189) // local variable is initialized but not referenced
 #endif
+
+#if defined(EA_PRAGMA_ONCE_SUPPORTED)
+    #pragma once // Some compilers (e.g. VC++) benefit significantly from using this. We've measured 3-4% build speed improvements in apps as a result.
+#endif
+
 
 
 namespace eastl
@@ -81,8 +80,6 @@ namespace eastl
     class EASTL_API allocator
     {
     public:
-        typedef eastl_size_t size_type;
-
         EASTL_ALLOCATOR_EXPLICIT allocator(const char* pName = EASTL_NAME_VAL(EASTL_ALLOCATOR_DEFAULT_NAME));
         allocator(const allocator& x);
         allocator(const allocator& x, const char* pName);
@@ -105,9 +102,40 @@ namespace eastl
     bool operator==(const allocator& a, const allocator& b);
     bool operator!=(const allocator& a, const allocator& b);
 
-    EASTL_API allocator* getDefaultAllocator();
-    EASTL_API allocator* setDefaultAllocator(allocator* pAllocator);
 
+
+    /// dummy_allocator
+    ///
+    class EASTL_API dummy_allocator
+    {
+    public:
+        EASTL_ALLOCATOR_EXPLICIT dummy_allocator(const char* = NULL) { }
+        dummy_allocator(const dummy_allocator&) { }
+        dummy_allocator(const dummy_allocator&, const char*) { }
+
+        dummy_allocator& operator=(const dummy_allocator&) { return *this; }
+
+        void* allocate(size_t, int = 0)                 { return NULL; }
+        void* allocate(size_t, size_t, size_t, int = 0) { return NULL; }
+        void  deallocate(void*, size_t)                 { }
+
+        const char* getName() const      { return ""; }
+        void        setName(const char*) { }
+    };
+
+    inline bool operator==(const dummy_allocator&, const dummy_allocator&) { return true;  }
+    inline bool operator!=(const dummy_allocator&, const dummy_allocator&) { return false; }
+
+
+
+    /// Defines a static default allocator which is constant across all types.
+    /// This is different from getDefaultAllocator, which is is bound at
+    /// compile-time and expected to differ per allocator type.
+    /// Currently this Default Allocator applies only to CoreAllocatorAdapter.
+    /// To consider: This naming of this function is too similar to getDefaultAllocator
+    /// and instead should be named something like GetStaticDefaultAllocator.
+    EASTL_API allocator* GetDefaultAllocator();
+    EASTL_API allocator* SetDefaultAllocator(allocator* pAllocator);
 
 
     /// getDefaultAllocator
@@ -139,12 +167,12 @@ namespace eastl
     }
 
 
-    /// default_allocfreemethod
+    /// defaultAllocfreemethod
     ///
     /// Implements a default allocfreemethod which uses the default global allocator.
     /// This version supports only default alignment.
     ///
-    inline void* default_allocfreemethod(size_t n, void* pBuffer, void* /*pContext*/)
+    inline void* defaultAllocfreemethod(size_t n, void* pBuffer, void* /*pContext*/)
     {
         EASTLAllocatorType* const pAllocator = EASTLAllocatorDefault();
 
@@ -158,7 +186,7 @@ namespace eastl
     }
 
 
-    /// allocate_memory
+    /// allocateMemory
     ///
     /// This is a memory allocation dispatching function.
     /// To do: Make aligned and unaligned specializations.
@@ -166,7 +194,7 @@ namespace eastl
     ///        function instead of a standalone function like below.
     ///
     template <typename Allocator>
-    void* allocate_memory(Allocator& a, size_t n, size_t alignment, size_t alignmentOffset)
+    void* allocateMemory(Allocator& a, size_t n, size_t alignment, size_t alignmentOffset)
     {
         if(alignment <= 8)
             return EASTLAlloc(a, n);
@@ -183,6 +211,7 @@ namespace eastl
 
     #ifdef _MSC_VER
         #pragma warning(push, 0)
+        #pragma warning(disable: 4265 4365 4836)
         #include <new>
         #pragma warning(pop)
     #else

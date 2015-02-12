@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2009-2010 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2009,2010,2012 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -26,32 +26,22 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-///////////////////////////////////////////////////////////////////////////////
-// EASTL/assert.cpp
-//
-// Copyright (c) 2005, Electronic Arts. All rights reserved.
-// Written and maintained by Paul Pedriana.
-///////////////////////////////////////////////////////////////////////////////
 
 
 
 #include <eastl/internal/config.h>
 #include <eastl/string.h>
-#include <eastl/base/base.h>
+#include <eastl/EABase/eabase.h>
 
-#if defined(TARGET_PLATFORM_MICROSOFT)
+#if defined(EA_PLATFORM_MICROSOFT)
     #pragma warning(push, 0)
     #if defined _MSC_VER
         #include <crtdbg.h>
     #endif
-    #if defined(TARGET_PLATFORM_WINDOWS)
         #ifndef WIN32_LEAN_AND_MEAN
             #define WIN32_LEAN_AND_MEAN
         #endif
-        #include <windows.h>
-    #elif defined(TARGET_PLATFORM_XENON)
-        #include <comdecl.h>
-    #endif
+        #include <Windows.h>
     #pragma warning(pop)
 #else
     #include <stdio.h>
@@ -63,16 +53,16 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace eastl
 {
 
-    /// gpAssertionFailureFunction
+    /// gpassertionFailureFunction
     /// 
-    /// Global assertion failure function pointer. Set by SetAssertionFailureFunction.
+    /// Global assertion failure function pointer. Set by setassertionFailureFunction.
     /// 
-    EASTL_API EASTL_AssertionFailureFunction gpAssertionFailureFunction        = AssertionFailureFunctionDefault;
-    EASTL_API void*                          gpAssertionFailureFunctionContext = NULL;
+    EASTL_API EASTL_assertionFailureFunction gpassertionFailureFunction        = assertionFailureFunctionDefault;
+    EASTL_API void*                          gpassertionFailureFunctionContext = NULL;
 
 
 
-    /// SetAssertionFailureFunction
+    /// setassertionFailureFunction
     ///
     /// Sets the function called when an assertion fails. If this function is not called
     /// by the user, a default function will be used. The user may supply a context parameter
@@ -83,51 +73,51 @@ namespace eastl
     /// this function is not called in a thread-unsafe way. The easiest way to do this is 
     /// to just call this function once from the main thread on application startup.
     ///
-    EASTL_API void SetAssertionFailureFunction(EASTL_AssertionFailureFunction pAssertionFailureFunction, void* pContext)
+    EASTL_API void setassertionFailureFunction(EASTL_assertionFailureFunction passertionFailureFunction, void* pContext)
     {
-        gpAssertionFailureFunction        = pAssertionFailureFunction;
-        gpAssertionFailureFunctionContext = pContext;
+        gpassertionFailureFunction        = passertionFailureFunction;
+        gpassertionFailureFunctionContext = pContext;
     }
 
 
 
-    /// AssertionFailureFunctionDefault
+    /// assertionFailureFunctionDefault
     ///
-    EASTL_API void AssertionFailureFunctionDefault(const char* pExpression, void* /*pContext*/)
+    EASTL_API void assertionFailureFunctionDefault(const char* pExpression, void* /*pContext*/)
     {
-        (void)pExpression;
-#if defined(EASTL_DEBUG) || defined(_DEBUG)       
-        // We cannot use puts() because it appends a newline.
-        // We cannot use printf(pExpression) because pExpression might have formatting statements.
-        #if defined(TARGET_PLATFORM_MICROSOFT)
+        #if defined(EA_PLATFORM_MICROSOFT)
             OutputDebugStringA(pExpression);
+            (void)pExpression;
         #else
             printf("%s", pExpression); // Write the message to stdout, which happens to be the trace view for many console debug machines.
         #endif
-#endif
+
         EASTL_DEBUG_BREAK();
     }
 
 
-    /// AssertionFailure
+    /// assertionFailure
     ///
-    EASTL_API void AssertionFailure(const char* pExpression)
+    EASTL_API void assertionFailure(const char* pExpression)
     {
-        if(gpAssertionFailureFunction)
-            gpAssertionFailureFunction(pExpression, gpAssertionFailureFunctionContext);
-    }
-
-    EASTL_API void ExtendedAssertionFailure(const char *msg, const char *exprStr, ...) {
-       char buffer[1024];
-       char buffer2[1024];
-       va_list args;
-       va_start(args, exprStr);
-       vsprintf(buffer, msg, args);
-       va_end(args);
-       sprintf(buffer2, "[ERR] Assertion failed: %s", buffer);
-       if(gpAssertionFailureFunction)
-           gpAssertionFailureFunction(buffer2, gpAssertionFailureFunctionContext);
+        if(gpassertionFailureFunction)
+            gpassertionFailureFunction(pExpression, gpassertionFailureFunctionContext);
     }
 
 
 } // namespace eastl
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

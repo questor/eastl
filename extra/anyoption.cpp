@@ -64,6 +64,8 @@
 
 #include "anyoption.h"
 
+#include <eastl/internal/config.h>
+
 #include <cstdlib>
 #include <cstdio>
 #include <string>

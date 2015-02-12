@@ -12,17 +12,16 @@ namespace eastl {
          #define _UNALIGNED
       #endif
    #endif
-   /* Taken from the Visual Studio 8 library */
-   /* countof helper */
+
    #if !defined(countof)
       #if !defined(__cplusplus)
          #define countof(_Array) (sizeof(_Array) / sizeof(0[_Array]))
       #else
       extern "C++"
          {
-         template <typename _CountofType, size_t _SizeOfArray>
-            char (*__countof_helper(_UNALIGNED _CountofType (&_Array)[_SizeOfArray]))[_SizeOfArray];
-         #define countof(_Array) (sizeof(*__countof_helper(_Array)) + 0)
+            // http://www.reedbeta.com/blog/2013/07/10/cpp-compile-time-array-size/
+            template <typename T, int N> char(&countof_helper(T(&)[N]))[N];
+            #define countof(x) (sizeof(countof_helper(x)))
          }
       #endif
    #endif

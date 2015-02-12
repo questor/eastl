@@ -27,7 +27,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 ///////////////////////////////////////////////////////////////////////////////
-// EASTL/internal/generic_iterator.h
+// eastl/internal/generic_iterator.h
 //
 // Written and maintained by Paul Pedriana - 2005.
 ///////////////////////////////////////////////////////////////////////////////
@@ -46,7 +46,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <eastl/internal/config.h>
 #include <eastl/iterator.h>
-#include <eastl/typetraits.h>
+#include <eastl/type_traits.h>
 
 
 #ifdef _MSC_VER

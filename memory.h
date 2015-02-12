@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2009-2010 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2009,2010,2012 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -26,13 +26,6 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-///////////////////////////////////////////////////////////////////////////////
-// EASTL/memory.h
-//
-// Copyright (c) 2005, Electronic Arts. All rights reserved.
-// Written and maintained by Paul Pedriana.
-// The uninitializedMove function was written by Ryan Ingram.
-///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
 // This file implements the following functions from the C++ standard that 
@@ -43,7 +36,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //    returnTemporaryBuffer
 //
 // Uninitialized operations:
-//    These are the same as the copy, fill, and fillN algorithms, except that 
+//    These are the same as the copy, fill, and fill_n algorithms, except that 
 //    they *construct* the destination with the source values rather than assign
 //    the destination with the source values. 
 //
@@ -55,7 +48,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //    uninitializedFillPtr      - Extention to standard functionality.
 //    uninitializedFillNPtr    - Extention to standard functionality.
 //    uninitializedCopyFill     - Extention to standard functionality.
-//    uninitializedFillCopy     - Extention to standard functionality.
+//    uninitializedFill_copy     - Extention to standard functionality.
 //    uninitializedCopyCopy     - Extention to standard functionality.
 //
 // In-place destructor helpers:
@@ -71,7 +64,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <eastl/internal/config.h>
 #include <eastl/internal/generic_iterator.h>
-#include <eastl/typetraits.h>
+#include <eastl/type_traits.h>
 #include <eastl/algorithm.h>
 #include <eastl/allocator.h>
 
@@ -87,6 +80,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #pragma warning(push)
     #pragma warning(disable: 4530)  // C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
 #endif
+
+#if defined(EA_PRAGMA_ONCE_SUPPORTED)
+    #pragma once // Some compilers (e.g. VC++) benefit significantly from using this. We've measured 3-4% build speed improvements in apps as a result.
+#endif
+
 
 
 namespace eastl
@@ -167,7 +165,7 @@ namespace eastl
     /// guaranteed to not throw C++ exceptions.
 
     template <bool hasTrivialMove, typename iteratorTag>
-    struct uninitializedMove_impl
+    struct uninitializedMoveImpl
     {
         template <typename ForwardIterator, typename ForwardIteratorDest>
         static ForwardIteratorDest do_move_start(ForwardIterator first, ForwardIterator last, ForwardIteratorDest dest)
@@ -179,7 +177,7 @@ namespace eastl
                 try
                 {
                     for(; first != last; ++first, ++dest)
-                        ::new(&*dest) value_type(*first);
+                        ::new((void*)&*dest) value_type(*first);
                 }
                 catch(...)
                 {
@@ -189,7 +187,7 @@ namespace eastl
                 }
             #else
                 for(; first != last; ++first, ++dest)
-                    ::new(&*dest) value_type(*first);
+                    ::new((void*)&*dest) value_type(*first);
             #endif
 
             return dest;
@@ -216,7 +214,7 @@ namespace eastl
     };
 
     template <>
-    struct uninitializedMove_impl<true, EASTL_ITC_NS::random_access_iterator_tag>
+    struct uninitializedMoveImpl<true, EASTL_ITC_NS::random_access_iterator_tag>
     {
         template <typename T>
         static T* do_move_start(T* first, T* last, T* dest)
@@ -274,7 +272,7 @@ namespace eastl
                                               is_pointer<ForwardIteratorDest>::value,
                                               is_same<value_type_input, value_type_output>::value>::value;
 
-        return eastl::uninitializedMove_impl<bHasTrivialMove, IC>::do_move_start(first, last, dest);
+        return eastl::uninitializedMoveImpl<bHasTrivialMove, IC>::do_move_start(first, last, dest);
     }
 
     template <typename ForwardIterator, typename ForwardIteratorDest>
@@ -289,7 +287,7 @@ namespace eastl
                                               is_pointer<ForwardIteratorDest>::value,
                                               is_same<value_type_input, value_type_output>::value>::value;
 
-        return eastl::uninitializedMove_impl<bHasTrivialMove, IC>::do_move_commit(first, last, dest);
+        return eastl::uninitializedMoveImpl<bHasTrivialMove, IC>::do_move_commit(first, last, dest);
     }
 
     template <typename ForwardIterator, typename ForwardIteratorDest>
@@ -304,7 +302,7 @@ namespace eastl
                                               is_pointer<ForwardIteratorDest>::value,
                                               is_same<value_type_input, value_type_output>::value>::value;
 
-        return eastl::uninitializedMove_impl<bHasTrivialMove, IC>::do_move_abort(first, last, dest);
+        return eastl::uninitializedMoveImpl<bHasTrivialMove, IC>::do_move_abort(first, last, dest);
     }
 
     /// uninitializedMove
@@ -330,13 +328,13 @@ namespace eastl
     // uninitializedCopy
     //
     template <typename InputIterator, typename ForwardIterator>
-    inline ForwardIterator uninitializedCopy_impl(InputIterator first, InputIterator last, ForwardIterator dest, true_type)
+    inline ForwardIterator uninitializedCopyImpl(InputIterator first, InputIterator last, ForwardIterator dest, true_type)
     {
         return eastl::copy(first, last, dest); // The copy() in turn will use memcpy for POD types.
     }
 
     template <typename InputIterator, typename ForwardIterator>
-    inline ForwardIterator uninitializedCopy_impl(InputIterator first, InputIterator last, ForwardIterator dest, false_type)
+    inline ForwardIterator uninitializedCopyImpl(InputIterator first, InputIterator last, ForwardIterator dest, false_type)
     {
         typedef typename eastl::iterator_traits<ForwardIterator>::value_type value_type;
         ForwardIterator currentDest(dest);
@@ -345,7 +343,7 @@ namespace eastl
             try
             {
                 for(; first != last; ++first, ++currentDest)
-                    ::new(&*currentDest) value_type(*first);
+                    ::new((void*)&*currentDest) value_type(*first);
             }
             catch(...)
             {
@@ -355,7 +353,7 @@ namespace eastl
             }
         #else
             for(; first != last; ++first, ++currentDest)
-                ::new(&*currentDest) value_type(*first);
+                ::new((void*)&*currentDest) value_type(*first);
         #endif
 
         return currentDest;
@@ -380,11 +378,7 @@ namespace eastl
     {
         typedef typename eastl::iterator_traits<ForwardIterator>::value_type value_type;
 
-        // Note: has_trivial_assign isn't actually the right thing to use here, as it 
-        // refers to assignment as opposed to construction. Bug Paul Pedriana if this 
-        // is becoming a problem. In the meantime, this code assumes that if has_trivial_assign
-        // is present for a type, then has_trivial_copy is as well.
-        return uninitializedCopy_impl(first, last, result, has_trivial_assign<value_type>());
+        return uninitializedCopyImpl(first, last, result, is_pod<value_type>()); // Is is_pod the best type trait to use? 
     }
 
     /// uninitializedCopyPtr
@@ -397,7 +391,7 @@ namespace eastl
     inline Result uninitializedCopyPtr(First first, Last last, Result result)
     {
         typedef typename eastl::iterator_traits<generic_iterator<Result, void> >::value_type value_type;
-        const generic_iterator<Result, void> i(uninitializedCopy_impl(generic_iterator<First, void>(first), 
+        const generic_iterator<Result, void> i(uninitializedCopyImpl(generic_iterator<First, void>(first), 
                                                                        generic_iterator<Last, void>(last), 
                                                                        generic_iterator<Result, void>(result), 
                                                                        has_trivial_assign<value_type>()));
@@ -425,7 +419,7 @@ namespace eastl
             try
             {
                 for(; currentDest != last; ++currentDest)
-                    ::new(&*currentDest) value_type(value);
+                    ::new((void*)&*currentDest) value_type(value);
             }
             catch(...)
             {
@@ -435,7 +429,7 @@ namespace eastl
             }
         #else
             for(; currentDest != last; ++currentDest)
-                ::new(&*currentDest) value_type(value);
+                ::new((void*)&*currentDest) value_type(value);
         #endif
     }
 
@@ -477,7 +471,7 @@ namespace eastl
     template <typename ForwardIterator, typename Count, typename T>
     inline void uninitializedFillN_impl(ForwardIterator first, Count n, const T& value, true_type)
     {
-        eastl::fillN(first, n, value);
+        eastl::fill_n(first, n, value);
     }
 
     template <typename ForwardIterator, typename Count, typename T>
@@ -490,7 +484,7 @@ namespace eastl
             try
             {
                 for(; n > 0; --n, ++currentDest)
-                    ::new(&*currentDest) value_type(value);
+                    ::new((void*)&*currentDest) value_type(value);
             }
             catch(...)
             {
@@ -500,7 +494,7 @@ namespace eastl
             }
         #else
             for(; n > 0; --n, ++currentDest)
-                ::new(&*currentDest) value_type(value);
+                ::new((void*)&*currentDest) value_type(value);
         #endif
     }
 
@@ -568,13 +562,13 @@ namespace eastl
 
 
 
-    /// uninitializedFillCopy
+    /// uninitializedFill_copy
     ///
     /// Fills [result, mid) with value then copies [first, last) into [mid, mid + (last - first)).
     ///
     template <typename ForwardIterator, typename T, typename InputIterator>
     inline ForwardIterator
-    uninitializedFillCopy(ForwardIterator result, ForwardIterator mid, const T& value, InputIterator first, InputIterator last)
+    uninitializedFill_copy(ForwardIterator result, ForwardIterator mid, const T& value, InputIterator first, InputIterator last)
     {
         eastl::uninitializedFill(result, mid, value);
 

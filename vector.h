@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2009-2010 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2009,2010,2012 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -26,12 +26,6 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-///////////////////////////////////////////////////////////////////////////////
-// EASTL/vector.h
-//
-// Copyright (c) 2005, Electronic Arts. All rights reserved.
-// Written and maintained by Paul Pedriana.
-///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
 // This file implements a vector (array-like container), much like the C++ 
@@ -53,8 +47,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //      which is safe to call even if the block is empty. This avoids the 
 //      common &v[0], &v.front(), and &*v.begin() constructs that trigger false 
 //      asserts in STL debugging modes.
-//    - vector::size_type is defined as eastl_size_t instead of size_t in order to 
-//      save memory and run faster on 64 bit systems.
 //    - vector data is guaranteed to be contiguous.
 //    - vector has a setCapacity() function which frees excess capacity. 
 //      The only way to do this with std::vector is via the cryptic non-obvious 
@@ -68,7 +60,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <eastl/internal/config.h>
 #include <eastl/allocator.h>
-#include <eastl/typetraits.h>
+#include <eastl/type_traits.h>
 #include <eastl/iterator.h>
 #include <eastl/algorithm.h>
 #include <eastl/memory.h>
@@ -101,6 +93,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #pragma warning(disable: 4127)  // Conditional expression is constant
     #pragma warning(disable: 4480)  // nonstandard extension used: specifying underlying type for enum
 #endif
+
+#if defined(EA_PRAGMA_ONCE_SUPPORTED)
+    #pragma once // Some compilers (e.g. VC++) benefit significantly from using this. We've measured 3-4% build speed improvements in apps as a result.
+#endif
+
 
 
 namespace eastl
@@ -157,7 +154,7 @@ namespace eastl
         typedef eastl_size_t size_type;             // See config.h for the definition of eastl_size_t, which defaults to uint32_t.
         typedef ptrdiff_t    difference_type;
 
-        #if defined(_MSC_VER) && (_MSC_VER >= 1400) // _MSC_VER of 1400 means VC8 (VS2005), 1500 means VC9 (VS2008)
+        #if defined(_MSC_VER) && (_MSC_VER >= 1400) && (_MSC_VER <= 1600) && !EASTL_STD_CPP_ONLY  // _MSC_VER of 1400 means VS2005, 1600 means VS2010. VS2011 generates errors with usage of enum:size_type.
             enum : size_type {                      // Use Microsoft enum language extension, allowing for smaller debug symbols than using a static const. Users have been affected by this.
                 npos     = (size_type)-1,
                 kMaxSize = (size_type)-2
@@ -166,12 +163,6 @@ namespace eastl
             static const size_type npos     = (size_type)-1;      /// 'npos' means non-valid position or simply non-position.
             static const size_type kMaxSize = (size_type)-2;      /// -1 is reserved for 'npos'. It also happens to be slightly beneficial that kMaxSize is a value less than -1, as it helps us deal with potential integer wraparound issues.
         #endif
-
-        enum
-        {
-            kAlignment       = EASTL_ALIGN_OF(T),
-            kAlignmentOffset = 0
-        };
 
     protected:
         T*              mpBegin;
@@ -317,15 +308,21 @@ namespace eastl
 
         iterator erase(iterator position);
         iterator erase(iterator first, iterator last);
+        iterator eraseUnsorted(iterator position);         // Same as erase, except it doesn't preserve order, but is faster because it simply copies the last item in the vector over the erased position.
 
         reverse_iterator erase(reverse_iterator position);
         reverse_iterator erase(reverse_iterator first, reverse_iterator last);
+        reverse_iterator eraseUnsorted(reverse_iterator position);
 
         void     clear();
-        void     reset();   /// This is a unilateral reset to an initially empty state. No destructors are called, no deallocation occurs.
+        void     resetLoseMemory();                       // This is a unilateral reset to an initially empty state. No destructors are called, no deallocation occurs.
 
         bool validate() const;
         int  validateIterator(const_iterator i) const;
+
+        #if EASTL_RESET_ENABLED
+            void reset(); // This function name is deprecated; use resetLoseMemory instead.
+        #endif
 
     protected:
         // These functions do the real work of maintaining the vector. You will notice
@@ -379,7 +376,13 @@ namespace eastl
 
         void DoInsertValues(iterator position, size_type n, const value_type& value);
 
+        void DoInsertValuesEnd(size_type n, const value_type& value);
+
         void DoInsertValue(iterator position, const value_type& value);
+
+        void DoInsertValueEnd(const value_type& value);
+
+        void DoGrow(size_type n);
 
     }; // class vector
 
@@ -454,7 +457,7 @@ namespace eastl
 
         // If n is zero, then we allocate no memory and just return NULL. 
         // This is fine, as our default ctor initializes with NULL pointers. 
-        return n ? (T*)allocate_memory(mAllocator, n * sizeof(T), kAlignment, kAlignmentOffset) : NULL;
+        return n ? (T*)allocateMemory(mAllocator, n * sizeof(T), EASTL_ALIGN_OF(T), 0) : NULL;
     }
 
 
@@ -747,9 +750,12 @@ namespace eastl
     inline void vector<T, Allocator>::resize(size_type n, const value_type& value)
     {
         if(n > (size_type)(mpEnd - mpBegin))  // We expect that more often than not, resizes will be upsizes.
-            insert(mpEnd, n - ((size_type)(mpEnd - mpBegin)), value);
+            DoInsertValuesEnd(n - ((size_type)(mpEnd - mpBegin)), value);
         else
-            erase(mpBegin + n, mpEnd);
+        {
+            DoDestroyValues(mpBegin + n, mpEnd);
+            mpEnd = mpBegin + n;
+        }
     }
 
 
@@ -760,9 +766,12 @@ namespace eastl
         // resize(n, value_type());
 
         if(n > (size_type)(mpEnd - mpBegin))  // We expect that more often than not, resizes will be upsizes.
-            insert(mpEnd, n - ((size_type)(mpEnd - mpBegin)), value_type());
+            DoInsertValuesEnd(n - ((size_type)(mpEnd - mpBegin)), value_type());
         else
-            erase(mpBegin + n, mpEnd);
+        {
+            DoDestroyValues(mpBegin + n, mpEnd);
+            mpEnd = mpBegin + n;
+        }
     }
 
 
@@ -771,20 +780,7 @@ namespace eastl
     {
         // If the user wants to reduce the reserved memory, there is the setCapacity function.
         if(n > size_type(mpCapacity - mpBegin)) // If n > capacity ...
-        {
-            // To consider: fold this reserve implementation with the setCapacity 
-            // implementation below. But we need to be careful to not call resize
-            // in the implementation, as that would require the user to have a 
-            // default constructor, which we are trying to avoid.
-            pointer const pNewData = DoRealloc(n, mpBegin, mpEnd);
-            DoDestroyValues(mpBegin, mpEnd);
-            DoFree(mpBegin, (size_type)(mpCapacity - mpBegin));
-
-            const ptrdiff_t nPrevSize = mpEnd - mpBegin;
-            mpBegin    = pNewData;
-            mpEnd      = pNewData + nPrevSize;
-            mpCapacity = mpBegin + n;
-        }
+            DoGrow(n);
     }
 
 
@@ -833,7 +829,7 @@ namespace eastl
     inline typename vector<T, Allocator>::reference
     vector<T, Allocator>::operator[](size_type n)
     {
-        #if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED    // We allow the user to use a reference to v[0] of an empty container.
+        #if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED    // We allow the user to use a reference to v[0] of an empty container. But this was merely grandfathered in and ideally we shouldn't allow such access to [0].
             if(EASTL_UNLIKELY((n != 0) && (n >= (static_cast<size_type>(mpEnd - mpBegin)))))
                 EASTL_FAIL_MSG("vector::operator[] -- out of range");
         #elif EASTL_ASSERT_ENABLED
@@ -849,7 +845,7 @@ namespace eastl
     inline typename vector<T, Allocator>::const_reference
     vector<T, Allocator>::operator[](size_type n) const
     {
-        #if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED    // We allow the user to use a reference to v[0] of an empty container.
+        #if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED    // We allow the user to use a reference to v[0] of an empty container. But this was merely grandfathered in and ideally we shouldn't allow such access to [0].
             if(EASTL_UNLIKELY((n != 0) && (n >= (static_cast<size_type>(mpEnd - mpBegin)))))
                 EASTL_FAIL_MSG("vector::operator[] -- out of range");
         #elif EASTL_ASSERT_ENABLED
@@ -865,6 +861,10 @@ namespace eastl
     inline typename vector<T, Allocator>::reference
     vector<T, Allocator>::at(size_type n)
     {
+        // The difference between at and operator[] is that at signals 
+        // if the requested position is out of range by throwing an 
+        // out_of_range exception.
+
         #if EASTL_EXCEPTIONS_ENABLED
             if(EASTL_UNLIKELY(n >= (static_cast<size_type>(mpEnd - mpBegin))))
                 throw std::out_of_range("vector::at -- out of range");
@@ -957,9 +957,9 @@ namespace eastl
     inline void vector<T, Allocator>::pushBack(const value_type& value)
     {
         if(mpEnd < mpCapacity)
-            ::new(mpEnd++) value_type(value);
+            ::new((void*)mpEnd++) value_type(value);
         else
-            DoInsertValue(mpEnd, value);
+            DoInsertValueEnd(value);
     }
 
 
@@ -968,9 +968,9 @@ namespace eastl
     vector<T, Allocator>::pushBack()
     {
         if(mpEnd < mpCapacity)
-            ::new(mpEnd++) value_type();
+            ::new((void*)mpEnd++) value_type();
         else // Note that in this case we create a temporary, which is less desirable.
-            DoInsertValue(mpEnd, value_type());
+            DoInsertValueEnd(value_type());
 
         return *(mpEnd - 1); // Same as return back();
     }
@@ -1016,7 +1016,7 @@ namespace eastl
         if((mpEnd == mpCapacity) || (position != mpEnd))
             DoInsertValue(position, value);
         else
-            ::new(mpEnd++) value_type(value);
+            ::new((void*)mpEnd++) value_type(value);
 
         return mpBegin + n;
     }
@@ -1091,6 +1091,26 @@ namespace eastl
 
 
     template <typename T, typename Allocator>
+    inline typename vector<T, Allocator>::iterator
+    vector<T, Allocator>::eraseUnsorted(iterator position)
+    {
+        #if EASTL_ASSERT_ENABLED
+            if(EASTL_UNLIKELY((position < mpBegin) || (position >= mpEnd)))
+                EASTL_FAIL_MSG("vector::erase -- invalid position");
+        #endif
+
+        // *position = back();
+        *position = *(mpEnd - 1);
+
+        // popBack();
+        --mpEnd;
+        mpEnd->~value_type();
+
+        return position;
+    }
+
+
+    template <typename T, typename Allocator>
     inline typename vector<T, Allocator>::reverse_iterator
     vector<T, Allocator>::erase(reverse_iterator position)
     {
@@ -1109,7 +1129,15 @@ namespace eastl
         // return first;
 
         // Version which erases in order from last to first, but is slightly more efficient:
-        return reverse_iterator(erase((++last).base(), (++first).base()));
+        return reverse_iterator(erase(last.base(), first.base()));
+    }
+
+
+    template <typename T, typename Allocator>
+    inline typename vector<T, Allocator>::reverse_iterator
+    vector<T, Allocator>::eraseUnsorted(reverse_iterator position)
+    {
+        return reverse_iterator(eraseUnsorted((++position).base()));
     }
 
 
@@ -1121,8 +1149,18 @@ namespace eastl
     }
 
 
+    #if EASTL_RESET_ENABLED
+        // This function name is deprecated; use resetLoseMemory instead.
+        template <typename T, typename Allocator>
+        inline void vector<T, Allocator>::reset()
+        {
+            resetLoseMemory();
+        }
+    #endif
+
+
     template <typename T, typename Allocator>
-    inline void vector<T, Allocator>::reset()
+    inline void vector<T, Allocator>::resetLoseMemory()
     {
         // The reset function is a special extension function which unilaterally 
         // resets the container to an empty state without freeing the memory of 
@@ -1169,7 +1207,9 @@ namespace eastl
         mpBegin    = DoAllocate((size_type)n);
         mpCapacity = mpBegin + n;
         mpEnd      = mpCapacity;
-        eastl::uninitializedFillNPtr<value_type, Integer>(mpBegin, n, value);
+
+        typedef typename eastl::remove_const<T>::type non_const_value_type; // If T is a const type (e.g. const int) then we need to initialize it as if it were non-const.
+        eastl::uninitializedFillNPtr<value_type, Integer>((non_const_value_type*)mpBegin, n, value);
     }
 
 
@@ -1199,15 +1239,16 @@ namespace eastl
         mpBegin    = DoAllocate(n);
         mpCapacity = mpBegin + n;
         mpEnd      = mpCapacity;
-        eastl::uninitializedCopyPtr(first, last, mpBegin);
+
+        typedef typename eastl::remove_const<T>::type non_const_value_type; // If T is a const type (e.g. const int) then we need to initialize it as if it were non-const.
+        eastl::uninitializedCopyPtr(first, last, (non_const_value_type*)mpBegin);
     }
 
 
     template <typename T, typename Allocator>
     inline void vector<T, Allocator>::DoDestroyValues(pointer first, pointer last)
     {
-        for(; first < last; ++first) // In theory, this could be an external function that works on an iterator.
-            first->~value_type();
+        eastl::destruct(first, last); // This will be smart enough to be more efficient for has_trivial_destructor.
     }
 
 
@@ -1244,7 +1285,7 @@ namespace eastl
         }
         else // else 0 <= n <= size
         {
-            eastl::fillN(mpBegin, n, value);
+            eastl::fill_n(mpBegin, n, value);
             erase(mpBegin + n, mpEnd);
         }
     }
@@ -1287,14 +1328,14 @@ namespace eastl
         }
         else if(n <= size_type(mpEnd - mpBegin)) // If n <= size ...
         {
-            pointer const pNewEnd = eastl::copy(first, last, mpBegin); // Since we are copying to mpBegin, we don't have to worry about needing copyBackward or a memmove-like copy (as opposed to memcpy-like copy).
+            pointer const pNewEnd = eastl::copy(first, last, mpBegin); // Since we are copying to mpBegin, we don't have to worry about needing copy_backward or a memmove-like copy (as opposed to memcpy-like copy).
             DoDestroyValues(pNewEnd, mpEnd);
             mpEnd = pNewEnd;
         }
         else // else size < n <= capacity
         {
             RandomAccessIterator position = first + (mpEnd - mpBegin);
-            eastl::copy(first, position, mpBegin); // Since we are copying to mpBegin, we don't have to worry about needing copyBackward or a memmove-like copy (as opposed to memcpy-like copy).
+            eastl::copy(first, position, mpBegin); // Since we are copying to mpBegin, we don't have to worry about needing copy_backward or a memmove-like copy (as opposed to memcpy-like copy).
             mpEnd = eastl::uninitializedCopyPtr(position, last, mpEnd);
         }
     }
@@ -1337,30 +1378,28 @@ namespace eastl
 
         if(first != last)
         {
-            const size_type n = (size_type)eastl::distance(first, last);
+            const size_type n = (size_type)eastl::distance(first, last);  // n is the number of elements we are inserting.
 
             if(n <= size_type(mpCapacity - mpEnd)) // If n fits within the existing capacity...
             {
                 const size_type nExtra = static_cast<size_type>(mpEnd - position);
-                const pointer   pEnd   = mpEnd;
 
-                if(n < nExtra)
+                if(n < nExtra) // If the inserted values are entirely within initialized memory (i.e. are before mpEnd)...
                 {
                     eastl::uninitializedCopyPtr(mpEnd - n, mpEnd, mpEnd);
-                    mpEnd += n;
-                    eastl::copyBackward(position, pEnd - n, pEnd); // We need copyBackward because of potential overlap issues.
+                    eastl::copy_backward(position, mpEnd - n, mpEnd); // We need copy_backward because of potential overlap issues.
                     eastl::copy(first, last, position);
                 }
                 else
                 {
-                    BidirectionalIterator fiTemp = first;
-                    eastl::advance(fiTemp, nExtra);
-                    eastl::uninitializedCopyPtr(fiTemp, last, mpEnd);
-                    mpEnd += n - nExtra;
-                    eastl::uninitializedCopyPtr(position, pEnd, mpEnd);
-                    mpEnd += nExtra;
-                    eastl::copyBackward(first, fiTemp, position + nExtra);
+                    BidirectionalIterator iTemp = first;
+                    eastl::advance(iTemp, nExtra);
+                    eastl::uninitializedCopyPtr(iTemp, last, mpEnd);
+                    eastl::uninitializedCopyPtr(position, mpEnd, mpEnd + n - nExtra);
+                    eastl::copy_backward(first, iTemp, position + nExtra);
                 }
+
+                mpEnd += n;
             }
             else // else we need to expand our capacity.
             {
@@ -1415,23 +1454,21 @@ namespace eastl
                 // To consider: Make this algorithm work more like DoInsertValue whereby a pointer to value is used.
                 const value_type temp  = value;
                 const size_type nExtra = static_cast<size_type>(mpEnd - position);
-                const pointer pEnd     = mpEnd;
 
                 if(n < nExtra)
                 {
                     eastl::uninitializedCopyPtr(mpEnd - n, mpEnd, mpEnd);
-                    mpEnd += n;
-                    eastl::copyBackward(position, pEnd - n, pEnd); // We need copyBackward because of potential overlap issues.
+                    eastl::copy_backward(position, mpEnd - n, mpEnd); // We need copy_backward because of potential overlap issues.
                     eastl::fill(position, position + n, temp);
                 }
                 else
                 {
                     eastl::uninitializedFillNPtr(mpEnd, n - nExtra, temp);
-                    mpEnd += n - nExtra;
-                    eastl::uninitializedCopyPtr(position, pEnd, mpEnd);
-                    mpEnd += nExtra;
-                    eastl::fill(position, pEnd, temp);
+                    eastl::uninitializedCopyPtr(position, mpEnd, mpEnd + n - nExtra);
+                    eastl::fill(position, mpEnd, temp);
                 }
+
+                mpEnd += n;
             }
         }
         else // else n > capacity
@@ -1472,6 +1509,66 @@ namespace eastl
 
 
     template <typename T, typename Allocator>
+    void vector<T, Allocator>::DoGrow(size_type n)
+    {
+        pointer const pNewData = DoAllocate(n);
+
+        pointer pNewEnd = eastl::uninitializedCopyPtr(mpBegin, mpEnd, pNewData);
+
+        DoDestroyValues(mpBegin, mpEnd);
+        DoFree(mpBegin, (size_type)(mpCapacity - mpBegin));
+
+        mpBegin    = pNewData;
+        mpEnd      = pNewEnd;
+        mpCapacity = pNewData + n;
+    }
+
+
+    template <typename T, typename Allocator>
+    void vector<T, Allocator>::DoInsertValuesEnd(size_type n, const value_type& value)
+    {
+        if(n > size_type(mpCapacity - mpEnd))
+        {
+            const size_type nPrevSize = size_type(mpEnd - mpBegin);
+            const size_type nGrowSize = GetNewCapacity(nPrevSize);
+            const size_type nNewSize  = nGrowSize > (nPrevSize + n) ? nGrowSize : (nPrevSize + n);
+            pointer const   pNewData  = DoAllocate(nNewSize);
+
+            #if EASTL_EXCEPTIONS_ENABLED
+                pointer pNewEnd = pNewData; // Assign pNewEnd a value here in case the copy throws.
+                try
+                {
+                    pNewEnd = eastl::uninitializedCopyPtr(mpBegin, mpEnd, pNewData);
+                }
+                catch(...)
+                {
+                    DoDestroyValues(pNewData, pNewEnd);
+                    DoFree(pNewData, nNewSize);
+                    throw;
+                }
+            #else
+                pointer pNewEnd = eastl::uninitializedCopyPtr(mpBegin, mpEnd, pNewData);
+            #endif
+
+            eastl::uninitializedFillNPtr(pNewEnd, n, value);
+            pNewEnd += n;
+
+            DoDestroyValues(mpBegin, mpEnd);
+            DoFree(mpBegin, (size_type)(mpCapacity - mpBegin));
+
+            mpBegin    = pNewData;
+            mpEnd      = pNewEnd;
+            mpCapacity = pNewData + nNewSize;
+        }
+        else
+        {
+            eastl::uninitializedFillNPtr(mpEnd, n, value);
+            mpEnd += n;
+        }
+    }
+
+
+    template <typename T, typename Allocator>
     void vector<T, Allocator>::DoInsertValue(iterator position, const value_type& value)
     {
         #if EASTL_ASSERT_ENABLED
@@ -1486,8 +1583,8 @@ namespace eastl
             const T* pValue = &value;
             if((pValue >= position) && (pValue < mpEnd)) // If value comes from within the range to be moved...
                 ++pValue;
-            ::new(mpEnd) value_type(*(mpEnd - 1));
-            eastl::copyBackward(position, mpEnd - 1, mpEnd); // We need copyBackward because of potential overlap issues.
+            ::new((void*)mpEnd) value_type(*(mpEnd - 1));
+            eastl::copy_backward(position, mpEnd - 1, mpEnd); // We need copy_backward because of potential overlap issues.
             *position = *pValue;
             ++mpEnd;
         }
@@ -1502,7 +1599,7 @@ namespace eastl
                 try
                 {
                     pNewEnd = eastl::uninitializedCopyPtr(mpBegin, position, pNewData);
-                    ::new(pNewEnd) value_type(value);
+                    ::new((void*)pNewEnd) value_type(value);
                     pNewEnd = eastl::uninitializedCopyPtr(position, mpEnd, ++pNewEnd);
                 }
                 catch(...)
@@ -1513,7 +1610,7 @@ namespace eastl
                 }
             #else
                 pointer pNewEnd = eastl::uninitializedCopyPtr(mpBegin, position, pNewData);
-                ::new(pNewEnd) value_type(value);
+                ::new((void*)pNewEnd) value_type(value);
                 pNewEnd = eastl::uninitializedCopyPtr(position, mpEnd, ++pNewEnd);
             #endif
 
@@ -1524,6 +1621,42 @@ namespace eastl
             mpEnd      = pNewEnd;
             mpCapacity = pNewData + nNewSize;
         }
+    }
+
+
+    template <typename T, typename Allocator>
+    void vector<T, Allocator>::DoInsertValueEnd(const value_type& value)
+    {
+        const size_type nPrevSize = size_type(mpEnd - mpBegin);
+        const size_type nNewSize  = GetNewCapacity(nPrevSize);
+        pointer const   pNewData  = DoAllocate(nNewSize);
+
+        #if EASTL_EXCEPTIONS_ENABLED
+            pointer pNewEnd = pNewData; // Assign pNewEnd a value here in case the copy throws.
+            try
+            {
+                pNewEnd = eastl::uninitializedCopyPtr(mpBegin, mpEnd, pNewData);
+                ::new((void*)pNewEnd) value_type(value);
+                pNewEnd++;
+            }
+            catch(...)
+            {
+                DoDestroyValues(pNewData, pNewEnd);
+                DoFree(pNewData, nNewSize);
+                throw;
+            }
+        #else
+            pointer pNewEnd = eastl::uninitializedCopyPtr(mpBegin, mpEnd, pNewData);
+            ::new((void*)pNewEnd) value_type(value);
+            pNewEnd++;
+        #endif
+
+        DoDestroyValues(mpBegin, mpEnd);
+        DoFree(mpBegin, (size_type)(mpCapacity - mpBegin));
+
+        mpBegin    = pNewData;
+        mpEnd      = pNewEnd;
+        mpCapacity = pNewData + nNewSize;
     }
 
 
@@ -1576,7 +1709,7 @@ namespace eastl
     template <typename T, typename Allocator>
     inline bool operator<(const vector<T, Allocator>& a, const vector<T, Allocator>& b)
     {
-        return lexicographicalCompare(a.begin(), a.end(), b.begin(), b.end());
+        return lexicographical_compare(a.begin(), a.end(), b.begin(), b.end());
     }
 
 

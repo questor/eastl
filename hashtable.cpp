@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2009-2010 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2009,2010,2012 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -26,12 +26,6 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-///////////////////////////////////////////////////////////////////////////////
-// EASTL/hashtable.cpp
-//
-// Copyright (c) 2005, Electronic Arts. All rights reserved.
-// Written and maintained by Paul Pedriana.
-///////////////////////////////////////////////////////////////////////////////
 
 
 
@@ -110,7 +104,7 @@ namespace eastl
         2364114217u, 2557710269u, 2767159799u, 2993761039u,
         3238918481u, 3504151727u, 3791104843u, 4101556399u,
         4294967291u,
-        4294967291u // Sentinel so we don't have to test result of lowerBound
+        4294967291u // Sentinel so we don't have to test result of lower_bound
     };
 
 
@@ -126,7 +120,7 @@ namespace eastl
     ///
     uint32_t prime_rehash_policy::GetPrevBucketCountOnly(uint32_t nBucketCountHint)
     {
-        const uint32_t nPrime = *(eastl::upperBound(gPrimeNumberArray, gPrimeNumberArray + kPrimeCount, nBucketCountHint) - 1);
+        const uint32_t nPrime = *(eastl::upper_bound(gPrimeNumberArray, gPrimeNumberArray + kPrimeCount, nBucketCountHint) - 1);
         return nPrime;
     }
 
@@ -137,9 +131,9 @@ namespace eastl
     ///
     uint32_t prime_rehash_policy::GetPrevBucketCount(uint32_t nBucketCountHint) const
     {
-        const uint32_t nPrime = *(eastl::upperBound(gPrimeNumberArray, gPrimeNumberArray + kPrimeCount, nBucketCountHint) - 1);
+        const uint32_t nPrime = *(eastl::upper_bound(gPrimeNumberArray, gPrimeNumberArray + kPrimeCount, nBucketCountHint) - 1);
 
-        mnNextResize = (uint32_t)ceil(nPrime * floor(mfMaxLoadFactor));
+        mnNextResize = (uint32_t)ceil(nPrime * mfMaxLoadFactor);
         return nPrime;
     }
 
@@ -150,9 +144,9 @@ namespace eastl
     ///
     uint32_t prime_rehash_policy::GetNextBucketCount(uint32_t nBucketCountHint) const
     {
-        const uint32_t nPrime = *eastl::lowerBound(gPrimeNumberArray, gPrimeNumberArray + kPrimeCount, nBucketCountHint);
+        const uint32_t nPrime = *eastl::lower_bound(gPrimeNumberArray, gPrimeNumberArray + kPrimeCount, nBucketCountHint);
 
-        mnNextResize = (uint32_t)ceil(nPrime * floor(mfMaxLoadFactor));
+        mnNextResize = (uint32_t)ceil(nPrime * mfMaxLoadFactor);
         return nPrime;
     }
 
@@ -163,10 +157,10 @@ namespace eastl
     ///
     uint32_t prime_rehash_policy::GetBucketCount(uint32_t nElementCount) const
     {
-        const uint32_t nMinBucketCount = (uint32_t)(nElementCount / floor(mfMaxLoadFactor));
-        const uint32_t nPrime          = *eastl::lowerBound(gPrimeNumberArray, gPrimeNumberArray + kPrimeCount, nMinBucketCount);
+        const uint32_t nMinBucketCount = (uint32_t)(nElementCount / mfMaxLoadFactor);
+        const uint32_t nPrime          = *eastl::lower_bound(gPrimeNumberArray, gPrimeNumberArray + kPrimeCount, nMinBucketCount);
 
-        mnNextResize = (uint32_t)ceil(nPrime * floor(mfMaxLoadFactor));
+        mnNextResize = (uint32_t)ceil(nPrime * mfMaxLoadFactor);
         return nPrime;
     }
 
@@ -185,19 +179,19 @@ namespace eastl
             if(nBucketCount == 1) // We force rehashing to occur if the bucket count is < 2.
                 nBucketCount = 0;
 
-            float fMinBucketCount = (float)(nElementCount + nElementAdd) / mfMaxLoadFactor;
+            float fMinBucketCount = (nElementCount + nElementAdd) / mfMaxLoadFactor;
 
             if(fMinBucketCount > (float)nBucketCount)
             {
-                fMinBucketCount       = eastl::maxAlt(fMinBucketCount, mfGrowthFactor * (float)nBucketCount);
-                const uint32_t nPrime = *eastl::lowerBound(gPrimeNumberArray, gPrimeNumberArray + kPrimeCount, (uint32_t)fMinBucketCount);
-                mnNextResize          = (uint32_t)ceil(nPrime * floor(mfMaxLoadFactor));
+                fMinBucketCount       = eastl::max_alt(fMinBucketCount, mfGrowthFactor * nBucketCount);
+                const uint32_t nPrime = *eastl::lower_bound(gPrimeNumberArray, gPrimeNumberArray + kPrimeCount, (uint32_t)fMinBucketCount);
+                mnNextResize          = (uint32_t)ceil(nPrime * mfMaxLoadFactor);
 
                 return eastl::pair<bool, uint32_t>(true, nPrime);
             }
             else
             {
-                mnNextResize = (uint32_t)ceil(nBucketCount * floor(mfMaxLoadFactor));
+                mnNextResize = (uint32_t)ceil(nBucketCount * mfMaxLoadFactor);
                 return eastl::pair<bool, uint32_t>(false, (uint32_t)0);
             }
         }

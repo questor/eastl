@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2005,2009-2010 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2005,2009,2010,2012 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -27,7 +27,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 ///////////////////////////////////////////////////////////////////////////////
-// EASTL/red_black_tree.h
+// eastl/red_black_tree.h
 // Written by Paul Pedriana 2005.
 //////////////////////////////////////////////////////////////////////////////
 
@@ -39,7 +39,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 #include <eastl/internal/config.h>
-#include <eastl/typetraits.h>
+#include <eastl/type_traits.h>
 #include <eastl/allocator.h>
 #include <eastl/iterator.h>
 #include <eastl/utility.h>
@@ -228,7 +228,7 @@ namespace eastl
         typedef ExtractKey extract_key;
 
     public:
-        Compare mCompare; // To do: Make sure that empty Compare classes go away via empty base optimizations.
+        Compare mCompare; // To do: Make sure that empty compare classes go away via empty base optimizations.
 
     public:
         rb_base() : mCompare() {}
@@ -247,7 +247,7 @@ namespace eastl
         typedef ExtractKey extract_key;
 
     public:
-        Compare mCompare; // To do: Make sure that empty Compare classes go away via empty base optimizations.
+        Compare mCompare; // To do: Make sure that empty compare classes go away via empty base optimizations.
 
     public:
         rb_base() : mCompare() {}
@@ -264,7 +264,7 @@ namespace eastl
         typedef eastl::useFirst<Pair> extract_key;
 
     public:
-        Compare mCompare; // To do: Make sure that empty Compare classes go away via empty base optimizations.
+        Compare mCompare; // To do: Make sure that empty compare classes go away via empty base optimizations.
 
     public:
         rb_base() : mCompare() {}
@@ -281,7 +281,7 @@ namespace eastl
         typedef eastl::useFirst<Pair> extract_key;
 
     public:
-        Compare mCompare; // To do: Make sure that empty Compare classes go away via empty base optimizations.
+        Compare mCompare; // To do: Make sure that empty compare classes go away via empty base optimizations.
 
     public:
         rb_base() : mCompare() {}
@@ -311,7 +311,7 @@ namespace eastl
     /// 'end() - 1' (a.k.a. rbegin()) to mpNodeRight, and assigning the tree root
     /// node to mpNodeParent. 
     ///
-    /// Compare (functor): This is a comparison class which defaults to 'less'.
+    /// compare (functor): This is a comparison class which defaults to 'less'.
     /// It is a common STL thing which takes two arguments and returns true if  
     /// the first is less than the second.
     ///
@@ -371,14 +371,6 @@ namespace eastl
         typedef typename base_type::extract_key                                                 extract_key;
 
         using base_type::mCompare;
-
-        enum
-        {
-            kKeyAlignment         = EASTL_ALIGN_OF(key_type),
-            kKeyAlignmentOffset   = 0,                          // To do: Make sure this really is zero for all uses of this template.
-            kValueAlignment       = EASTL_ALIGN_OF(value_type),
-            kValueAlignmentOffset = 0                           // To fix: This offset is zero for sets and >0 for maps. Need to fix this.
-        };
 
     public:
         rbtree_node_base  mAnchor;      /// This node acts as end() and its mpLeft points to begin(), and mpRight points to rbegin() (the last node on the right).
@@ -458,7 +450,7 @@ namespace eastl
         void erase(const key_type* first, const key_type* last);
 
         void clear();
-        void reset();
+        void resetLoseMemory(); // This is a unilateral reset to an initially empty state. No destructors are called, no deallocation occurs.
 
         iterator       find(const key_type& key);
         const_iterator find(const key_type& key) const;
@@ -480,22 +472,26 @@ namespace eastl
         template <typename U, typename Compare2>
         const_iterator find_as(const U& u, Compare2 compare2) const;
 
-        iterator       lowerBound(const key_type& key);
-        const_iterator lowerBound(const key_type& key) const;
+        iterator       lower_bound(const key_type& key);
+        const_iterator lower_bound(const key_type& key) const;
 
-        iterator       upperBound(const key_type& key);
-        const_iterator upperBound(const key_type& key) const;
+        iterator       upper_bound(const key_type& key);
+        const_iterator upper_bound(const key_type& key) const;
 
         bool validate() const;
         int  validateIterator(const_iterator i) const;
+
+        #if EASTL_RESET_ENABLED
+            void reset(); // This function name is deprecated; use resetLoseMemory instead.
+        #endif
 
     protected:
         node_type*  DoAllocateNode();
         void        DoFreeNode(node_type* pNode);
 
-        node_type* DoCreateNodeFromKey(const key_type& key);
-        node_type* DoCreateNode(const value_type& value);
-        node_type* DoCreateNode(const node_type* pNodeSource, node_type* pNodeParent);
+        node_type* DocreateNodeFromKey(const key_type& key);
+        node_type* DocreateNode(const value_type& value);
+        node_type* DocreateNode(const node_type* pNodeSource, node_type* pNodeParent);
 
         node_type* DoCopySubtree(const node_type* pNodeSource, node_type* pNodeDest);
         void       DoNukeSubtree(node_type* pNode);
@@ -656,7 +652,7 @@ namespace eastl
           mnSize(0),
           mAllocator(EASTL_RBTREE_DEFAULT_NAME)
     {
-        reset();
+        resetLoseMemory();
     }
 
 
@@ -666,7 +662,7 @@ namespace eastl
           mnSize(0),
           mAllocator(allocator)
     {
-        reset();
+        resetLoseMemory();
     }
 
 
@@ -677,7 +673,7 @@ namespace eastl
           mnSize(0),
           mAllocator(allocator)
     {
-        reset();
+        resetLoseMemory();
     }
 
 
@@ -688,7 +684,7 @@ namespace eastl
           mnSize(0),
           mAllocator(x.mAllocator)
     {
-        reset();
+        resetLoseMemory();
 
         if(x.mAnchor.mpNodeParent) // mAnchor.mpNodeParent is the rb_tree root node.
         {
@@ -708,7 +704,7 @@ namespace eastl
           mnSize(0),
           mAllocator(allocator)
     {
-        reset();
+        resetLoseMemory();
 
         #if EASTL_EXCEPTIONS_ENABLED
             try
@@ -1275,7 +1271,7 @@ namespace eastl
         else
             side = kRBTreeSideRight;
 
-        node_type* const pNodeNew = DoCreateNode(value); // Note that pNodeNew->mpLeft, mpRight, mpParent, will be uninitialized.
+        node_type* const pNodeNew = DocreateNode(value); // Note that pNodeNew->mpLeft, mpRight, mpParent, will be uninitialized.
         RBTreeInsert(pNodeNew, pNodeParent, &mAnchor, side);
         mnSize++;
 
@@ -1298,7 +1294,7 @@ namespace eastl
         else
             side = kRBTreeSideRight;
 
-        node_type* const pNodeNew = DoCreateNodeFromKey(key); // Note that pNodeNew->mpLeft, mpRight, mpParent, will be uninitialized.
+        node_type* const pNodeNew = DocreateNodeFromKey(key); // Note that pNodeNew->mpLeft, mpRight, mpParent, will be uninitialized.
         RBTreeInsert(pNodeNew, pNodeParent, &mAnchor, side);
         mnSize++;
 
@@ -1321,14 +1317,24 @@ namespace eastl
         // Erase the entire tree. DoNukeSubtree is not a 
         // conventional erase function, as it does no rebalancing.
         DoNukeSubtree((node_type*)mAnchor.mpNodeParent);
-        reset();
+        resetLoseMemory();
     }
 
 
+    #if EASTL_RESET_ENABLED
+        // This function name is deprecated; use resetLoseMemory instead.
+        template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
+        inline void rbtree<K, V, C, A, E, bM, bU>::reset()
+        {
+            resetLoseMemory();
+        }
+    #endif
+
+
     template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
-    inline void rbtree<K, V, C, A, E, bM, bU>::reset()
+    inline void rbtree<K, V, C, A, E, bM, bU>::resetLoseMemory()
     {
-        // The reset function is a special extension function which unilaterally 
+        // The resetLoseMemory function is a special extension function which unilaterally 
         // resets the container to an empty state without freeing the memory of 
         // the contained objects. This is useful for very quickly tearing down a 
         // container built into scratch memory.
@@ -1422,12 +1428,12 @@ namespace eastl
     typename rbtree<K, V, C, A, E, bM, bU>::iterator
     rbtree<K, V, C, A, E, bM, bU>::find(const key_type& key)
     {
-        // To consider: Implement this instead via calling lowerBound and 
+        // To consider: Implement this instead via calling lower_bound and 
         // inspecting the result. The following is an implementation of this:
-        //    const iterator it(lowerBound(key));
+        //    const iterator it(lower_bound(key));
         //    return ((it.mpNode == &mAnchor) || mCompare(key, extractKey(it.mpNode->mValue))) ? iterator(&mAnchor) : it;
         // We don't currently implement the above because in practice people tend to call 
-        // find a lot with trees, but very uncommonly call lowerBound.
+        // find a lot with trees, but very uncommonly call lower_bound.
         extract_key extractKey;
 
         node_type* pCurrent  = (node_type*)mAnchor.mpNodeParent; // Start with the root node.
@@ -1504,7 +1510,7 @@ namespace eastl
 
     template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
     typename rbtree<K, V, C, A, E, bM, bU>::iterator
-    rbtree<K, V, C, A, E, bM, bU>::lowerBound(const key_type& key)
+    rbtree<K, V, C, A, E, bM, bU>::lower_bound(const key_type& key)
     {
         extract_key extractKey;
 
@@ -1531,16 +1537,16 @@ namespace eastl
 
     template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
     inline typename rbtree<K, V, C, A, E, bM, bU>::const_iterator
-    rbtree<K, V, C, A, E, bM, bU>::lowerBound(const key_type& key) const
+    rbtree<K, V, C, A, E, bM, bU>::lower_bound(const key_type& key) const
     {
         typedef rbtree<K, V, C, A, E, bM, bU> rbtree_type;
-        return const_iterator(const_cast<rbtree_type*>(this)->lowerBound(key));
+        return const_iterator(const_cast<rbtree_type*>(this)->lower_bound(key));
     }
 
 
     template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
     typename rbtree<K, V, C, A, E, bM, bU>::iterator
-    rbtree<K, V, C, A, E, bM, bU>::upperBound(const key_type& key)
+    rbtree<K, V, C, A, E, bM, bU>::upper_bound(const key_type& key)
     {
         extract_key extractKey;
 
@@ -1565,10 +1571,10 @@ namespace eastl
 
     template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
     inline typename rbtree<K, V, C, A, E, bM, bU>::const_iterator
-    rbtree<K, V, C, A, E, bM, bU>::upperBound(const key_type& key) const
+    rbtree<K, V, C, A, E, bM, bU>::upper_bound(const key_type& key) const
     {
         typedef rbtree<K, V, C, A, E, bM, bU> rbtree_type;
-        return const_iterator(const_cast<rbtree_type*>(this)->upperBound(key));
+        return const_iterator(const_cast<rbtree_type*>(this)->upper_bound(key));
     }
 
 
@@ -1682,7 +1688,7 @@ namespace eastl
     inline typename rbtree<K, V, C, A, E, bM, bU>::node_type*
     rbtree<K, V, C, A, E, bM, bU>::DoAllocateNode()
     {
-        return (node_type*)allocate_memory(mAllocator, sizeof(node_type), kValueAlignment, kValueAlignmentOffset);
+        return (node_type*)allocateMemory(mAllocator, sizeof(node_type), EASTL_ALIGN_OF(value_type), 0);
     }
 
 
@@ -1696,7 +1702,7 @@ namespace eastl
 
     template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
     typename rbtree<K, V, C, A, E, bM, bU>::node_type*
-    rbtree<K, V, C, A, E, bM, bU>::DoCreateNodeFromKey(const key_type& key)
+    rbtree<K, V, C, A, E, bM, bU>::DocreateNodeFromKey(const key_type& key)
     {
         // Note that this function intentionally leaves the node pointers uninitialized.
         // The caller would otherwise just turn right around and modify them, so there's
@@ -1707,7 +1713,7 @@ namespace eastl
             try
             {
         #endif
-                ::new(&pNode->mValue) value_type(key);
+                ::new((void*)&pNode->mValue) value_type(key);
 
         #if EASTL_EXCEPTIONS_ENABLED
             }
@@ -1731,7 +1737,7 @@ namespace eastl
 
     template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
     typename rbtree<K, V, C, A, E, bM, bU>::node_type*
-    rbtree<K, V, C, A, E, bM, bU>::DoCreateNode(const value_type& value)
+    rbtree<K, V, C, A, E, bM, bU>::DocreateNode(const value_type& value)
     {
         // Note that this function intentionally leaves the node pointers uninitialized.
         // The caller would otherwise just turn right around and modify them, so there's
@@ -1742,7 +1748,7 @@ namespace eastl
             try
             {
         #endif
-                ::new(&pNode->mValue) value_type(value);
+                ::new((void*)&pNode->mValue) value_type(value);
         #if EASTL_EXCEPTIONS_ENABLED
             }
             catch(...)
@@ -1765,9 +1771,9 @@ namespace eastl
 
     template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
     typename rbtree<K, V, C, A, E, bM, bU>::node_type*
-    rbtree<K, V, C, A, E, bM, bU>::DoCreateNode(const node_type* pNodeSource, node_type* pNodeParent)
+    rbtree<K, V, C, A, E, bM, bU>::DocreateNode(const node_type* pNodeSource, node_type* pNodeParent)
     {
-        node_type* const pNode = DoCreateNode(pNodeSource->mValue);
+        node_type* const pNode = DocreateNode(pNodeSource->mValue);
 
         pNode->mpNodeRight  = NULL;
         pNode->mpNodeLeft   = NULL;
@@ -1782,7 +1788,7 @@ namespace eastl
     typename rbtree<K, V, C, A, E, bM, bU>::node_type*
     rbtree<K, V, C, A, E, bM, bU>::DoCopySubtree(const node_type* pNodeSource, node_type* pNodeDest)
     {
-        node_type* const pNewNodeRoot = DoCreateNode(pNodeSource, pNodeDest);
+        node_type* const pNewNodeRoot = DocreateNode(pNodeSource, pNodeDest);
 
         #if EASTL_EXCEPTIONS_ENABLED
             try
@@ -1798,7 +1804,7 @@ namespace eastl
                     pNodeSource;
                     pNodeSource = (node_type*)pNodeSource->mpNodeLeft, pNodeDest = pNewNodeLeft)
                 {
-                    pNewNodeLeft = DoCreateNode(pNodeSource, pNodeDest);
+                    pNewNodeLeft = DocreateNode(pNodeSource, pNodeDest);
 
                     pNodeDest->mpNodeLeft = pNewNodeLeft;
 
@@ -1846,7 +1852,7 @@ namespace eastl
 
 
     // Note that in operator< we do comparisons based on the tree value_type with operator<() of the
-    // value_type instead of the tree's Compare function. For set/multiset, the value_type is T, while
+    // value_type instead of the tree's compare function. For set/multiset, the value_type is T, while
     // for map/multimap the value_type is a pair<Key, T>. operator< for pair can be seen by looking
     // utility.h, but it basically is uses the operator< for pair.first and pair.second. The C++ standard
     // appears to require this behaviour, whether intentionally or not. If anything, a good reason to do
@@ -1854,7 +1860,7 @@ namespace eastl
     template <typename K, typename V, typename A, typename C, typename E, bool bM, bool bU>
     inline bool operator<(const rbtree<K, V, C, A, E, bM, bU>& a, const rbtree<K, V, C, A, E, bM, bU>& b)
     {
-        return eastl::lexicographicalCompare(a.begin(), a.end(), b.begin(), b.end());
+        return eastl::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end());
     }
 
 

@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2009-2010 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2009,2010,2012 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -26,12 +26,6 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-///////////////////////////////////////////////////////////////////////////////
-// EASTL/list.h
-//
-// Copyright (c) 2005, Electronic Arts. All rights reserved.
-// Written and maintained by Paul Pedriana.
-///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
 // This file implements a doubly-linked list, much like the C++ std::list class.
@@ -68,7 +62,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <eastl/internal/config.h>
 #include <eastl/allocator.h>
-#include <eastl/typetraits.h>
+#include <eastl/type_traits.h>
 #include <eastl/iterator.h>
 #include <eastl/algorithm.h>
 
@@ -87,6 +81,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #pragma warning(disable: 4530)  // C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
     #pragma warning(disable: 4345)  // Behavior change: an object of POD type constructed with an initializer of the form () will be default-initialized
 #endif
+
+#if defined(EA_PRAGMA_ONCE_SUPPORTED)
+    #pragma once // Some compilers (e.g. VC++) benefit significantly from using this. We've measured 3-4% build speed improvements in apps as a result.
+#endif
+
 
 
 namespace eastl
@@ -234,12 +233,6 @@ namespace eastl
             typedef ListNodeBase                     base_node_type; // We use ListNodeBase instead of ListNode<T> because we don't want to create a T.
         #endif
 
-        enum
-        {
-            kAlignment       = EASTL_ALIGN_OF(T),
-            kAlignmentOffset = 0                    // offsetof(node_type, mValue);
-        };
-
     protected:
         base_node_type mNode;
         #if EASTL_LIST_SIZE_CACHE
@@ -290,7 +283,7 @@ namespace eastl
     /// the Allocator interface):
     ///     typedef list<Widget, MemoryPool> WidgetList;           // Delare your WidgetList type.
     ///     MemoryPool myPool(sizeof(WidgetList::node_type), 100); // Make a pool of 100 Widget nodes.
-    ///     WidgetList myList(&myPool);                            // Create a list that uses the pool.
+    ///     WidgetList myList(&myPool);                            // create a list that uses the pool.
     ///
     template <typename T, typename Allocator = EASTLAllocatorType>
     class list : public ListBase<T, Allocator>
@@ -373,7 +366,7 @@ namespace eastl
         reference pushBack();
         void*     pushBackUninitialized();
 
-        void popFront();
+        void pop_front();
         void popBack();
 
         iterator insert(iterator position);
@@ -391,7 +384,7 @@ namespace eastl
         reverse_iterator erase(reverse_iterator first, reverse_iterator last);
 
         void clear();
-        void reset();
+        void resetLoseMemory();    // This is a unilateral reset to an initially empty state. No destructors are called, no deallocation occurs.
 
         void remove(const T& x);
 
@@ -403,6 +396,10 @@ namespace eastl
         void splice(iterator position, this_type& x);
         void splice(iterator position, this_type& x, iterator i);
         void splice(iterator position, this_type& x, iterator first, iterator last);
+
+        #if EASTL_RESET_ENABLED
+            void reset(); // This function name is deprecated; use resetLoseMemory instead.
+        #endif
 
     public:
         // Sorting functionality
@@ -430,8 +427,8 @@ namespace eastl
         int  validateIterator(const_iterator i) const;
 
     protected:
-        node_type* DoCreateNode();
-        node_type* DoCreateNode(const value_type& value);
+        node_type* DocreateNode();
+        node_type* DocreateNode(const value_type& value);
 
         template <typename Integer>
         void DoAssign(Integer n, Integer value, true_type);
@@ -520,8 +517,8 @@ namespace eastl
 
     inline void ListNodeBase::remove()
     {
-        mpPrev->mpNext = mpNext;
-        mpNext->mpPrev = mpPrev;
+        mpNext->mpPrev = mpPrev;  // These two lines were previously reversed in order, but they caused a crash
+        mpPrev->mpNext = mpNext;  // in optimized PS3 GCC compiler builds due to code misgeneration.
     }
 
 
@@ -692,7 +689,7 @@ namespace eastl
     inline typename ListBase<T, Allocator>::node_type*
     ListBase<T, Allocator>::DoAllocateNode()
     {
-        return (node_type*)allocate_memory(mAllocator, sizeof(node_type), kAlignment, kAlignmentOffset);
+        return (node_type*)allocateMemory(mAllocator, sizeof(node_type), EASTL_ALIGN_OF(T), 0);
     }
 
 
@@ -772,7 +769,7 @@ namespace eastl
         : base_type(x.mAllocator)
     {
         //insert(iterator((ListNodeBase*)&mNode), const_iterator((ListNodeBase*)x.mNode.mpNext), const_iterator((ListNodeBase*)&x.mNode));
-        DoInsert((ListNodeBase*)&mNode, const_iterator((const ListNodeBase*)x.mNode.mpNext), const_iterator((const ListNodeBase*)&x.mNode), false_type());
+        DoInsert((ListNodeBase*)&mNode, const_iterator((ListNodeBase*)x.mNode.mpNext), const_iterator((ListNodeBase*)&x.mNode), false_type());
     }
 
 
@@ -814,7 +811,7 @@ namespace eastl
     inline typename list<T, Allocator>::const_iterator
     list<T, Allocator>::end() const
     {
-        return const_iterator((const ListNodeBase*)&mNode);
+        return const_iterator((ListNodeBase*)&mNode);
     }
 
 
@@ -830,7 +827,7 @@ namespace eastl
     inline typename list<T, Allocator>::const_reverse_iterator
     list<T, Allocator>::rbegin() const
     {
-        return const_reverse_iterator((const ListNodeBase*)&mNode);
+        return const_reverse_iterator((ListNodeBase*)&mNode);
     }
 
 
@@ -927,15 +924,15 @@ namespace eastl
             #if EASTL_DEBUG
                 const ListNodeBase* p = (ListNodeBase*)mNode.mpNext;
                 size_type n = 0;
-                while(p != (const ListNodeBase*)&mNode)
+                while(p != (ListNodeBase*)&mNode)
                 {
                     ++n;
-                    p = (const ListNodeBase*)p->mpNext;
+                    p = (ListNodeBase*)p->mpNext;
                 }
                 return n;
             #else
                 // The following optimizes to slightly better code than the code above.
-                return (size_type)eastl::distance(const_iterator((const ListNodeBase*)mNode.mpNext), const_iterator((const ListNodeBase*)&mNode));
+                return (size_type)eastl::distance(const_iterator((ListNodeBase*)mNode.mpNext), const_iterator((ListNodeBase*)&mNode));
             #endif
         #endif
     }
@@ -952,8 +949,8 @@ namespace eastl
             #endif
 
             iterator       current((ListNodeBase*)mNode.mpNext);
-            const_iterator first((const ListNodeBase*)x.mNode.mpNext);
-            const_iterator last((const ListNodeBase*)&x.mNode);
+            const_iterator first((ListNodeBase*)x.mNode.mpNext);
+            const_iterator last((ListNodeBase*)&x.mNode);
 
             while((current.mpNode != &mNode) && (first != last))
             {
@@ -1000,10 +997,20 @@ namespace eastl
     }
 
 
+    #if EASTL_RESET_ENABLED
+        // This function name is deprecated; use resetLoseMemory instead.
+        template <typename T, typename Allocator>
+        inline void list<T, Allocator>::reset()
+        {
+            resetLoseMemory();
+        }
+    #endif
+
+
     template <typename T, typename Allocator>
-    inline void list<T, Allocator>::reset()
+    inline void list<T, Allocator>::resetLoseMemory()
     {
-        // The reset function is a special extension function which unilaterally 
+        // The resetLoseMemory function is a special extension function which unilaterally 
         // resets the container to an empty state without freeing the memory of 
         // the contained objects. This is useful for very quickly tearing down a 
         // container built into scratch memory.
@@ -1050,7 +1057,7 @@ namespace eastl
     inline typename list<T, Allocator>::reference
     list<T, Allocator>::pushFront()
     {
-        node_type* const pNode = DoCreateNode();
+        node_type* const pNode = DocreateNode();
         ((ListNodeBase*)pNode)->insert((ListNodeBase*)mNode.mpNext);
         #if EASTL_LIST_SIZE_CACHE
             ++mSize;
@@ -1072,11 +1079,11 @@ namespace eastl
 
 
     template <typename T, typename Allocator>
-    inline void list<T, Allocator>::popFront()
+    inline void list<T, Allocator>::pop_front()
     {
         #if EASTL_ASSERT_ENABLED
             if(EASTL_UNLIKELY(static_cast<node_type*>(mNode.mpNext) == &mNode))
-                EASTL_FAIL_MSG("list::popFront -- empty container");
+                EASTL_FAIL_MSG("list::pop_front -- empty container");
         #endif
 
         DoErase((ListNodeBase*)mNode.mpNext);
@@ -1094,7 +1101,7 @@ namespace eastl
     inline typename list<T, Allocator>::reference
     list<T, Allocator>::pushBack()
     {
-        node_type* const pNode = DoCreateNode();
+        node_type* const pNode = DocreateNode();
         ((ListNodeBase*)pNode)->insert((ListNodeBase*)&mNode);
         #if EASTL_LIST_SIZE_CACHE
             ++mSize;
@@ -1131,7 +1138,7 @@ namespace eastl
     inline typename list<T, Allocator>::iterator
     list<T, Allocator>::insert(iterator position)
     {
-        node_type* const pNode = DoCreateNode(value_type());
+        node_type* const pNode = DocreateNode(value_type());
         ((ListNodeBase*)pNode)->insert((ListNodeBase*)position.mpNode);
         #if EASTL_LIST_SIZE_CACHE
             ++mSize;
@@ -1144,7 +1151,7 @@ namespace eastl
     inline typename list<T, Allocator>::iterator
     list<T, Allocator>::insert(iterator position, const value_type& value)
     {
-        node_type* const pNode = DoCreateNode(value);
+        node_type* const pNode = DocreateNode(value);
         ((ListNodeBase*)pNode)->insert((ListNodeBase*)position.mpNode);
         #if EASTL_LIST_SIZE_CACHE
             ++mSize;
@@ -1485,12 +1492,12 @@ namespace eastl
            (static_cast<node_type*>(mNode.mpNext) != static_cast<node_type*>(mNode.mpPrev)))
         {
             // We may have a stack space problem here if sizeof(this_type) is large (usually due to 
-            // usage of a fixedList). The only current resolution is to find an alternative way of 
+            // usage of a fixed_list). The only current resolution is to find an alternative way of 
             // doing things. I (Paul Pedriana) believe that the best long-term solution to this problem
             // is to revise this sort function to not use this_type but instead use a ListNodeBase
             // which involves no allocators and sort at that level, entirely with node pointers.
 
-            // Split the array into 2 roughly equal halves.
+            // split the array into 2 roughly equal halves.
             this_type leftList(getAllocator());     // This should cause no memory allocation.
             this_type rightList(getAllocator());
 
@@ -1540,12 +1547,12 @@ namespace eastl
            (static_cast<node_type*>(mNode.mpNext) != static_cast<node_type*>(mNode.mpPrev)))
         {
             // We may have a stack space problem here if sizeof(this_type) is large (usually due to 
-            // usage of a fixedList). The only current resolution is to find an alternative way of 
+            // usage of a fixed_list). The only current resolution is to find an alternative way of 
             // doing things. I (Paul Pedriana) believe that the best long-term solution to this problem
             // is to revise this sort function to not use this_type but instead use a ListNodeBase
             // which involves no allocators and sort at that level, entirely with node pointers.
 
-            // Split the array into 2 roughly equal halves.
+            // split the array into 2 roughly equal halves.
             this_type leftList(getAllocator());     // This should cause no memory allocation.
             this_type rightList(getAllocator());
 
@@ -1580,14 +1587,14 @@ namespace eastl
 
     template <typename T, typename Allocator>
     inline typename list<T, Allocator>::node_type*
-    list<T, Allocator>::DoCreateNode(const value_type& value)
+    list<T, Allocator>::DocreateNode(const value_type& value)
     {
         node_type* const pNode = DoAllocateNode();
 
         #if EASTL_EXCEPTIONS_ENABLED
             try
             {
-                ::new(&pNode->mValue) value_type(value);
+                ::new((void*)&pNode->mValue) value_type(value);
             }
             catch(...)
             {
@@ -1595,7 +1602,7 @@ namespace eastl
                 throw;
             }
         #else
-            ::new(&pNode->mValue) value_type(value);
+            ::new((void*)&pNode->mValue) value_type(value);
         #endif
 
         return pNode;
@@ -1604,14 +1611,14 @@ namespace eastl
 
     template <typename T, typename Allocator>
     inline typename list<T, Allocator>::node_type*
-    list<T, Allocator>::DoCreateNode()
+    list<T, Allocator>::DocreateNode()
     {
         node_type* const pNode = DoAllocateNode();
 
         #if EASTL_EXCEPTIONS_ENABLED
             try
             {
-                ::new(&pNode->mValue) value_type();
+                ::new((void*)&pNode->mValue) value_type();
             }
             catch(...)
             {
@@ -1619,7 +1626,7 @@ namespace eastl
                 throw;
             }
         #else
-            ::new(&pNode->mValue) value_type;
+            ::new((void*)&pNode->mValue) value_type;
         #endif
 
         return pNode;
@@ -1699,7 +1706,7 @@ namespace eastl
     template <typename T, typename Allocator>
     inline void list<T, Allocator>::DoInsertValue(ListNodeBase* pNode, const value_type& value)
     {
-        node_type* const pNodeNew = DoCreateNode(value);
+        node_type* const pNodeNew = DocreateNode(value);
         ((ListNodeBase*)pNodeNew)->insert((ListNodeBase*)pNode);
         #if EASTL_LIST_SIZE_CACHE
             ++mSize;
@@ -1716,6 +1723,21 @@ namespace eastl
         #if EASTL_LIST_SIZE_CACHE
             --mSize;
         #endif
+
+        /* Test version that uses union intermediates
+        union
+        {
+            ListNodeBase* mpBase;
+            node_type*    mpNode;
+        } node = { pNode };
+
+        node.mpNode->~node_type();
+        node.mpBase->remove();
+        DoFreeNode(node.mpNode);
+        #if EASTL_LIST_SIZE_CACHE
+            --mSize;
+        #endif
+        */
     }
 
 
@@ -1793,7 +1815,7 @@ namespace eastl
     template <typename T, typename Allocator>
     bool operator<(const list<T, Allocator>& a, const list<T, Allocator>& b)
     {
-        return eastl::lexicographicalCompare(a.begin(), a.end(), b.begin(), b.end());
+        return eastl::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end());
     }
 
     template <typename T, typename Allocator>

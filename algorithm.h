@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2005,2009-2010 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2005,2009,2010,2012 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -27,7 +27,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 ///////////////////////////////////////////////////////////////////////////////
-// EASTL/algorithm.h
+// eastl/algorithm.h
 //
 // Written and maintained by Paul Pedriana - 2005.
 ///////////////////////////////////////////////////////////////////////////////
@@ -54,10 +54,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //    typename                     Meaning
 //    --------------------------------------------------------------
 //    T                            The value type.
-//    Compare                      A function which takes two arguments and returns the lesser of the two.
+//    compare                      A function which takes two arguments and returns the lesser of the two.
 //    Predicate                    A function which takes one argument returns true if the argument meets some criteria.
 //    BinaryPredicate              A function which takes two arguments and returns true if some criteria is met (e.g. they are equal).
-//    StrickWeakOrdering           A BinaryPredicate that compares two objects, returning true if the first precedes the second. Like Compare but has additional requirements. Used for sorting routines.
+//    StrickWeakOrdering           A BinaryPredicate that compares two objects, returning true if the first precedes the second. Like compare but has additional requirements. Used for sorting routines.
 //    Function                     A function which takes one argument and applies some operation to the target.
 //    Size                         A count or size.
 //    Generator                    A function which takes no arguments and returns a value (which will usually be assigned to an object).
@@ -101,6 +101,152 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 ///////////////////////////////////////////////////////////////////////////////
 
+
+///////////////////////////////////////////////////////////////////////////////
+// Supported Algorithms
+//
+// Algorithms that we implement are listed here. Note that these items are not
+// all within this header file, as we split up the header files in order to 
+// improve compilation performance. Items marked with '+' are items that are
+// extensions which don't exist in the C++ standard. 
+//
+//    -------------------------------------------------------------------------------
+//      Algorithm                                   Notes
+//    -------------------------------------------------------------------------------
+//      adjacent_find
+//      adjacent_find<compare>
+//      binary_search
+//      binary_search<compare>
+//     +binary_search_i
+//     +binary_search_i<compare>
+//     +changeHeap                                 Found in heap.h
+//     +changeHeap<compare>                        Found in heap.h
+//      copy
+//      copy_backward
+//      count
+//      count_if
+//      equal
+//      equal<compare>
+//      equalRange
+//      equalRange<compare>
+//      fill
+//      fill_n
+//      find
+//      find_end
+//      find_end<compare>
+//      findFirstOf
+//      findFirstOf<compare>
+//     +findFirstNotOf
+//     +findFirstNotOf<compare>
+//     +findLastOf
+//     +findLastOf<compare>
+//     +findLastNotOf
+//     +findLastNotOf<compare>
+//      find_if
+//      for_each
+//      generate
+//      generate_n
+//     +identical
+//     +identical<compare>
+//      iter_swap
+//      lexicographical_compare
+//      lexicographical_compare<compare>
+//      lower_bound
+//      lower_bound<compare>
+//      makeHeap                                   Found in heap.h
+//      makeHeap<compare>                          Found in heap.h
+//      min
+//      min<compare>
+//      max
+//      max<compare>
+//     +min_alt                                     exists to work around the problem of conflicts with min/max #defines on some systems.
+//     +min_alt<compare>
+//     +max_alt
+//     +max_alt<compare>
+//     +median
+//     +median<compare>
+//      merge                                       Found in sort.h
+//      merge<compare>                              Found in sort.h
+//      min_element
+//      min_element<compare>
+//      max_element
+//      max_element<compare>
+//      mismatch
+//      mismatch<compare>
+//      nthElement                                 Found in sort.h
+//      nthElement<compare>                        Found in sort.h
+//      partialSort                                Found in sort.h
+//      partialSort<compare>                       Found in sort.h
+//      pushHeap                                   Found in heap.h
+//      pushHeap<compare>                          Found in heap.h
+//      popHeap                                    Found in heap.h
+//      popHeap<compare>                           Found in heap.h
+//      random_shuffle<Random>      
+//      remove
+//      removeIf
+//      remove_copy
+//      remove_copy_if
+//     +removeHeap                                 Found in heap.h
+//     +removeHeap<compare>                        Found in heap.h
+//      replace
+//      replace_if
+//      replace_copy
+//      replace_copy_if
+//      reverse_copy
+//      reverse
+//      search
+//      search<compare>
+//      search_n
+//      set_difference
+//      set_difference<compare>
+//      set_intersection
+//      set_intersection<compare>
+//      set_symmetric_difference
+//      set_symmetric_difference<compare>
+//      sort                                        Found in sort.h
+//      sort<compare>                               Found in sort.h
+//      sortHeap                                   Found in heap.h
+//      sortHeap<compare>                          Found in heap.h
+//      swap
+//      swap_ranges
+//      transform
+//      transform<Operation>
+//      unique
+//      unique<compare>
+//      upper_bound
+//      upper_bound<compare>
+//
+// Algorithms from the C++ standard that we don't implement are listed here.
+// Most of these items are absent because they aren't used very often.
+// They also happen to be the more complicated than other algorithms.
+// However, we can implement any of these functions for users that might 
+// need them. 
+//      includes
+//      includes<compare>
+//      inplace_merge
+//      inplace_merge<compare>
+//      next_permutation
+//      next_permutation<compare>
+//      partialSort_copy
+//      partialSort_copy<compare>
+//      paritition
+//      prev_permutation
+//      prev_permutation<compare>
+//      random_shuffle
+//      rotate
+//      rotate_copy
+//      search_n<compare>
+//      set_union
+//      set_union<compare>
+//      stable_partition
+//      stableSort
+//      stableSort<compare>
+//      unique_copy
+//      unique_copy<compare>
+//
+///////////////////////////////////////////////////////////////////////////////
+
+
 #ifndef EASTL_ALGORITHM_H
 #define EASTL_ALGORITHM_H
 
@@ -110,20 +256,21 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <eastl/iterator.h>
 #include <eastl/functional.h>
 #include <eastl/internal/generic_iterator.h>
-#include <eastl/typetraits.h>
+#include <eastl/type_traits.h>
 
 #ifdef _MSC_VER
     #pragma warning(push, 0)
 #endif
 #include <stddef.h>
-#ifdef __MWERKS__
-    #include <../Include/string.h> // Force the compiler to use the std lib header.
-#else
     #include <string.h> // memcpy, memcmp, memmove
-#endif
 #ifdef _MSC_VER
     #pragma warning(pop)
 #endif
+
+#if defined(EA_PRAGMA_ONCE_SUPPORTED)
+    #pragma once // Some compilers (e.g. VC++) benefit significantly from using this. We've measured 3-4% build speed improvements in apps as a result.
+#endif
+
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -173,7 +320,7 @@ namespace eastl
     #endif // EASTL_MINMAX_ENABLED
 
 
-    /// minAlt
+    /// min_alt
     ///
     /// This is an alternative version of min that avoids any possible 
     /// collisions with Microsoft #defines of min and max.
@@ -182,7 +329,7 @@ namespace eastl
     ///
     template <typename T>
     inline const T&
-    minAlt(const T& a, const T& b)
+    min_alt(const T& a, const T& b)
     {
         return b < a ? b : a;
     }
@@ -192,7 +339,7 @@ namespace eastl
         ///
         /// Min returns the lesser of its two arguments; it returns the first 
         /// argument if neither is less than the other. The two arguments are
-        /// compared with the Compare function (or function object), which 
+        /// compared with the compare function (or function object), which 
         /// takes two arguments and returns true if the first is less than 
         /// the second.
         ///
@@ -222,7 +369,7 @@ namespace eastl
     #endif // EASTL_MINMAX_ENABLED
 
 
-    /// minAlt
+    /// min_alt
     ///
     /// This is an alternative version of min that avoids any possible 
     /// collisions with Microsoft #defines of min and max.
@@ -231,7 +378,7 @@ namespace eastl
     ///
     template <typename T, typename Compare>
     inline const T&
-    minAlt(const T& a, const T& b, Compare compare)
+    min_alt(const T& a, const T& b, Compare compare)
     {
         return compare(b, a) ? b : a;
     }
@@ -261,14 +408,14 @@ namespace eastl
     #endif // EASTL_MINMAX_ENABLED
 
 
-    /// maxAlt
+    /// max_alt
     ///
     /// This is an alternative version of max that avoids any possible 
     /// collisions with Microsoft #defines of min and max.
     ///
     template <typename T>
     inline const T&
-    maxAlt(const T& a, const T& b)
+    max_alt(const T& a, const T& b)
     {
         return a < b ? b : a;
     }
@@ -278,7 +425,7 @@ namespace eastl
         ///
         /// Min returns the lesser of its two arguments; it returns the first 
         /// argument if neither is less than the other. The two arguments are
-        /// compared with the Compare function (or function object), which 
+        /// compared with the compare function (or function object), which 
         /// takes two arguments and returns true if the first is less than 
         /// the second.
         ///
@@ -292,23 +439,23 @@ namespace eastl
     #endif
  
 
-    /// maxAlt
+    /// max_alt
     ///
     /// This is an alternative version of max that avoids any possible 
     /// collisions with Microsoft #defines of min and max.
     ///
     template <typename T, typename Compare>
     inline const T&
-    maxAlt(const T& a, const T& b, Compare compare)
+    max_alt(const T& a, const T& b, Compare compare)
     {
         return compare(a, b) ? b : a;
     }
 
 
 
-    /// minElement
+    /// min_element
     ///
-    /// minElement finds the smallest element in the range [first, last). 
+    /// min_element finds the smallest element in the range [first, last). 
     /// It returns the first iterator i in [first, last) such that no other 
     /// iterator in [first, last) points to a value smaller than *i. 
     /// The return value is last if and only if [first, last) is an empty range.
@@ -321,7 +468,7 @@ namespace eastl
     /// corresponding comparisons.
     ///
     template <typename ForwardIterator>
-    ForwardIterator minElement(ForwardIterator first, ForwardIterator last)
+    ForwardIterator min_element(ForwardIterator first, ForwardIterator last)
     {
         if(first != last)
         {
@@ -338,9 +485,9 @@ namespace eastl
     }
 
 
-    /// minElement
+    /// min_element
     ///
-    /// minElement finds the smallest element in the range [first, last). 
+    /// min_element finds the smallest element in the range [first, last). 
     /// It returns the first iterator i in [first, last) such that no other 
     /// iterator in [first, last) points to a value smaller than *i. 
     /// The return value is last if and only if [first, last) is an empty range.
@@ -353,7 +500,7 @@ namespace eastl
     /// corresponding comparisons.
     ///
     template <typename ForwardIterator, typename Compare>
-    ForwardIterator minElement(ForwardIterator first, ForwardIterator last, Compare compare)
+    ForwardIterator min_element(ForwardIterator first, ForwardIterator last, Compare compare)
     {
         if(first != last)
         {
@@ -370,9 +517,9 @@ namespace eastl
     }
 
 
-    /// maxElement
+    /// max_element
     ///
-    /// maxElement finds the largest element in the range [first, last). 
+    /// max_element finds the largest element in the range [first, last). 
     /// It returns the first iterator i in [first, last) such that no other 
     /// iterator in [first, last) points to a value greater than *i. 
     /// The return value is last if and only if [first, last) is an empty range.
@@ -385,7 +532,7 @@ namespace eastl
     /// corresponding comparisons.
     ///
     template <typename ForwardIterator>
-    ForwardIterator maxElement(ForwardIterator first, ForwardIterator last)
+    ForwardIterator max_element(ForwardIterator first, ForwardIterator last)
     {
         if(first != last)
         {
@@ -402,9 +549,9 @@ namespace eastl
     }
 
 
-    /// maxElement
+    /// max_element
     ///
-    /// maxElement finds the largest element in the range [first, last). 
+    /// max_element finds the largest element in the range [first, last). 
     /// It returns the first iterator i in [first, last) such that no other 
     /// iterator in [first, last) points to a value greater than *i. 
     /// The return value is last if and only if [first, last) is an empty range.
@@ -417,7 +564,7 @@ namespace eastl
     /// corresponding comparisons.
     ///
     template <typename ForwardIterator, typename Compare>
-    ForwardIterator maxElement(ForwardIterator first, ForwardIterator last, Compare compare)
+    ForwardIterator max_element(ForwardIterator first, ForwardIterator last, Compare compare)
     {
         if(first != last)
         {
@@ -505,66 +652,63 @@ namespace eastl
     template <typename T>
     inline void swap(T& a, T& b)
     {
-       T temp = _move(a);
-       a = _move(b);
-       b = _move(temp);
-//        T temp(a);
-//        a = b;
-//        b = temp;
+        T temp(a);
+        a = b;
+        b = temp;
     }
 
 
 
-    // iterSwap helper functions
+    // iter_swap helper functions
     //
     template <bool bTypesAreEqual>
-    struct iterSwap_impl
+    struct iter_swap_impl
     {
         template <typename ForwardIterator1, typename ForwardIterator2>
-        static void iterSwap(ForwardIterator1 a, ForwardIterator2 b)
+        static void iter_swap(ForwardIterator1 a, ForwardIterator2 b)
         {
             typedef typename eastl::iterator_traits<ForwardIterator1>::value_type value_type_a;
 
             value_type_a temp(*a);
             *a = *b;
-            *b = temp;
+            *b = temp; 
         }
     };
 
     template <>
-    struct iterSwap_impl<true>
+    struct iter_swap_impl<true>
     {
         template <typename ForwardIterator1, typename ForwardIterator2>
-        static void iterSwap(ForwardIterator1 a, ForwardIterator2 b)
+        static void iter_swap(ForwardIterator1 a, ForwardIterator2 b)
         {
             eastl::swap(*a, *b);
         }
     };
 
-    /// iterSwap
+    /// iter_swap
     ///
     /// Equivalent to swap(*a, *b), though the user can provide an override to
-    /// iterSwap that is independent of an override which may exist for swap.
+    /// iter_swap that is independent of an override which may exist for swap.
     ///
-    /// We provide a version of iterSwap which uses swap when the swapped types 
+    /// We provide a version of iter_swap which uses swap when the swapped types 
     /// are equal but a manual implementation otherwise. We do this because the 
-    /// C++ standard defect report says that iterSwap(a, b) must be implemented 
+    /// C++ standard defect report says that iter_swap(a, b) must be implemented 
     /// as swap(*a, *b) when possible.
     ///
     template <typename ForwardIterator1, typename ForwardIterator2>
-    inline void iterSwap(ForwardIterator1 a, ForwardIterator2 b)
+    inline void iter_swap(ForwardIterator1 a, ForwardIterator2 b)
     {
         typedef typename eastl::iterator_traits<ForwardIterator1>::value_type value_type_a;
         typedef typename eastl::iterator_traits<ForwardIterator2>::value_type value_type_b;
         typedef typename eastl::iterator_traits<ForwardIterator1>::reference  reference_a;
         typedef typename eastl::iterator_traits<ForwardIterator2>::reference  reference_b;
 
-        iterSwap_impl<type_and<is_same<value_type_a, value_type_b>::value, is_same<value_type_a&, reference_a>::value, is_same<value_type_b&, reference_b>::value >::value >::iterSwap(a, b);
+        iter_swap_impl<type_and<is_same<value_type_a, value_type_b>::value, is_same<value_type_a&, reference_a>::value, is_same<value_type_b&, reference_b>::value >::value >::iter_swap(a, b);
     }
 
 
 
-    /// swapRanges
+    /// swap_ranges
     ///
     /// Swaps each of the elements in the range [first1, last1) with the 
     /// corresponding element in the range [first2, first2 + (last1 - first1)). 
@@ -581,16 +725,16 @@ namespace eastl
     ///
     template <typename ForwardIterator1, typename ForwardIterator2>
     inline ForwardIterator2
-    swapRanges(ForwardIterator1 first1, ForwardIterator1 last1, ForwardIterator2 first2)
+    swap_ranges(ForwardIterator1 first1, ForwardIterator1 last1, ForwardIterator2 first2)
     {
         for(; first1 != last1; ++first1, ++first2)
-            iterSwap(first1, first2);
+            iter_swap(first1, first2);
         return first2;
     }
 
 
 
-    /// adjacentFind
+    /// adjacent_find
     ///
     /// Returns: The first iterator i such that both i and i + 1 are in the range 
     /// [first, last) for which the following corresponding conditions hold: *i == *(i + 1). 
@@ -600,7 +744,7 @@ namespace eastl
     ///
     template <typename ForwardIterator>
     inline ForwardIterator 
-    adjacentFind(ForwardIterator first, ForwardIterator last)
+    adjacent_find(ForwardIterator first, ForwardIterator last)
     {
         if(first != last)
         {
@@ -618,7 +762,7 @@ namespace eastl
 
 
 
-    /// adjacentFind
+    /// adjacent_find
     ///
     /// Returns: The first iterator i such that both i and i + 1 are in the range 
     /// [first, last) for which the following corresponding conditions hold: predicate(*i, *(i + 1)) != false. 
@@ -628,7 +772,7 @@ namespace eastl
     ///
     template <typename ForwardIterator, typename BinaryPredicate>
     inline ForwardIterator 
-    adjacentFind(ForwardIterator first, ForwardIterator last, BinaryPredicate predicate)
+    adjacent_find(ForwardIterator first, ForwardIterator last, BinaryPredicate predicate)
     {
         if(first != last)
         {
@@ -645,6 +789,59 @@ namespace eastl
     }
 
 
+
+    /// random_shuffle
+    ///
+    /// Randomizes a sequence of values.
+    ///
+    /// Effects: Shuffles the elements in the range [first, last) with uniform distribution.
+    ///
+    /// Complexity: Exactly '(last - first) - 1' swaps.
+    ///
+    /// Example usage:
+    ///     random_shuffle(pArrayBegin, pArrayEnd);
+    ///
+    /// *** Disabled until we decide if we want to get into the business of writing random number generators. ***
+    ///
+    /// template <typename RandomAccessIterator>
+    /// inline void random_shuffle(RandomAccessIterator first, RandomAccessIterator last)
+    /// {
+    ///     for(RandomAccessIterator i = first + 1; i < last; ++i)
+    ///         iter_swap(i, first + SomeRangedRandomNumberGenerator((i - first) + 1)); 
+    /// }
+
+
+
+    /// random_shuffle
+    ///
+    /// Randomizes a sequence of values.
+    ///
+    /// Effects: Shuffles the elements in the range [first, last) with uniform distribution.
+    ///
+    /// Complexity: Exactly '(last - first) - 1' swaps.
+    ///
+    /// Example usage:
+    ///     eastl_size_t Rand(eastl_size_t n) { return (eastl_size_t)(rand() % n); } // Note: The C rand function is poor and slow.
+    ///     pointer_to_unary_function<eastl_size_t, eastl_size_t> randInstance(Rand);
+    ///     random_shuffle(pArrayBegin, pArrayEnd, randInstance);
+    ///
+    /// Example usage:
+    ///     struct Rand{ eastl_size_t operator()(eastl_size_t n) { return (eastl_size_t)(rand() % n); } }; // Note: The C rand function is poor and slow.
+    ///     Rand randInstance;
+    ///     random_shuffle(pArrayBegin, pArrayEnd, randInstance);
+    ///
+    template <typename RandomAccessIterator, typename RandomNumberGenerator>
+    inline void random_shuffle(RandomAccessIterator first, RandomAccessIterator last, RandomNumberGenerator& rng)
+    {
+        typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type difference_type;
+
+        // We must do 'rand((i - first) + 1)' here and cannot do 'rand(last - first)',
+        // as it turns out that the latter results in unequal distribution probabilities.
+        // This information comes from Usenet, but a more specific reference would be useful.
+
+        for(RandomAccessIterator i = first + 1; i < last; ++i)               
+            iter_swap(i, first + (difference_type)rng((eastl_size_t)((i - first) + 1)));
+    }                                                                       
 
 
     // copy
@@ -773,16 +970,33 @@ namespace eastl
     }
 
 
-
-
-    // copyBackward
+    // copy_if
     //
-    // We implement copyBackward via some helper functions whose purpose is 
+    // Effects: Assigns to the result iterator only if the predicate is true.
+    // 
+    template <typename InputIterator, typename OutputIterator, typename Predicate>
+    inline OutputIterator
+    copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate predicate)
+    {
+        // This implementation's performance could be improved by taking a more complicated approach like with the copy algorithm.
+        for(; first != last; ++first)
+        {
+            if(predicate(*first))
+                *result++ = *first;
+        }
+
+        return result;
+    }
+
+
+    // copy_backward
+    //
+    // We implement copy_backward via some helper functions whose purpose is 
     // to try to use memcpy when possible. We need to use type_traits and 
     // iterator categories to do this.
     //
     template <bool bHasTrivialCopy, typename IteratorTag>
-    struct copyBackward_impl
+    struct copy_backward_impl
     {
         template <typename BidirectionalIterator1, typename BidirectionalIterator2>
         static BidirectionalIterator2 do_copy(BidirectionalIterator1 first, BidirectionalIterator1 last, BidirectionalIterator2 result)
@@ -794,7 +1008,7 @@ namespace eastl
     };
 
     template <>
-    struct copyBackward_impl<true, EASTL_ITC_NS::random_access_iterator_tag> // If we have a trivally copyable random access array, use memcpy
+    struct copy_backward_impl<true, EASTL_ITC_NS::random_access_iterator_tag> // If we have a trivally copyable random access array, use memcpy
     {
         template <typename T>
         static T* do_copy(const T* first, const T* last, T* result)
@@ -803,11 +1017,11 @@ namespace eastl
         }
     };
 
-    // copyBackward_chooser
-    // Calls one of the above copyBackward_impl functions.
+    // copy_backward_chooser
+    // Calls one of the above copy_backward_impl functions.
     template <typename InputIterator, typename OutputIterator>
     inline OutputIterator
-    copyBackward_chooser(InputIterator first, InputIterator last, OutputIterator result)
+    copy_backward_chooser(InputIterator first, InputIterator last, OutputIterator result)
     {
         typedef typename eastl::iterator_traits<InputIterator>::iterator_category IC;
         typedef typename eastl::iterator_traits<InputIterator>::value_type        value_type_input;
@@ -818,10 +1032,10 @@ namespace eastl
                                               is_pointer<OutputIterator>::value,
                                               is_same<value_type_input, value_type_output>::value>::value;
 
-        return eastl::copyBackward_impl<bHasTrivialCopy, IC>::do_copy(first, last, result);
+        return eastl::copy_backward_impl<bHasTrivialCopy, IC>::do_copy(first, last, result);
     }
 
-    // copyBackward_generic_iterator
+    // copy_backward_generic_iterator
     // Converts a copy call via a generic_iterator to a copy call via the iterator type the 
     // generic_iterator holds. We do this because generic_iterator's purpose is to hold
     // iterators that are simply pointers, and if we want the functions above to be fast,
@@ -829,46 +1043,46 @@ namespace eastl
     // does generic_iterator. We are forced into using a templated struct with a templated
     // do_copy member function because C++ doesn't allow specializations for standalone functions.
     template <bool bInputIsGenericIterator, bool bOutputIsGenericIterator>
-    struct copyBackward_generic_iterator
+    struct copy_backward_generic_iterator
     {
         template <typename InputIterator, typename OutputIterator>
         static OutputIterator do_copy(InputIterator first, InputIterator last, OutputIterator result)
         {
-            return eastl::copyBackward_chooser(first, last, result);
+            return eastl::copy_backward_chooser(first, last, result);
         }
     };
 
     template <>
-    struct copyBackward_generic_iterator<true, false>
+    struct copy_backward_generic_iterator<true, false>
     {
         template <typename InputIterator, typename OutputIterator>
         static OutputIterator do_copy(InputIterator first, InputIterator last, OutputIterator result)
         {
-            return eastl::copyBackward_chooser(first.base(), last.base(), result); // first.base(), last.base() will resolve to a pointer (e.g. T*).
+            return eastl::copy_backward_chooser(first.base(), last.base(), result); // first.base(), last.base() will resolve to a pointer (e.g. T*).
         }
     };
 
     template <>
-    struct copyBackward_generic_iterator<false, true>
+    struct copy_backward_generic_iterator<false, true>
     {
         template <typename InputIterator, typename OutputIterator>
         static OutputIterator do_copy(InputIterator first, InputIterator last, OutputIterator result)
         {
-            return OutputIterator(eastl::copyBackward_chooser(first, last, result.base())); // Have to convert to OutputIterator because result.base() is a T*
+            return OutputIterator(eastl::copy_backward_chooser(first, last, result.base())); // Have to convert to OutputIterator because result.base() is a T*
         }
     };
 
     template <>
-    struct copyBackward_generic_iterator<true, true>
+    struct copy_backward_generic_iterator<true, true>
     {
         template <typename InputIterator, typename OutputIterator>
         static OutputIterator do_copy(InputIterator first, InputIterator last, OutputIterator result)
         {
-            return OutputIterator(eastl::copyBackward_chooser(first.base(), last.base(), result.base())); // Have to convert to OutputIterator because result.base() is a T*
+            return OutputIterator(eastl::copy_backward_chooser(first.base(), last.base(), result.base())); // Have to convert to OutputIterator because result.base() is a T*
         }
     };
 
-    /// copyBackward
+    /// copy_backward
     ///
     /// copies memory in the range of [first, last) to the range *ending* with result.
     /// 
@@ -884,12 +1098,12 @@ namespace eastl
     /// 
     template <typename BidirectionalIterator1, typename BidirectionalIterator2>
     inline BidirectionalIterator2
-    copyBackward(BidirectionalIterator1 first, BidirectionalIterator1 last, BidirectionalIterator2 result)
+    copy_backward(BidirectionalIterator1 first, BidirectionalIterator1 last, BidirectionalIterator2 result)
     {
         const bool bInputIsGenericIterator  = is_generic_iterator<BidirectionalIterator1>::value;
         const bool bOutputIsGenericIterator = is_generic_iterator<BidirectionalIterator2>::value;
 
-        return eastl::copyBackward_generic_iterator<bInputIsGenericIterator, bOutputIsGenericIterator>::do_copy(first, last, result);
+        return eastl::copy_backward_generic_iterator<bInputIsGenericIterator, bOutputIsGenericIterator>::do_copy(first, last, result);
     }
 
 
@@ -903,7 +1117,7 @@ namespace eastl
     ///
     /// Complexity: At most 'last - first' applications of the corresponding predicate.
     ///
-    /// Note: The predicate version of count is countIf and not another variation of count.
+    /// Note: The predicate version of count is count_if and not another variation of count.
     /// This is because both versions would have three parameters and there could be ambiguity.
     ///
     template <typename InputIterator, typename T>
@@ -921,7 +1135,7 @@ namespace eastl
     }
 
 
-    /// countIf
+    /// count_if
     ///
     /// Counts the number of items in the range of [first, last) which match 
     /// the input value as defined by the input predicate function.
@@ -931,12 +1145,12 @@ namespace eastl
     ///
     /// Complexity: At most 'last - first' applications of the corresponding predicate.
     ///
-    /// Note: The non-predicate version of countIf is count and not another variation of countIf.
+    /// Note: The non-predicate version of count_if is count and not another variation of count_if.
     /// This is because both versions would have three parameters and there could be ambiguity.
     ///
     template <typename InputIterator, typename Predicate>
     inline typename eastl::iterator_traits<InputIterator>::difference_type
-    countIf(InputIterator first, InputIterator last, Predicate predicate)
+    count_if(InputIterator first, InputIterator last, Predicate predicate)
     {
         typename eastl::iterator_traits<InputIterator>::difference_type result = 0;
 
@@ -1042,7 +1256,7 @@ namespace eastl
         memset(first, (unsigned char)c, (size_t)(last - first));
     }
 
-    #if defined(_MSC_VER) || defined(__BORLANDC__) || defined(__SNC__) || defined(__ICL) || defined(__PPU__) || defined(__SPU__) // SN = SN compiler, ICL = Intel compiler, PPU == PS3 processor, SPU = PS3 cell processor
+    #if defined(_MSC_VER) || defined(__BORLANDC__) || defined(CS_UNDEFINED_STRING) || defined(__ICL) || defined(CS_UNDEFINED_STRING) || defined(CS_UNDEFINED_STRING) // SN = SN compiler, ICL = Intel compiler, PPU == PS3 processor, SPU = PS3 cell processor
         inline void fill(bool* first, bool* last, const bool& b)
         {
             memset(first, (char)b, (size_t)(last - first));
@@ -1052,13 +1266,13 @@ namespace eastl
 
 
 
-    // fillN
+    // fill_n
     //
     // We implement some fill helper functions in order to allow us to optimize it
     // where possible.
     //
     template <bool bIsScalar>
-    struct fillN_imp
+    struct fill_n_imp
     {
         template <typename OutputIterator, typename Size, typename T>
         static OutputIterator do_fill(OutputIterator first, Size n, const T& value)
@@ -1070,7 +1284,7 @@ namespace eastl
     };
 
     template <>
-    struct fillN_imp<true>
+    struct fill_n_imp<true>
     {
         template <typename OutputIterator, typename Size, typename T>
         static OutputIterator do_fill(OutputIterator first, Size n, const T& value)
@@ -1084,9 +1298,9 @@ namespace eastl
         }
     };
 
-    /// fillN
+    /// fill_n
     ///
-    /// The fillN function is very much like memset in that a copies a source value
+    /// The fill_n function is very much like memset in that a copies a source value
     /// n times into a destination range. The source value may come from within 
     /// the destination range.
     ///
@@ -1095,36 +1309,36 @@ namespace eastl
     /// Complexity: Exactly n assignments.
     ///
     template <typename OutputIterator, typename Size, typename T>
-    OutputIterator fillN(OutputIterator first, Size n, const T& value)
+    OutputIterator fill_n(OutputIterator first, Size n, const T& value)
     {
         #ifdef _MSC_VER // VC++ up to and including VC8 blow up when you pass a 64 bit scalar to the do_fill function.
-            return eastl::fillN_imp< is_scalar<T>::value && (sizeof(T) <= sizeof(uint32_t)) >::do_fill(first, n, value);
+            return eastl::fill_n_imp< is_scalar<T>::value && (sizeof(T) <= sizeof(uint32_t)) >::do_fill(first, n, value);
         #else
-            return eastl::fillN_imp< is_scalar<T>::value >::do_fill(first, n, value);
+            return eastl::fill_n_imp< is_scalar<T>::value >::do_fill(first, n, value);
         #endif
     }
 
     template <typename Size>
-    inline char* fillN(char* first, Size n, const char& c)
+    inline char* fill_n(char* first, Size n, const char& c)
     {
         return (char*)memset(first, (char)c, (size_t)n) + n;
     }
 
     template <typename Size>
-    inline unsigned char* fillN(unsigned char* first, Size n, const unsigned char& c)
+    inline unsigned char* fill_n(unsigned char* first, Size n, const unsigned char& c)
     {
         return (unsigned char*)memset(first, (unsigned char)c, (size_t)n) + n;
     }
 
     template <typename Size>
-    inline signed char* fillN(signed char* first, Size n, const signed char& c)
+    inline signed char* fill_n(signed char* first, Size n, const signed char& c)
     {
         return (signed char*)memset(first, (signed char)c, n) + (size_t)n;
     }
 
-    #if defined(_MSC_VER) || defined(__BORLANDC__) || defined(__SNC__) || defined(__ICL) || defined(__PPU__) || defined(__SPU__) // SN = SN compiler, ICL = Intel compiler, PU == PS3 processor, SPU = PS3 cell processor
+    #if defined(_MSC_VER) || defined(__BORLANDC__) || defined(CS_UNDEFINED_STRING) || defined(__ICL) || defined(CS_UNDEFINED_STRING) || defined(CS_UNDEFINED_STRING) // SN = SN compiler, ICL = Intel compiler, PU == PS3 processor, SPU = PS3 cell processor
         template <typename Size>
-        inline bool* fillN(bool* first, Size n, const bool& b)
+        inline bool* fill_n(bool* first, Size n, const bool& b)
         {
             return (bool*)memset(first, (char)b, n) + (size_t)n;
         }
@@ -1143,7 +1357,7 @@ namespace eastl
     /// Complexity: At most 'last - first' applications of the corresponding predicate.
     /// This is a linear search and not a binary one. 
     ///
-    /// Note: The predicate version of find is findIf and not another variation of find.
+    /// Note: The predicate version of find is find_if and not another variation of find.
     /// This is because both versions would have three parameters and there could be ambiguity.
     ///
     template <typename InputIterator, typename T>
@@ -1157,7 +1371,7 @@ namespace eastl
 
 
 
-    /// findIf
+    /// find_if
     ///
     /// finds the value within the unsorted range of [first, last). 
     ///
@@ -1169,12 +1383,12 @@ namespace eastl
     ///
     /// Complexity: At most 'last - first' applications of the corresponding predicate.
     ///
-    /// Note: The non-predicate version of findIf is find and not another variation of findIf.
+    /// Note: The non-predicate version of find_if is find and not another variation of find_if.
     /// This is because both versions would have three parameters and there could be ambiguity.
     ///
     template <typename InputIterator, typename Predicate>
     inline InputIterator
-    findIf(InputIterator first, InputIterator last, Predicate predicate)
+    find_if(InputIterator first, InputIterator last, Predicate predicate)
     {
         while((first != last) && !predicate(*first))
             ++first;
@@ -1306,7 +1520,7 @@ namespace eastl
 
         for(; first1 != last1; ++first1)
         {
-            if(eastl::findIf(first2, last2, eastl::bind1st<BinaryPredicate, value_type>(predicate, *first1)) == last2)
+            if(eastl::find_if(first2, last2, eastl::bind1st<BinaryPredicate, value_type>(predicate, *first1)) == last2)
                 break;
         }
 
@@ -1346,10 +1560,10 @@ namespace eastl
         {
             BidirectionalIterator1 it1(last1);
 
-            while((--it1 != first1) && (eastl::findIf(first2, last2, eastl::bind1st<BinaryPredicate, value_type>(predicate, *it1)) == last2))
+            while((--it1 != first1) && (eastl::find_if(first2, last2, eastl::bind1st<BinaryPredicate, value_type>(predicate, *it1)) == last2))
                 ; // Do nothing
 
-            if((it1 != first1) || (eastl::findIf(first2, last2, eastl::bind1st<BinaryPredicate, value_type>(predicate, *it1)) != last2))
+            if((it1 != first1) || (eastl::find_if(first2, last2, eastl::bind1st<BinaryPredicate, value_type>(predicate, *it1)) != last2))
                 return it1;
         }
 
@@ -1389,10 +1603,10 @@ namespace eastl
         {
             BidirectionalIterator1 it1(last1);
 
-            while((--it1 != first1) && (eastl::findIf(first2, last2, eastl::bind1st<BinaryPredicate, value_type>(predicate, *it1)) != last2))
+            while((--it1 != first1) && (eastl::find_if(first2, last2, eastl::bind1st<BinaryPredicate, value_type>(predicate, *it1)) != last2))
                 ; // Do nothing
 
-            if((it1 != first1) || (eastl::findIf(first2, last2, eastl::bind1st<BinaryPredicate, value_type>(predicate, *it1))) == last2)
+            if((it1 != first1) || (eastl::find_if(first2, last2, eastl::bind1st<BinaryPredicate, value_type>(predicate, *it1))) != last2)
                 return it1;
         }
 
@@ -1402,7 +1616,7 @@ namespace eastl
 
 
 
-    /// forEach
+    /// for_each
     ///
     /// Calls the Function function for each value in the range [first, last).
     /// Function takes a single parameter: the current value.
@@ -1418,7 +1632,7 @@ namespace eastl
     /// 
     template <typename InputIterator, typename Function>
     inline Function
-    forEach(InputIterator first, InputIterator last, Function function)
+    for_each(InputIterator first, InputIterator last, Function function)
     {
         for(; first != last; ++first)
             function(*first);
@@ -1438,12 +1652,12 @@ namespace eastl
     inline void
     generate(ForwardIterator first, ForwardIterator last, Generator generator)
     {
-        for(; first != last; ++first) // We cannot call generateN(first, last-first, generator) 
+        for(; first != last; ++first) // We cannot call generate_n(first, last-first, generator) 
             *first = generator();     // because the 'last-first' might not be supported by the 
     }                                 // given iterator.
 
 
-    /// generateN
+    /// generate_n
     ///
     /// Iterates an interator n times and assigns the result of generator
     /// to each succeeding element. Generator is a function which takes
@@ -1453,7 +1667,7 @@ namespace eastl
     ///
     template <typename OutputIterator, typename Size, typename Generator>
     inline OutputIterator
-    generateN(OutputIterator first, Size n, Generator generator)
+    generate_n(OutputIterator first, Size n, Generator generator)
     {
         for(; n > 0; --n, ++first)
             *first = generator();
@@ -1537,6 +1751,56 @@ namespace eastl
         return true;
     }
 
+    /* Enable the following if there was shown to be some benefit. A glance and Microsoft VC++ memcmp
+        shows that it is not optimized in any way, much less one that would benefit us here.
+
+    inline bool equal(const bool* first1, const bool* last1, const bool* first2)
+        { return (memcmp(first1, first2, (size_t)((uintptr_t)last1 - (uintptr_t)first1)) == 0); }
+
+    inline bool equal(const char* first1, const char* last1, const char* first2)
+        { return (memcmp(first1, first2, (size_t)((uintptr_t)last1 - (uintptr_t)first1)) == 0); }
+
+    inline bool equal(const unsigned char* first1, const unsigned char* last1, const unsigned char* first2)
+        { return (memcmp(first1, first2, (size_t)((uintptr_t)last1 - (uintptr_t)first1)) == 0); }
+
+    inline bool equal(const signed char* first1, const signed char* last1, const signed char* first2)
+        { return (memcmp(first1, first2, (size_t)((uintptr_t)last1 - (uintptr_t)first1)) == 0); }
+
+    #ifndef EA_WCHAR_T_NON_NATIVE // EABase defines this. If you are getting a compiler error here, then somebody has taken away EABase or broken it.
+        inline bool equal(const wchar_t* first1, const wchar_t* last1, const wchar_t* first2)
+            { return (memcmp(first1, first2, (size_t)((uintptr_t)last1 - (uintptr_t)first1)) == 0); }
+    #endif
+
+    inline bool equal(const int16_t* first1, const int16_t* last1, const int16_t* first2)
+        { return (memcmp(first1, first2, (size_t)((uintptr_t)last1 - (uintptr_t)first1)) == 0); }
+
+    inline bool equal(const uint16_t* first1, const uint16_t* last1, const uint16_t* first2)
+        { return (memcmp(first1, first2, (size_t)((uintptr_t)last1 - (uintptr_t)first1)) == 0); }
+
+    inline bool equal(const int32_t* first1, const int32_t* last1, const int32_t* first2)
+        { return (memcmp(first1, first2, (size_t)((uintptr_t)last1 - (uintptr_t)first1)) == 0); }
+
+    inline bool equal(const uint32_t* first1, const uint32_t* last1, const uint32_t* first2)
+        { return (memcmp(first1, first2, (size_t)((uintptr_t)last1 - (uintptr_t)first1)) == 0); }
+
+    inline bool equal(const int64_t* first1, const int64_t* last1, const int64_t* first2)
+        { return (memcmp(first1, first2, (size_t)((uintptr_t)last1 - (uintptr_t)first1)) == 0); }
+
+    inline bool equal(const uint64_t* first1, const uint64_t* last1, const uint64_t* first2)
+        { return (memcmp(first1, first2, (size_t)((uintptr_t)last1 - (uintptr_t)first1)) == 0); }
+
+    inline bool equal(const float* first1, const float* last1, const float* first2)
+        { return (memcmp(first1, first2, (size_t)((uintptr_t)last1 - (uintptr_t)first1)) == 0); }
+
+    inline bool equal(const double* first1, const double* last1, const double* first2)
+        { return (memcmp(first1, first2, (size_t)((uintptr_t)last1 - (uintptr_t)first1)) == 0); }
+
+    inline bool equal(const long double* first1, const long double* last1, const long double* first2)
+        { return (memcmp(first1, first2, (size_t)((uintptr_t)last1 - (uintptr_t)first1)) == 0); }
+    */
+
+
+
     /// equal
     ///
     /// Returns: true if for every iterator i in the range [first1, last1) the 
@@ -1606,7 +1870,8 @@ namespace eastl
     }
 
 
-    /// lexicographicalCompare
+
+    /// lexicographical_compare
     ///
     /// Returns: true if the sequence of elements defined by the range 
     /// [first1, last1) is lexicographically less than the sequence of 
@@ -1625,7 +1890,7 @@ namespace eastl
     ///
     template <typename InputIterator1, typename InputIterator2>
     inline bool
-    lexicographicalCompare(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2)
+    lexicographical_compare(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2)
     {
         for(; (first1 != last1) && (first2 != last2); ++first1, ++first2)
         {
@@ -1638,75 +1903,75 @@ namespace eastl
     }
 
     inline bool     // Specialization for const char*.
-    lexicographicalCompare(const char* first1, const char* last1, const char* first2, const char* last2)
+    lexicographical_compare(const char* first1, const char* last1, const char* first2, const char* last2)
     {
         const ptrdiff_t n1(last1 - first1), n2(last2 - first2);
-        const int result = memcmp(first1, first2, (size_t)eastl::minAlt(n1, n2));
+        const int result = memcmp(first1, first2, (size_t)eastl::min_alt(n1, n2));
         return result ? (result < 0) : (n1 < n2);
     }
 
     inline bool     // Specialization for char*.
-    lexicographicalCompare(char* first1, char* last1, char* first2, char* last2)
+    lexicographical_compare(char* first1, char* last1, char* first2, char* last2)
     {
         const ptrdiff_t n1(last1 - first1), n2(last2 - first2);
-        const int result = memcmp(first1, first2, (size_t)eastl::minAlt(n1, n2));
+        const int result = memcmp(first1, first2, (size_t)eastl::min_alt(n1, n2));
         return result ? (result < 0) : (n1 < n2);
     }
 
     inline bool     // Specialization for const unsigned char*.
-    lexicographicalCompare(const unsigned char* first1, const unsigned char* last1, const unsigned char* first2, const unsigned char* last2)
+    lexicographical_compare(const unsigned char* first1, const unsigned char* last1, const unsigned char* first2, const unsigned char* last2)
     {
         const ptrdiff_t n1(last1 - first1), n2(last2 - first2);
-        const int result = memcmp(first1, first2, (size_t)eastl::minAlt(n1, n2));
+        const int result = memcmp(first1, first2, (size_t)eastl::min_alt(n1, n2));
         return result ? (result < 0) : (n1 < n2);
     }
 
     inline bool     // Specialization for unsigned char*.
-    lexicographicalCompare(unsigned char* first1, unsigned char* last1, unsigned char* first2, unsigned char* last2)
+    lexicographical_compare(unsigned char* first1, unsigned char* last1, unsigned char* first2, unsigned char* last2)
     {
         const ptrdiff_t n1(last1 - first1), n2(last2 - first2);
-        const int result = memcmp(first1, first2, (size_t)eastl::minAlt(n1, n2));
+        const int result = memcmp(first1, first2, (size_t)eastl::min_alt(n1, n2));
         return result ? (result < 0) : (n1 < n2);
     }
 
     inline bool     // Specialization for const signed char*.
-    lexicographicalCompare(const signed char* first1, const signed char* last1, const signed char* first2, const signed char* last2)
+    lexicographical_compare(const signed char* first1, const signed char* last1, const signed char* first2, const signed char* last2)
     {
         const ptrdiff_t n1(last1 - first1), n2(last2 - first2);
-        const int result = memcmp(first1, first2, (size_t)eastl::minAlt(n1, n2));
+        const int result = memcmp(first1, first2, (size_t)eastl::min_alt(n1, n2));
         return result ? (result < 0) : (n1 < n2);
     }
 
     inline bool     // Specialization for signed char*.
-    lexicographicalCompare(signed char* first1, signed char* last1, signed char* first2, signed char* last2)
+    lexicographical_compare(signed char* first1, signed char* last1, signed char* first2, signed char* last2)
     {
         const ptrdiff_t n1(last1 - first1), n2(last2 - first2);
-        const int result = memcmp(first1, first2, (size_t)eastl::minAlt(n1, n2));
+        const int result = memcmp(first1, first2, (size_t)eastl::min_alt(n1, n2));
         return result ? (result < 0) : (n1 < n2);
     }
 
     #if defined(_MSC_VER) // If using the VC++ compiler (and thus bool is known to be a single byte)...
         //Not sure if this is a good idea.
         //inline bool     // Specialization for const bool*.
-        //lexicographicalCompare(const bool* first1, const bool* last1, const bool* first2, const bool* last2)
+        //lexicographical_compare(const bool* first1, const bool* last1, const bool* first2, const bool* last2)
         //{
         //    const ptrdiff_t n1(last1 - first1), n2(last2 - first2);
-        //    const int result = memcmp(first1, first2, (size_t)eastl::minAlt(n1, n2));
+        //    const int result = memcmp(first1, first2, (size_t)eastl::min_alt(n1, n2));
         //    return result ? (result < 0) : (n1 < n2);
         //}
         //
         //inline bool     // Specialization for bool*.
-        //lexicographicalCompare(bool* first1, bool* last1, bool* first2, bool* last2)
+        //lexicographical_compare(bool* first1, bool* last1, bool* first2, bool* last2)
         //{
         //    const ptrdiff_t n1(last1 - first1), n2(last2 - first2);
-        //    const int result = memcmp(first1, first2, (size_t)eastl::minAlt(n1, n2));
+        //    const int result = memcmp(first1, first2, (size_t)eastl::min_alt(n1, n2));
         //    return result ? (result < 0) : (n1 < n2);
         //}
     #endif
 
 
 
-    /// lexicographicalCompare
+    /// lexicographical_compare
     ///
     /// Returns: true if the sequence of elements defined by the range 
     /// [first1, last1) is lexicographically less than the sequence of 
@@ -1731,7 +1996,7 @@ namespace eastl
     ///
     template <typename InputIterator1, typename InputIterator2, typename Compare>
     inline bool
-    lexicographicalCompare(InputIterator1 first1, InputIterator1 last1, 
+    lexicographical_compare(InputIterator1 first1, InputIterator1 last1, 
                             InputIterator2 first2, InputIterator2 last2, Compare compare)
     {
         for(; (first1 != last1) && (first2 != last2); ++first1, ++first2)
@@ -1745,8 +2010,66 @@ namespace eastl
     }
 
 
+    /// mismatch
+    ///
+    /// Finds the first position where the two ranges [first1, last1) and 
+    /// [first2, first2 + (last1 - first1)) differ. The two versions of  
+    /// mismatch use different tests for whether elements differ.
+    ///
+    /// Returns: A pair of iterators i and j such that j == first2 + (i - first1)
+    /// and i is the first iterator in the range [first1, last1) for which the 
+    /// following corresponding condition holds: !(*i == *(first2 + (i - first1))).
+    /// Returns the pair last1 and first2 + (last1 - first1) if such an iterator 
+    /// i is not found.
+    ///
+    /// Complexity: At most last1 first1 applications of the corresponding predicate.
+    ///
+    template <class InputIterator1, class InputIterator2>
+    inline eastl::pair<InputIterator1, InputIterator2>
+    mismatch(InputIterator1 first1, InputIterator1 last1,
+             InputIterator2 first2) // , InputIterator2 last2)
+    {
+        while((first1 != last1) && (*first1 == *first2)) // && (first2 != last2) <- C++ standard mismatch function doesn't check first2/last2.
+        {
+            ++first1;
+            ++first2;
+        }
 
-    /// lowerBound
+        return eastl::pair<InputIterator1, InputIterator2>(first1, first2);
+    }
+
+
+    /// mismatch
+    ///
+    /// Finds the first position where the two ranges [first1, last1) and 
+    /// [first2, first2 + (last1 - first1)) differ. The two versions of  
+    /// mismatch use different tests for whether elements differ.
+    ///
+    /// Returns: A pair of iterators i and j such that j == first2 + (i - first1)
+    /// and i is the first iterator in the range [first1, last1) for which the 
+    /// following corresponding condition holds: pred(*i, *(first2 + (i - first1))) == false.
+    /// Returns the pair last1 and first2 + (last1 - first1) if such an iterator 
+    /// i is not found.
+    ///
+    /// Complexity: At most last1 first1 applications of the corresponding predicate.
+    ///
+    template <class InputIterator1, class InputIterator2, class BinaryPredicate>
+    inline eastl::pair<InputIterator1, InputIterator2>
+    mismatch(InputIterator1 first1, InputIterator1 last1,
+             InputIterator2 first2, // InputIterator2 last2,
+             BinaryPredicate predicate)
+    {
+        while((first1 != last1) && predicate(*first1, *first2)) // && (first2 != last2) <- C++ standard mismatch function doesn't check first2/last2.
+        {
+            ++first1;
+            ++first2;
+        }
+
+        return eastl::pair<InputIterator1, InputIterator2>(first1, first2);
+    }
+
+
+    /// lower_bound
     ///
     /// Finds the position of the first element in a sorted range that has a value 
     /// greater than or equivalent to a specified value.
@@ -1766,7 +2089,7 @@ namespace eastl
     ///
     template <typename ForwardIterator, typename T>
     ForwardIterator
-    lowerBound(ForwardIterator first, ForwardIterator last, const T& value)
+    lower_bound(ForwardIterator first, ForwardIterator last, const T& value)
     {
         typedef typename eastl::iterator_traits<ForwardIterator>::difference_type DifferenceType;
 
@@ -1781,7 +2104,7 @@ namespace eastl
 
             if(*i < value)
             {
-                // Disabled because std::lowerBound doesn't specify (23.3.3.3, p3) this can be done: EASTL_VALIDATE_COMPARE(!(value < *i)); // Validate that the compare function is sane.
+                // Disabled because std::lower_bound doesn't specify (23.3.3.3, p3) this can be done: EASTL_VALIDATE_COMPARE(!(value < *i)); // Validate that the compare function is sane.
                 first = ++i;
                 d    -= d2 + 1;
             }
@@ -1792,10 +2115,10 @@ namespace eastl
     }
 
 
-    /// lowerBound
+    /// lower_bound
     ///
     /// Finds the position of the first element in a sorted range that has a value 
-    /// greater than or equivalent to a specified value. The input Compare function
+    /// greater than or equivalent to a specified value. The input compare function
     /// takes two arguments and returns true if the first argument is less than
     /// the second argument.
     ///
@@ -1814,7 +2137,7 @@ namespace eastl
     ///
     template <typename ForwardIterator, typename T, typename Compare>
     ForwardIterator
-    lowerBound(ForwardIterator first, ForwardIterator last, const T& value, Compare compare)
+    lower_bound(ForwardIterator first, ForwardIterator last, const T& value, Compare compare)
     {
         typedef typename eastl::iterator_traits<ForwardIterator>::difference_type DifferenceType;
 
@@ -1829,7 +2152,7 @@ namespace eastl
 
             if(compare(*i, value))
             {
-                // Disabled because std::lowerBound doesn't specify (23.3.3.1, p3) this can be done: EASTL_VALIDATE_COMPARE(!compare(value, *i)); // Validate that the compare function is sane.
+                // Disabled because std::lower_bound doesn't specify (23.3.3.1, p3) this can be done: EASTL_VALIDATE_COMPARE(!compare(value, *i)); // Validate that the compare function is sane.
                 first = ++i;
                 d    -= d2 + 1;
             }
@@ -1841,7 +2164,7 @@ namespace eastl
 
 
 
-    /// upperBound
+    /// upper_bound
     ///
     /// Finds the position of the first element in a sorted range that has a 
     /// value that is greater than a specified value.
@@ -1857,7 +2180,7 @@ namespace eastl
     ///
     template <typename ForwardIterator, typename T>
     ForwardIterator
-    upperBound(ForwardIterator first, ForwardIterator last, const T& value)
+    upper_bound(ForwardIterator first, ForwardIterator last, const T& value)
     {
         typedef typename eastl::iterator_traits<ForwardIterator>::difference_type DifferenceType;
 
@@ -1877,7 +2200,7 @@ namespace eastl
             }
             else
             {
-                // Disabled because std::upperBound doesn't specify (23.3.3.2, p3) this can be done: EASTL_VALIDATE_COMPARE(!(*i < value)); // Validate that the compare function is sane.
+                // Disabled because std::upper_bound doesn't specify (23.3.3.2, p3) this can be done: EASTL_VALIDATE_COMPARE(!(*i < value)); // Validate that the compare function is sane.
                 len = len2;
             }
         }
@@ -1885,10 +2208,10 @@ namespace eastl
     }
 
 
-    /// upperBound
+    /// upper_bound
     ///
     /// Finds the position of the first element in a sorted range that has a 
-    /// value that is greater than a specified value. The input Compare function
+    /// value that is greater than a specified value. The input compare function
     /// takes two arguments and returns true if the first argument is less than
     /// the second argument.
     ///
@@ -1903,7 +2226,7 @@ namespace eastl
     ///
     template <typename ForwardIterator, typename T, typename Compare>
     ForwardIterator
-    upperBound(ForwardIterator first, ForwardIterator last, const T& value, Compare compare)
+    upper_bound(ForwardIterator first, ForwardIterator last, const T& value, Compare compare)
     {
         typedef typename eastl::iterator_traits<ForwardIterator>::difference_type DifferenceType;
 
@@ -1923,7 +2246,7 @@ namespace eastl
             }
             else
             {
-                // Disabled because std::upperBound doesn't specify (23.3.3.2, p3) this can be done: EASTL_VALIDATE_COMPARE(!compare(*i, value)); // Validate that the compare function is sane.
+                // Disabled because std::upper_bound doesn't specify (23.3.3.2, p3) this can be done: EASTL_VALIDATE_COMPARE(!compare(*i, value)); // Validate that the compare function is sane.
                 len = len2;
             }
         }
@@ -1971,8 +2294,8 @@ namespace eastl
             {
                 ForwardIterator j(i);
 
-                return ResultType(eastl::lowerBound(first, i, value), 
-                                  eastl::upperBound(++j, last, value));
+                return ResultType(eastl::lower_bound(first, i, value), 
+                                  eastl::upper_bound(++j, last, value));
             }
         }
         return ResultType(first, first);
@@ -2019,8 +2342,8 @@ namespace eastl
             {
                 ForwardIterator j(i);
 
-                return ResultType(eastl::lowerBound(first, i, value, compare), 
-                                  eastl::upperBound(++j, last, value, compare));
+                return ResultType(eastl::lower_bound(first, i, value, compare), 
+                                  eastl::upper_bound(++j, last, value, compare));
             }
         }
         return ResultType(first, first);
@@ -2034,7 +2357,7 @@ namespace eastl
     /// 
     /// Complexity: Exactly 'last - first' applications of the corresponding predicate.
     ///
-    /// Note: The predicate version of replace is replaceIf and not another variation of replace.
+    /// Note: The predicate version of replace is replace_if and not another variation of replace.
     /// This is because both versions would have the same parameter count and there could be ambiguity.
     ///
     template <typename ForwardIterator, typename T>
@@ -2049,19 +2372,19 @@ namespace eastl
     }
 
 
-    /// replaceIf
+    /// replace_if
     ///
     /// Effects: Substitutes elements referred by the iterator i in the range [first, last) 
     /// with new_value, when the following corresponding conditions hold: predicate(*i) != false.
     /// 
     /// Complexity: Exactly 'last - first' applications of the corresponding predicate.
     ///
-    /// Note: The predicate version of replaceIf is replace and not another variation of replaceIf.
+    /// Note: The predicate version of replace_if is replace and not another variation of replace_if.
     /// This is because both versions would have the same parameter count and there could be ambiguity.
     ///
     template <typename ForwardIterator, typename Predicate, typename T>
     inline void
-    replaceIf(ForwardIterator first, ForwardIterator last, Predicate predicate, const T& new_value)
+    replace_if(ForwardIterator first, ForwardIterator last, Predicate predicate, const T& new_value)
     {
         for(; first != last; ++first)
         {
@@ -2071,7 +2394,7 @@ namespace eastl
     }
 
 
-    /// removeCopy
+    /// remove_copy
     ///
     /// Effects: Copies all the elements referred to by the iterator i in the range 
     /// [first, last) for which the following corresponding condition does not hold: 
@@ -2085,7 +2408,7 @@ namespace eastl
     ///
     template <typename InputIterator, typename OutputIterator, typename T>
     inline OutputIterator
-    removeCopy(InputIterator first, InputIterator last, OutputIterator result, const T& value)
+    remove_copy(InputIterator first, InputIterator last, OutputIterator result, const T& value)
     {
         for(; first != last; ++first)
         {
@@ -2099,7 +2422,7 @@ namespace eastl
     }
 
 
-    /// removeCopyIf
+    /// remove_copy_if
     ///
     /// Effects: Copies all the elements referred to by the iterator i in the range 
     /// [first, last) for which the following corresponding condition does not hold: 
@@ -2113,7 +2436,7 @@ namespace eastl
     ///
     template <typename InputIterator, typename OutputIterator, typename Predicate>
     inline OutputIterator
-    removeCopyIf(InputIterator first, InputIterator last, OutputIterator result, Predicate predicate)
+    remove_copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate predicate)
     {
         for(; first != last; ++first)
         {
@@ -2158,7 +2481,7 @@ namespace eastl
         if(first != last)
         {
             ForwardIterator i(first);
-            return eastl::removeCopy(++i, last, first, value);
+            return eastl::remove_copy(++i, last, first, value);
         }
         return first;
     }
@@ -2191,17 +2514,17 @@ namespace eastl
     inline ForwardIterator
     removeIf(ForwardIterator first, ForwardIterator last, Predicate predicate)
     {
-        first = eastl::findIf(first, last, predicate);
+        first = eastl::find_if(first, last, predicate);
         if(first != last)
         {
             ForwardIterator i(first);
-            return eastl::removeCopyIf<ForwardIterator, ForwardIterator, Predicate>(++i, last, first, predicate);
+            return eastl::remove_copy_if<ForwardIterator, ForwardIterator, Predicate>(++i, last, first, predicate);
         }
         return first;
     }
 
 
-    /// replaceCopy
+    /// replace_copy
     ///
     /// Effects: Assigns to every iterator i in the range [result, result + (last - first))
     /// either new_value or *(first + (i - result)) depending on whether the following 
@@ -2213,12 +2536,12 @@ namespace eastl
     ///
     /// Complexity: Exactly 'last - first' applications of the corresponding predicate.
     ///
-    /// Note: The predicate version of replaceCopy is replaceCopyIf and not another variation of replaceCopy.
+    /// Note: The predicate version of replace_copy is replace_copy_if and not another variation of replace_copy.
     /// This is because both versions would have the same parameter count and there could be ambiguity.
     ///
     template <typename InputIterator, typename OutputIterator, typename T>
     inline OutputIterator
-    replaceCopy(InputIterator first, InputIterator last, OutputIterator result, const T& old_value, const T& new_value)
+    replace_copy(InputIterator first, InputIterator last, OutputIterator result, const T& old_value, const T& new_value)
     {
         for(; first != last; ++first, ++result)
             *result = (*first == old_value) ? new_value : *first;
@@ -2226,7 +2549,7 @@ namespace eastl
     }
 
 
-    /// replaceCopyIf
+    /// replace_copy_if
     ///
     /// Effects: Assigns to every iterator i in the range [result, result + (last - first))
     /// either new_value or *(first + (i - result)) depending on whether the following 
@@ -2238,12 +2561,12 @@ namespace eastl
     ///
     /// Complexity: Exactly 'last - first' applications of the corresponding predicate.
     ///
-    /// Note: The predicate version of replaceCopyIf is replaceCopy and not another variation of replaceCopyIf.
+    /// Note: The predicate version of replace_copy_if is replace_copy and not another variation of replace_copy_if.
     /// This is because both versions would have the same parameter count and there could be ambiguity.
     ///
     template <typename InputIterator, typename OutputIterator, typename Predicate, typename T>
     inline OutputIterator
-    replaceCopyIf(InputIterator first, InputIterator last, OutputIterator result, Predicate predicate, const T& new_value)
+    replace_copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate predicate, const T& new_value)
     {
         for(; first != last; ++first, ++result)
             *result = predicate(*first) ? new_value : *first;
@@ -2262,14 +2585,17 @@ namespace eastl
     inline void reverse_impl(BidirectionalIterator first, BidirectionalIterator last, EASTL_ITC_NS::bidirectional_iterator_tag)
     {
         for(; (first != last) && (first != --last); ++first) // We are not allowed to use operator <, <=, >, >= with a
-            eastl::iterSwap(first, last);                   // generic (bidirectional or otherwise) iterator.
+            eastl::iter_swap(first, last);                   // generic (bidirectional or otherwise) iterator.
     }
 
     template <typename RandomAccessIterator>
     inline void reverse_impl(RandomAccessIterator first, RandomAccessIterator last, EASTL_ITC_NS::random_access_iterator_tag)
     {
-        for(; first < --last; ++first)      // With a random access iterator, we can use operator < to more efficiently implement
-            eastl::iterSwap(first, last);  // this algorithm. A generic iterator doesn't necessarily have an operator < defined.
+        if(first != last)
+        {
+            for(; first < --last; ++first)      // With a random access iterator, we can use operator < to more efficiently implement
+                eastl::iter_swap(first, last);  // this algorithm. A generic iterator doesn't necessarily have an operator < defined.
+        }
     }
 
     /// reverse
@@ -2290,7 +2616,7 @@ namespace eastl
 
 
 
-    /// reverseCopy
+    /// reverse_copy
     ///
     /// Copies the range [first, last) in reverse order to the result.
     ///
@@ -2308,7 +2634,7 @@ namespace eastl
     ///
     template <typename BidirectionalIterator, typename OutputIterator>
     inline OutputIterator
-    reverseCopy(BidirectionalIterator first, BidirectionalIterator last, OutputIterator result)
+    reverse_copy(BidirectionalIterator first, BidirectionalIterator last, OutputIterator result)
     {
         for(; first != last; ++result)
             *result = *--last;
@@ -2459,11 +2785,11 @@ namespace eastl
 
 
 
-    // searchN helper functions
+    // search_n helper functions
     //
     template <typename ForwardIterator, typename Size, typename T>
     ForwardIterator     // Generic implementation.
-    searchN_impl(ForwardIterator first, ForwardIterator last, Size count, const T& value, EASTL_ITC_NS::forward_iterator_tag)
+    search_n_impl(ForwardIterator first, ForwardIterator last, Size count, const T& value, EASTL_ITC_NS::forward_iterator_tag)
     {
         if(count <= 0)
             return first;
@@ -2492,7 +2818,7 @@ namespace eastl
 
     template <typename RandomAccessIterator, typename Size, typename T> inline
     RandomAccessIterator    // Random access iterator implementation. Much faster than generic implementation.
-    searchN_impl(RandomAccessIterator first, RandomAccessIterator last, Size count, const T& value, EASTL_ITC_NS::random_access_iterator_tag)
+    search_n_impl(RandomAccessIterator first, RandomAccessIterator last, Size count, const T& value, EASTL_ITC_NS::random_access_iterator_tag)
     {
         if(count <= 0)
             return first;
@@ -2545,7 +2871,7 @@ namespace eastl
     }
 
 
-    /// searchN
+    /// search_n
     ///
     /// Returns: The first iterator i in the range [first, last count) such that 
     /// for any nonnegative integer n less than count the following corresponding 
@@ -2556,45 +2882,45 @@ namespace eastl
     ///
     template <typename ForwardIterator, typename Size, typename T>
     ForwardIterator
-    searchN(ForwardIterator first, ForwardIterator last, Size count, const T& value)
+    search_n(ForwardIterator first, ForwardIterator last, Size count, const T& value)
     {
         typedef typename eastl::iterator_traits<ForwardIterator>::iterator_category IC;
-        return eastl::searchN_impl(first, last, count, value, IC());
+        return eastl::search_n_impl(first, last, count, value, IC());
     }
 
 
-    /// binarySearch
+    /// binary_search
     ///
     /// Returns: true if there is an iterator i in the range [first last) that 
     /// satisfies the corresponding conditions: !(*i < value) && !(value < *i).
     ///
     /// Complexity: At most 'log(last - first) + 2' comparisons.
     ///
-    /// Note: The reason binarySearch returns bool instead of an iterator is
-    /// that searchN, lowerBound, or equalRange already return an iterator. 
-    /// However, there are arguments that binarySearch should return an iterator.
-    /// Note that we provide binarySearchI (STL extension) to return an iterator.
+    /// Note: The reason binary_search returns bool instead of an iterator is
+    /// that search_n, lower_bound, or equalRange already return an iterator. 
+    /// However, there are arguments that binary_search should return an iterator.
+    /// Note that we provide binary_search_i (STL extension) to return an iterator.
     ///
-    /// To use searchN to find an item, do this:
-    ///     iterator i = searchN(begin, end, 1, value);
-    /// To use lowerBound to find an item, do this:
-    ///     iterator i = lowerBound(begin, end, value);
+    /// To use search_n to find an item, do this:
+    ///     iterator i = search_n(begin, end, 1, value);
+    /// To use lower_bound to find an item, do this:
+    ///     iterator i = lower_bound(begin, end, value);
     ///     if((i != last) && !(value < *i))
     ///         <use the iterator>
-    /// It turns out that the above lowerBound method is as fast as binarySearch
+    /// It turns out that the above lower_bound method is as fast as binary_search
     /// would be if it returned an iterator.
     ///
     template <typename ForwardIterator, typename T>
     inline bool
-    binarySearch(ForwardIterator first, ForwardIterator last, const T& value)
+    binary_search(ForwardIterator first, ForwardIterator last, const T& value)
     {
-        // To do: This can be made slightly faster by not using lowerBound.
-        ForwardIterator i(eastl::lowerBound<ForwardIterator, T>(first, last, value));
+        // To do: This can be made slightly faster by not using lower_bound.
+        ForwardIterator i(eastl::lower_bound<ForwardIterator, T>(first, last, value));
         return ((i != last) && !(value < *i)); // Note that we always express value comparisons in terms of < or ==.
     }
 
 
-    /// binarySearch
+    /// binary_search
     ///
     /// Returns: true if there is an iterator i in the range [first last) that 
     /// satisfies the corresponding conditions: compare(*i, value) == false && 
@@ -2602,19 +2928,19 @@ namespace eastl
     ///
     /// Complexity: At most 'log(last - first) + 2' comparisons.
     ///
-    /// Note: See comments above regarding the bool return value of binarySearch.
+    /// Note: See comments above regarding the bool return value of binary_search.
     ///
     template <typename ForwardIterator, typename T, typename Compare>
     inline bool
-    binarySearch(ForwardIterator first, ForwardIterator last, const T& value, Compare compare)
+    binary_search(ForwardIterator first, ForwardIterator last, const T& value, Compare compare)
     {
-        // To do: This can be made slightly faster by not using lowerBound.
-        ForwardIterator i(eastl::lowerBound<ForwardIterator, T, Compare>(first, last, value, compare));
+        // To do: This can be made slightly faster by not using lower_bound.
+        ForwardIterator i(eastl::lower_bound<ForwardIterator, T, compare>(first, last, value, compare));
         return ((i != last) && !compare(value, *i));
     }
 
 
-    /// binarySearchI
+    /// binary_search_i
     ///
     /// Returns: iterator if there is an iterator i in the range [first last) that 
     /// satisfies the corresponding conditions: !(*i < value) && !(value < *i).
@@ -2624,17 +2950,17 @@ namespace eastl
     ///
     template <typename ForwardIterator, typename T>
     inline ForwardIterator
-    binarySearchI(ForwardIterator first, ForwardIterator last, const T& value)
+    binary_search_i(ForwardIterator first, ForwardIterator last, const T& value)
     {
-        // To do: This can be made slightly faster by not using lowerBound.
-        ForwardIterator i(eastl::lowerBound<ForwardIterator, T>(first, last, value));
+        // To do: This can be made slightly faster by not using lower_bound.
+        ForwardIterator i(eastl::lower_bound<ForwardIterator, T>(first, last, value));
         if((i != last) && !(value < *i)) // Note that we always express value comparisons in terms of < or ==.
             return i;
         return last;
     }
 
 
-    /// binarySearchI
+    /// binary_search_i
     ///
     /// Returns: iterator if there is an iterator i in the range [first last) that 
     /// satisfies the corresponding conditions: !(*i < value) && !(value < *i).
@@ -2644,10 +2970,10 @@ namespace eastl
     ///
     template <typename ForwardIterator, typename T, typename Compare>
     inline ForwardIterator
-    binarySearchI(ForwardIterator first, ForwardIterator last, const T& value, Compare compare)
+    binary_search_i(ForwardIterator first, ForwardIterator last, const T& value, Compare compare)
     {
-        // To do: This can be made slightly faster by not using lowerBound.
-        ForwardIterator i(eastl::lowerBound<ForwardIterator, T, Compare>(first, last, value, compare));
+        // To do: This can be made slightly faster by not using lower_bound.
+        ForwardIterator i(eastl::lower_bound<ForwardIterator, T, Compare>(first, last, value, compare));
         if((i != last) && !compare(value, *i))
             return i;
         return last;
@@ -2679,7 +3005,7 @@ namespace eastl
     template <typename ForwardIterator>
     ForwardIterator unique(ForwardIterator first, ForwardIterator last)
     {
-        first = eastl::adjacentFind<ForwardIterator>(first, last);
+        first = eastl::adjacent_find<ForwardIterator>(first, last);
 
         if(first != last) // We expect that there are duplicated items, else the user wouldn't be calling this function.
         {
@@ -2716,7 +3042,7 @@ namespace eastl
     template <typename ForwardIterator, typename BinaryPredicate>
     ForwardIterator unique(ForwardIterator first, ForwardIterator last, BinaryPredicate predicate)
     {
-        first = eastl::adjacentFind<ForwardIterator, BinaryPredicate>(first, last, predicate);
+        first = eastl::adjacent_find<ForwardIterator, BinaryPredicate>(first, last, predicate);
 
         if(first != last) // We expect that there are duplicated items, else the user wouldn't be calling this function.
         {
@@ -2734,7 +3060,7 @@ namespace eastl
 
 
 
-    // findEnd
+    // find_end
     //
     // We provide two versions here, one for a bidirectional iterators and one for
     // regular forward iterators. Given that we are searching backward, it's a bit 
@@ -2743,7 +3069,7 @@ namespace eastl
     //
     template <typename ForwardIterator1, typename ForwardIterator2>
     ForwardIterator1
-    findEnd_impl(ForwardIterator1 first1, ForwardIterator1 last1,
+    find_end_impl(ForwardIterator1 first1, ForwardIterator1 last1,
                   ForwardIterator2 first2, ForwardIterator2 last2,
                   EASTL_ITC_NS::forward_iterator_tag, EASTL_ITC_NS::forward_iterator_tag)
     {
@@ -2767,7 +3093,7 @@ namespace eastl
 
     template <typename BidirectionalIterator1, typename BidirectionalIterator2>
     BidirectionalIterator1
-    findEnd_impl(BidirectionalIterator1 first1, BidirectionalIterator1 last1,
+    find_end_impl(BidirectionalIterator1 first1, BidirectionalIterator1 last1,
                   BidirectionalIterator2 first2, BidirectionalIterator2 last2,
                   EASTL_ITC_NS::bidirectional_iterator_tag, EASTL_ITC_NS::bidirectional_iterator_tag)
     {
@@ -2786,11 +3112,11 @@ namespace eastl
         return last1;
     }
 
-    /// findEnd
+    /// find_end
     ///
     /// Finds the last occurrence of the second sequence in the first sequence.
     /// As such, this function is much like the C string function strrstr and it 
-    /// is also the same as a reversed version of 'search'. It is called findEnd
+    /// is also the same as a reversed version of 'search'. It is called find_end
     /// instead of the possibly more consistent search_end simply because the C++
     /// standard algorithms have such naming.
     ///
@@ -2799,13 +3125,13 @@ namespace eastl
     ///
     template <typename ForwardIterator1, typename ForwardIterator2>
     inline ForwardIterator1
-    findEnd(ForwardIterator1 first1, ForwardIterator1 last1,
+    find_end(ForwardIterator1 first1, ForwardIterator1 last1,
              ForwardIterator2 first2, ForwardIterator2 last2)
     {
         typedef typename eastl::iterator_traits<ForwardIterator1>::iterator_category IC1;
         typedef typename eastl::iterator_traits<ForwardIterator2>::iterator_category IC2;
 
-        return eastl::findEnd_impl(first1, last1, first2, last2, IC1(), IC2());
+        return eastl::find_end_impl(first1, last1, first2, last2, IC1(), IC2());
     }
 
 
@@ -2815,7 +3141,7 @@ namespace eastl
     //              this algorithm into a single function.
     template <typename ForwardIterator1, typename ForwardIterator2, typename BinaryPredicate>
     ForwardIterator1
-    findEnd_impl(ForwardIterator1 first1, ForwardIterator1 last1,
+    find_end_impl(ForwardIterator1 first1, ForwardIterator1 last1,
                   ForwardIterator2 first2, ForwardIterator2 last2,
                   BinaryPredicate predicate,
                   EASTL_ITC_NS::forward_iterator_tag, EASTL_ITC_NS::forward_iterator_tag)
@@ -2840,7 +3166,7 @@ namespace eastl
 
     template <typename BidirectionalIterator1, typename BidirectionalIterator2, typename BinaryPredicate>
     BidirectionalIterator1
-    findEnd_impl(BidirectionalIterator1 first1, BidirectionalIterator1 last1,
+    find_end_impl(BidirectionalIterator1 first1, BidirectionalIterator1 last1,
                   BidirectionalIterator2 first2, BidirectionalIterator2 last2,
                   BinaryPredicate predicate, 
                   EASTL_ITC_NS::bidirectional_iterator_tag, EASTL_ITC_NS::bidirectional_iterator_tag)
@@ -2862,7 +3188,7 @@ namespace eastl
     }
 
 
-    /// findEnd
+    /// find_end
     ///
     /// Effects: Finds a subsequence of equal values in a sequence.
     ///
@@ -2876,22 +3202,22 @@ namespace eastl
     ///
     template <typename ForwardIterator1, typename ForwardIterator2, typename BinaryPredicate>
     inline ForwardIterator1
-    findEnd(ForwardIterator1 first1, ForwardIterator1 last1,
+    find_end(ForwardIterator1 first1, ForwardIterator1 last1,
              ForwardIterator2 first2, ForwardIterator2 last2,
              BinaryPredicate predicate)
     {
         typedef typename eastl::iterator_traits<ForwardIterator1>::iterator_category IC1;
         typedef typename eastl::iterator_traits<ForwardIterator2>::iterator_category IC2;
 
-        return eastl::findEnd_impl<ForwardIterator1, ForwardIterator2, BinaryPredicate>
+        return eastl::find_end_impl<ForwardIterator1, ForwardIterator2, BinaryPredicate>
                                    (first1, last1, first2, last2, predicate, IC1(), IC2());
     }
 
 
 
-    /// setDifference
+    /// set_difference
     ///
-    /// setDifference iterates over both input ranges and copies elements present 
+    /// set_difference iterates over both input ranges and copies elements present 
     /// in the first range but not the second to the output range.
     ///
     /// Effects: Copies the elements of the range [first1, last1) which are not 
@@ -2906,7 +3232,7 @@ namespace eastl
     /// Complexity: At most (2 * ((last1 - first1) + (last2 - first2)) - 1) comparisons.
     ///
     template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
-    OutputIterator setDifference(InputIterator1 first1, InputIterator1 last1,
+    OutputIterator set_difference(InputIterator1 first1, InputIterator1 last1,
                                   InputIterator2 first2, InputIterator2 last2, 
                                   OutputIterator result) 
     {
@@ -2932,7 +3258,7 @@ namespace eastl
 
 
     template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Compare>
-    OutputIterator setDifference(InputIterator1 first1, InputIterator1 last1,
+    OutputIterator set_difference(InputIterator1 first1, InputIterator1 last1,
                                   InputIterator2 first2, InputIterator2 last2, 
                                   OutputIterator result, Compare compare) 
     {
@@ -2959,6 +3285,243 @@ namespace eastl
 
         return eastl::copy(first1, last1, result);
     }
+
+
+
+    /// set_symmetric_difference
+    ///
+    /// set_difference iterates over both input ranges and copies elements present 
+    /// in the either range but not the other to the output range.
+    ///
+    /// Effects: Copies the elements of the range [first1, last1) which are not 
+    /// present in the range [first2, last2), and the elements of the range [first2, last2) 
+    /// which are not present in the range [first1, last1) to the range beginning at result. 
+    /// The elements in the constructed range are sorted.
+    ///
+    /// Requires: The input ranges must be sorted.
+    /// Requires: The resulting range shall not overlap with either of the original ranges.
+    ///
+    /// Returns: The end of the constructed range.
+    ///
+    /// Complexity: At most (2 * ((last1 - first1) + (last2 - first2)) - 1) comparisons.
+    /// 
+    template<typename InputIterator1, typename InputIterator2, typename OutputIterator>
+    OutputIterator set_symmetric_difference(InputIterator1 first1, InputIterator1 last1,
+                                            InputIterator2 first2, InputIterator2 last2,
+                                            OutputIterator result)
+    {
+        while((first1 != last1) && (first2 != last2))
+        {
+            if(*first1 < *first2)
+            {
+                *result = *first1;
+                ++first1;
+                ++result;
+            }
+            else if(*first2 < *first1)
+            {
+                *result = *first2;
+                ++first2;
+                ++result;
+            }
+            else
+            {
+                ++first1;
+                ++first2;
+            }
+        }
+    
+        return eastl::copy(first2, last2, eastl::copy(first1, last1, result));
+    }
+
+
+    template<typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Compare>
+    OutputIterator set_symmetric_difference(InputIterator1 first1, InputIterator1 last1,
+                                            InputIterator2 first2, InputIterator2 last2,
+                                            OutputIterator result, Compare compare)
+    {
+        while((first1 != last1) && (first2 != last2))
+        {
+            if(compare(*first1, *first2))
+            {
+                EASTL_VALIDATE_COMPARE(!compare(*first2, *first1)); // Validate that the compare function is sane.
+                *result = *first1;
+                ++first1;
+                ++result;
+            }
+            else if(compare(*first2, *first1))
+            {
+                EASTL_VALIDATE_COMPARE(!compare(*first1, *first2)); // Validate that the compare function is sane.
+                *result = *first2;
+                ++first2;
+                ++result;
+            }
+            else
+            {
+                ++first1;
+                ++first2;
+            }
+        }
+    
+        return eastl::copy(first2, last2, eastl::copy(first1, last1, result));
+    }
+
+
+
+
+    /// set_intersection
+    ///
+    /// set_intersection over both ranges and copies elements present in
+    /// both ranges to the output range. 
+    ///
+    /// Effects: Constructs a sorted intersection of the elements from the 
+    /// two ranges; that is, the set of elements that are present in both of the ranges.
+    ///
+    /// Requires: The input ranges must be sorted.
+    /// Requires: The resulting range shall not overlap with either of the original ranges.
+    ///  
+    /// Returns: The end of the constructed range.
+    /// 
+    /// Complexity: At most 2 * ((last1 - first1) + (last2 - first2)) - 1)  comparisons.
+    /// 
+    /// Note: The copying operation is stable; if an element is present in both ranges, 
+    /// the one from the first range is copied.
+    /// 
+    template<typename InputIterator1, typename InputIterator2, typename OutputIterator>
+    OutputIterator set_intersection(InputIterator1 first1, InputIterator1 last1,
+                                    InputIterator2 first2, InputIterator2 last2,
+                                    OutputIterator result)
+    {
+        while((first1 != last1) && (first2 != last2))
+        {
+            if(*first1 < *first2)
+                ++first1;
+            else if(*first2 < *first1)
+                ++first2;
+            else
+            {
+                *result = *first1;
+                ++first1;
+                ++first2;
+                ++result;
+            }
+        }
+
+        return result;
+    }
+
+
+    template<typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Compare>
+    OutputIterator set_intersection(InputIterator1 first1, InputIterator1 last1,
+                                    InputIterator2 first2, InputIterator2 last2,
+                                    OutputIterator result, Compare compare)
+    {
+        while((first1 != last1) && (first2 != last2))
+        {
+            if(compare(*first1, *first2))
+            {
+                EASTL_VALIDATE_COMPARE(!compare(*first2, *first1)); // Validate that the compare function is sane.
+                ++first1;
+            }
+            else if(compare(*first2, *first1))
+            {
+                EASTL_VALIDATE_COMPARE(!compare(*first1, *first2)); // Validate that the compare function is sane.
+                ++first2;
+            }
+            else
+            {
+                *result = *first1;
+                ++first1;
+                ++first2;
+                ++result;
+            }
+        }
+
+        return result;
+    }
+
+
+
+    /// set_union
+    ///
+    /// set_union iterators over both ranges and copies elements present in
+    /// both ranges to the output range.
+    ///
+    /// Effects: Constructs a sorted union of the elements from the two ranges; 
+    /// that is, the set of elements that are present in one or both of the ranges.
+    ///
+    /// Requires: The input ranges must be sorted.
+    /// Requires: The resulting range shall not overlap with either of the original ranges.
+    ///
+    /// Returns: The end of the constructed range.
+    ///
+    /// Complexity: At most (2 * ((last1 - first1) + (last2 - first2)) - 1) comparisons.
+    ///
+    /// Note: The copying operation is stable; if an element is present in both ranges, 
+    /// the one from the first range is copied.
+    ///
+    template<typename InputIterator1, typename InputIterator2, typename OutputIterator>
+    OutputIterator set_union(InputIterator1 first1, InputIterator1 last1,
+                             InputIterator2 first2, InputIterator2 last2,
+                             OutputIterator result)
+    {
+        while((first1 != last1) && (first2 != last2))
+        {
+            if(*first1 < *first2)
+            {
+                *result = *first1;
+                ++first1;
+            }
+            else if(*first2 < *first1)
+            {
+                *result = *first2;
+                ++first2;
+            }
+            else
+            {
+                *result = *first1;
+                ++first1;
+                ++first2;
+            }
+            ++result;
+        }
+
+        return eastl::copy(first2, last2, eastl::copy(first1, last1, result));
+    }
+
+
+    template<typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Compare>
+    OutputIterator set_union(InputIterator1 first1, InputIterator1 last1,
+                             InputIterator2 first2, InputIterator2 last2,
+                             OutputIterator result, Compare compare)
+    {
+        while((first1 != last1) && (first2 != last2))
+        {
+            if(compare(*first1, *first2))
+            {
+                EASTL_VALIDATE_COMPARE(!compare(*first2, *first1)); // Validate that the compare function is sane.
+                *result = *first1;
+                ++first1;
+            }
+            else if(compare(*first2, *first1))
+            {
+                EASTL_VALIDATE_COMPARE(!compare(*first1, *first2)); // Validate that the compare function is sane.
+                *result = *first2;
+                ++first2;
+            }
+            else
+            {
+                *result = *first1;
+                ++first1;
+                ++first2;
+            }
+            ++result;
+        }
+
+        return eastl::copy(first2, last2, eastl::copy(first1, last1, result));
+    }
+
+
 
 } // namespace eastl
 

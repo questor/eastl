@@ -3,10 +3,11 @@
 #define EASTL_DEBUG_H
 
 #include <eastl/internal/config.h>
+#include <eastl/EAAssert/eaassert.h>
 
 namespace eastl {
-void printDebugString(char *text, ...);
-void fatalError(char *text,...);
+void printDebugString(const char *text, ...);
+void fatalError(const char *text,...);
 };
 
 #endif

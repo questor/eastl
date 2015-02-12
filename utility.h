@@ -26,18 +26,15 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-///////////////////////////////////////////////////////////////////////////////
-// EASTL/utility.h
-// Written and maintained by Paul Pedriana - 2005.
-///////////////////////////////////////////////////////////////////////////////
 
 
 
 #ifndef EASTL_UTILITY_H
 #define EASTL_UTILITY_H
 
-#include "eastl/internal/config.h"
-#include "eastl/typetraits.h"
+
+#include <eastl/internal/config.h>
+
 
 #ifdef _MSC_VER
     #pragma warning(push)           // VC++ generates a bogus warning that you cannot code away.
@@ -45,6 +42,11 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #pragma warning(disable: 4217)  // Member template functions cannot be used for copy-assignment or copy-construction.
     #pragma warning(disable: 4512)  // 'class' : assignment operator could not be generated.  // This disabling would best be put elsewhere.
 #endif
+
+#if defined(EA_PRAGMA_ONCE_SUPPORTED)
+    #pragma once // Some compilers (e.g. VC++) benefit significantly from using this. We've measured 3-4% build speed improvements in apps as a result.
+#endif
+
 
 
 namespace eastl
@@ -82,21 +84,7 @@ namespace eastl
             { return !(x < y); }
     }
 
-    ///////////////////////////////////////////////////////////////////////
-    /// forwarding(mainly from visual studio 2010)
-    ///
-    template<class Type> struct identity {  //map Type to type unchanged
-       typedef Type type;
-       const Type& operator()(const Type& left) const {
-          return (left);
-       }
-    };
-    template<class Type> inline Type&& forward(typename identity<Type>::type& Arg) {
-       return ((Type&&)Arg);
-    }
-    template<class Type> inline typename remove_reference<Type>::type&& _move(Type&& Arg) {
-       return ((typename remove_reference<Type>::type&&)Arg);
-    }
+
 
     ///////////////////////////////////////////////////////////////////////
     /// pair
@@ -155,6 +143,7 @@ namespace eastl
     template <typename Pair>
     struct useFirst            // : public unary_function<Pair, typename Pair::first_type> // Perhaps we want to make it a subclass of unary_function.
     {
+        typedef Pair argument_type;
         typedef typename Pair::first_type result_type;
 
         const result_type& operator()(const Pair& x) const
@@ -169,6 +158,7 @@ namespace eastl
     template <typename Pair>
     struct useSecond           // : public unary_function<Pair, typename Pair::second_type> // Perhaps we want to make it a subclass of unary_function.
     {
+        typedef Pair argument_type;
         typedef typename Pair::second_type result_type;
 
         const result_type& operator()(const Pair& x) const

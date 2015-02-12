@@ -18,7 +18,7 @@ namespace eastl {
 //----------------------------------------------------------------------------------
 // printDebugString
 //----------------------------------------------------------------------------------
-void printDebugString(char *text, ...) {
+void printDebugString(const char *text, ...) {
 	static char textbuffer[2048];
 	va_list args;
 	va_start(args,text);
@@ -39,7 +39,7 @@ void printDebugString(char *text, ...) {
 //----------------------------------------------------------------------------------
 // Fatal Error
 // 22.09.2000
-void fatalError(char *text, ...) {
+void fatalError(const char *text, ...) {
 	static char textbuffer[2048];
 	static char textbuf2[2048];
 	va_list args;

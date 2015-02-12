@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2005,2009-2010 Electronic Arts, Inc.  All rights reserved.
+Copyright (C) 2005,2009,2010,2012 Electronic Arts, Inc.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -27,13 +27,13 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 ///////////////////////////////////////////////////////////////////////////////
-// EASTL/internal/hashtable.h
+// eastl/internal/hashtable.h
 //
 // Written and maintained by Paul Pedriana - 2005.
 ///////////////////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////////////////
-// This file implements a hashtable, much like the C++ TR1 hashSet/hashMap.
+// This file implements a hashtable, much like the C++ TR1 hash_set/hash_map.
 // proposed classes.
 // The primary distinctions between this hashtable and TR1 hash tables are:
 //    - hashtable is savvy to an environment that doesn't have exception handling,
@@ -52,8 +52,15 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ///////////////////////////////////////////////////////////////////////////////
 // This file is currently partially based on the TR1 (technical report 1) 
-// reference implementation of the hashSet/hashMap C++ classes 
-// as of about 4/2005. 
+// reference implementation of the hash_set/hash_map C++ classes 
+// as of about 4/2005. Most likely many or all C++ library vendors' 
+// implementations of this classes will be based off of the reference version 
+// and so will look pretty similar to this file as well as other vendors' versions. 
+// Until we understand exactly what is going to be specified by the standard,
+// we largely replicate verbatim the components of this implementation which the 
+// standard proposal seems to identify as significant. Reading of online discussion 
+// implies that much of what is implemented in the reference is required of a 
+// conforming implementation.
 ///////////////////////////////////////////////////////////////////////////////
 
 
@@ -62,7 +69,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 #include <eastl/internal/config.h>
-#include <eastl/typetraits.h>
+#include <eastl/type_traits.h>
 #include <eastl/allocator.h>
 #include <eastl/iterator.h>
 #include <eastl/functional.h>
@@ -330,7 +337,9 @@ namespace eastl
     template <typename Iterator>
     inline typename eastl::iterator_traits<Iterator>::difference_type
     distance_fw_impl(Iterator /*first*/, Iterator /*last*/, EASTL_ITC_NS::input_iterator_tag)
-        { return 0; }
+    {
+        return 0;
+    }
 
     template <typename Iterator>
     inline typename eastl::iterator_traits<Iterator>::difference_type
@@ -515,8 +524,11 @@ namespace eastl
         hash_code_base(const ExtractKey& extractKey, const Equal& eq, const H1&, const H2&, const H& h)
             : mExtractKey(extractKey), mEqual(eq), mRangedHash(h) { }
 
-        hash_code_t get_hash_code(const Key& /*key*/) const
-            { return NULL; }
+        hash_code_t get_hash_code(const Key& key) const
+        {
+            EA_UNUSED(key);
+            return NULL;
+        }
 
         bucket_index_t bucket_index(hash_code_t, uint32_t) const
             { return (bucket_index_t)0; }
@@ -533,8 +545,11 @@ namespace eastl
         void copy_code(hash_node<Value, false>*, const hash_node<Value, false>*) const
             { } // Nothing to do.
 
-        void set_code(hash_node<Value, false>* /*pDest*/, hash_code_t /*c*/) const
-            { } // Nothing to do.
+        void set_code(hash_node<Value, false>* pDest, hash_code_t c) const
+        {
+            EA_UNUSED(pDest);
+            EA_UNUSED(c);
+        }
 
         void base_swap(hash_code_base& x)
         {
@@ -754,13 +769,13 @@ namespace eastl
     ///
     /// bMutableIterators: true if hashtable::iterator is a mutable
     /// iterator, false if iterator and const_iterator are both const 
-    /// iterators. This is true for hashMap and hashMultimap,
-    /// false for hashSet and hashMultiset.
+    /// iterators. This is true for hash_map and hash_multimap,
+    /// false for hash_set and hash_multiset.
     ///
     /// bUniqueKeys: true if the return value of hashtable::count(k)
     /// is always at most one, false if it may be an arbitrary number. 
-    /// This is true for hashSet and hashMap and is false for 
-    /// hashMultiset and hashMultimap.
+    /// This is true for hash_set and hash_map and is false for 
+    /// hash_multiset and hash_multimap.
     ///
     ///////////////////////////////////////////////////////////////////////
     /// Note:
@@ -824,15 +839,12 @@ namespace eastl
         using hash_code_base_type::bucket_index;
         using hash_code_base_type::compare;
         using hash_code_base_type::set_code;
+        using hash_code_base_type::copy_code;
 
         static const bool kCacheHashCode = bCacheHashCode;
 
         enum
         {
-            kKeyAlignment         = EASTL_ALIGN_OF(key_type),
-            kKeyAlignmentOffset   = 0,                          // To do: Make sure this really is zero for all uses of this template.
-            kValueAlignment       = EASTL_ALIGN_OF(value_type),
-            kValueAlignmentOffset = 0,                          // To fix: This offset is zero for sets and >0 for maps. Need to fix this.
             kAllocFlagBuckets     = 0x00400000                  // Flag to allocator which indicates that we are allocating buckets and not nodes.
         };
 
@@ -953,9 +965,13 @@ namespace eastl
         size_type        erase(const key_type& k);
 
         void clear();
-        void clear(bool clearBuckets);
-        void reset();
+        void clear(bool clearBuckets);                  // If clearBuckets is true, we free the bucket memory and set the bucket count back to the newly constructed count.
+        void resetLoseMemory();                       // This is a unilateral reset to an initially empty state. No destructors are called, no deallocation occurs.
         void rehash(size_type nBucketCount);
+
+        #if EASTL_RESET_ENABLED
+            void reset(); // This function name is deprecated; use resetLoseMemory instead.
+        #endif
 
     public:
         iterator       find(const key_type& key);
@@ -969,11 +985,11 @@ namespace eastl
         /// find function.
         ///
         /// Example usage (namespaces omitted for brevity):
-        ///     hashSet<string> hashSet;
+        ///     hash_set<string> hashSet;
         ///     hashSet.find_as("hello");    // Use default hash and compare.
         ///
         /// Example usage (note that the predicate uses string as first type and char* as second):
-        ///     hashSet<string> hashSet;
+        ///     hash_set<string> hashSet;
         ///     hashSet.find_as("hello", hash<char*>(), equal_to_2<string, char*>());
         ///
         template <typename U, typename UHash, typename BinaryPredicate>
@@ -1019,11 +1035,10 @@ namespace eastl
 
         void       DoRehash(size_type nBucketCount);
         node_type* DoFindNode(node_type* pNode, const key_type& k, hash_code_t c) const;
+        node_type* DoFindNode(node_type* pNode, hash_code_t c) const;
 
         template <typename U, typename BinaryPredicate>
-        node_type* DoFindNode(node_type* pNode, const U& u, BinaryPredicate predicate) const;
-
-        node_type* DoFindNode(node_type* pNode, hash_code_t c) const;
+        node_type* DoFindNodeT(node_type* pNode, const U& u, BinaryPredicate predicate) const;
 
     }; // class hashtable
 
@@ -1078,7 +1093,7 @@ namespace eastl
             mAllocator(allocator)
     {
         if(nBucketCount < 2)  // If we are starting in an initially empty state, with no memory allocation done.
-            reset();
+            resetLoseMemory();
         else // Else we are creating a potentially non-empty hashtable...
         {
             EASTL_ASSERT(nBucketCount < 10000000);
@@ -1160,7 +1175,7 @@ namespace eastl
                         while(pNodeSource)
                         {
                             *ppNodeDest = DoAllocateNode(pNodeSource->mValue);
-                            this->copy_code(*ppNodeDest, pNodeSource);
+                            copy_code(*ppNodeDest, pNodeSource);
                             ppNodeDest = &(*ppNodeDest)->mpNext;
                             pNodeSource = pNodeSource->mpNext;
                         }
@@ -1179,7 +1194,7 @@ namespace eastl
         {
             // In this case, instead of allocate memory and copy nothing from x, 
             // we reset ourselves to a zero allocation state.
-            reset();
+            resetLoseMemory();
         }
     }
 
@@ -1239,13 +1254,13 @@ namespace eastl
     typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::node_type*
     hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoAllocateNode(const value_type& value)
     {
-        node_type* const pNode = (node_type*)allocate_memory(mAllocator, sizeof(node_type), kValueAlignment, kValueAlignmentOffset);
+        node_type* const pNode = (node_type*)allocateMemory(mAllocator, sizeof(node_type), EASTL_ALIGN_OF(value_type), 0);
 
         #if EASTL_EXCEPTIONS_ENABLED
             try
             {
         #endif
-                ::new(&pNode->mValue) value_type(value);
+                ::new((void*)&pNode->mValue) value_type(value);
                 pNode->mpNext = NULL;
                 return pNode;
         #if EASTL_EXCEPTIONS_ENABLED
@@ -1265,13 +1280,13 @@ namespace eastl
     typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::node_type*
     hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoAllocateNodeFromKey(const key_type& key)
     {
-        node_type* const pNode = (node_type*)allocate_memory(mAllocator, sizeof(node_type), kValueAlignment, kValueAlignmentOffset);
+        node_type* const pNode = (node_type*)allocateMemory(mAllocator, sizeof(node_type), EASTL_ALIGN_OF(value_type), 0);
 
         #if EASTL_EXCEPTIONS_ENABLED
             try
             {
         #endif
-                ::new(&pNode->mValue) value_type(key);
+                ::new((void*)&pNode->mValue) value_type(key);
                 pNode->mpNext = NULL;
                 return pNode;
         #if EASTL_EXCEPTIONS_ENABLED
@@ -1419,7 +1434,7 @@ namespace eastl
         const hash_code_t c = (hash_code_t)uhash(other);
         const size_type   n = (size_type)(c % mnBucketCount); // This assumes we are using the mod range policy.
 
-        node_type* const pNode = DoFindNode(mpBucketArray[n], other, predicate);
+        node_type* const pNode = DoFindNodeT(mpBucketArray[n], other, predicate);
         return pNode ? iterator(pNode, mpBucketArray + n) : iterator(mpBucketArray + mnBucketCount); // iterator(mpBucketArray + mnBucketCount) == end()
     }
 
@@ -1434,7 +1449,7 @@ namespace eastl
         const hash_code_t c = (hash_code_t)uhash(other);
         const size_type   n = (size_type)(c % mnBucketCount); // This assumes we are using the mod range policy.
 
-        node_type* const pNode = DoFindNode(mpBucketArray[n], other, predicate);
+        node_type* const pNode = DoFindNodeT(mpBucketArray[n], other, predicate);
         return pNode ? const_iterator(pNode, mpBucketArray + n) : const_iterator(mpBucketArray + mnBucketCount); // iterator(mpBucketArray + mnBucketCount) == end()
     }
 
@@ -1446,11 +1461,11 @@ namespace eastl
     /// Note that the default hash functions may not be what you want, though.
     ///
     /// Example usage. Instead of this:
-    ///     hashSet<string> hashSet;
+    ///     hash_set<string> hashSet;
     ///     hashSet.find("hello", hash<char*>(), equal_to_2<string, char*>());
     ///
     /// You can use this:
-    ///     hashSet<string> hashSet;
+    ///     hash_set<string> hashSet;
     ///     hashtable_find(hashSet, "hello");
     ///
     template <typename H, typename U>
@@ -1536,11 +1551,10 @@ namespace eastl
                 typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::iterator>
     hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::equalRange(const key_type& k)
     {
-        const hash_code_t c = get_hash_code(k);
-        const size_type   n = (size_type)bucket_index(k, c, (uint32_t)mnBucketCount);
-
-        node_type** head  = mpBucketArray + n;
-        node_type*  pNode = DoFindNode(*head, k, c);
+        const hash_code_t c     = get_hash_code(k);
+        const size_type   n     = (size_type)bucket_index(k, c, (uint32_t)mnBucketCount);
+        node_type**       head  = mpBucketArray + n;
+        node_type*        pNode = DoFindNode(*head, k, c);
 
         if(pNode)
         {
@@ -1623,7 +1637,7 @@ namespace eastl
               typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
     template <typename U, typename BinaryPredicate>
     inline typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::node_type* 
-    hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoFindNode(node_type* pNode, const U& other, BinaryPredicate predicate) const
+    hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoFindNodeT(node_type* pNode, const U& other, BinaryPredicate predicate) const
     {
         for(; pNode; pNode = pNode->mpNext)
         {
@@ -1655,12 +1669,14 @@ namespace eastl
     eastl::pair<typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::iterator, bool>
     hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoInsertValue(const value_type& value, true_type) // true_type means bUniqueKeys is true.
     {
+        // Adds the value to the hash table if not already present. 
+        // If already present then the existing value is returned via an iterator/bool pair.
         const key_type&   k     = mExtractKey(value);
         const hash_code_t c     = get_hash_code(k);
         size_type         n     = (size_type)bucket_index(k, c, (uint32_t)mnBucketCount);
         node_type* const  pNode = DoFindNode(mpBucketArray[n], k, c);
 
-        if(pNode == NULL)
+        if(pNode == NULL) // If value is not present... add it.
         {
             const eastl::pair<bool, uint32_t> bRehash = mRehashPolicy.GetRehashRequired((uint32_t)mnBucketCount, (uint32_t)mnElementCount, (uint32_t)1);
 
@@ -1679,7 +1695,7 @@ namespace eastl
                         DoRehash(bRehash.second);
                     }
 
-                    EASTL_ASSERT((void**)mpBucketArray != &gpEmptyBucketArray[0]);
+                    EASTL_ASSERT((uintptr_t)mpBucketArray != (uintptr_t)&gpEmptyBucketArray[0]);
                     pNodeNew->mpNext = mpBucketArray[n];
                     mpBucketArray[n] = pNodeNew;
                     ++mnElementCount;
@@ -1853,11 +1869,7 @@ namespace eastl
     {
         // We ignore the first argument (hint iterator). It's not likely to be useful for hashtable containers.
 
-        #ifdef __MWERKS__ // The Metrowerks compiler has a bug.
-            insert_return_type result = insert(value);
-            return result.first; // Note by Paul Pedriana while perusing this code: This code will fail to compile when bU is false (i.e. for multiset, multimap).
-
-        #elif defined(__GNUC__) && (__GNUC__ < 3) // If using old GCC (GCC 2.x has a bug which we work around)
+        #if   defined(__GNUC__) && (__GNUC__ < 3) // If using old GCC (GCC 2.x has a bug which we work around)
             EASTL_ASSERT(empty()); // This function cannot return the correct return value on GCC 2.x. Unless, that is, the container is empty.
             DoInsertValue(value, integral_constant<bool, bU>());
             return begin(); // This is the wrong answer.
@@ -1883,11 +1895,7 @@ namespace eastl
 
         for(; first != last; ++first)
         {
-            #ifdef __MWERKS__ // The Metrowerks compiler has a bug.
-                insert(*first);
-            #else
                 DoInsertValue(*first, integral_constant<bool, bU>());
-            #endif
         }
     }
 
@@ -2017,16 +2025,28 @@ namespace eastl
         if(clearBuckets)
         {
             DoFreeBuckets(mpBucketArray, mnBucketCount);
-            reset();
+            resetLoseMemory();
         }
         mnElementCount = 0;
     }
 
 
 
+    #if EASTL_RESET_ENABLED
+        // This function name is deprecated; use resetLoseMemory instead.
+        template <typename K, typename V, typename A, typename EK, typename Eq,
+                  typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
+        inline void hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::reset()
+        {
+            resetLoseMemory();
+        }
+    #endif
+
+
+
     template <typename K, typename V, typename A, typename EK, typename Eq,
               typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
-    inline void hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::reset()
+    inline void hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::resetLoseMemory()
     {
         // The reset function is a special extension function which unilaterally 
         // resets the container to an empty state without freeing the memory of 
@@ -2192,7 +2212,7 @@ namespace eastl
         // This requires hash table elements to support operator<. Since the hash table
         // doesn't compare elements via less (it does so via equals), we must use the 
         // globally defined operator less for the elements.
-        return eastl::lexicographicalCompare(a.begin(), a.end(), b.begin(), b.end());
+        return eastl::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end());
     }
 
 
