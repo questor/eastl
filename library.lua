@@ -6,9 +6,12 @@ local native = require "tundra.native"
 StaticLibrary {
    Name = "eastl",
    Sources = {
-      Glob {
+      FGlob {
          Dir = _G.LIBROOT_EASTL,
          Extensions = { ".h", ".cpp" },
+         Filters = {
+            {Config="ignore", Pattern="coreallocator/newdelete.cpp"},
+         },
       },
    },
    Env = {
