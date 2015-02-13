@@ -5,14 +5,14 @@
 namespace eastl {
 
 template<typename T, typename _Container = eastl::vector<T> > class stack;
-template<typename T, typename _Container> inline bool operator==(const stack<T, _Container>&,
-                                                                 const stack<T, _Container>&);
-template<typename T, typename _Container> inline bool operator< (const stack<T, _Container>&,
-                                                                 const stack<T, _Container>&);
+template<typename T, typename _Container> bool operator==(const stack<T, _Container>&,
+                                                          const stack<T, _Container>&);
+template<typename T, typename _Container> bool operator< (const stack<T, _Container>&,
+                                                          const stack<T, _Container>&);
 
 template<typename T, typename _Container> class stack {
-   friend bool operator==(const stack&, const stack&);
-   friend bool operator< (const stack&, const stack&);
+   friend bool operator==<T,_Container>(const stack&, const stack&);
+   friend bool operator< <T,_Container>(const stack&, const stack&);
 public:
    typedef _Container container_type;
    typedef typename container_type::value_type value_type;
