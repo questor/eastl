@@ -123,22 +123,30 @@ int levenshteinDistance(const eastl::string source, const eastl::string target) 
   return matrix[n][m];
 }
 
-//conversion routines
-template<typename T> T convertFromString(eastl::string &string) {
+//number conversion routines
+template<typename T> T numberFromString(eastl::string &string) {
    ASSERT(0);
 }
-template<> float convertFromString(eastl::string &string) {
+template<> float numberFromString(eastl::string &string) {
    return (float)strtod(string.c_str(), NULL);
 }
-template<> int32_t convertFromString(eastl::string &string) {
+template<> int32_t numberFromString(eastl::string &string) {
    //TODO: check for 0x or 0b in front of string!
-   return (int32_t)strtol(string.c_str(), NULL, 10);
+   if(string.compare(0, 2, "0x") == 0) {
+      XASSERT(0, "DO HEX INPUT");
+      return -1;
+   } else if(string.compare(0, 2, "0b") == 0) {
+      XASSERT(0, "DO BINARY INPUT");
+      return -1;
+   } else {
+     return (int32_t)strtol(string.c_str(), NULL, 10);
+   }
 }
 
-template<typename T> eastl::string convertToString(T value) {
+template<typename T> eastl::string numberToString(T value) {
    ASSERT(0);
 }
-template<> eastl::string convertToString(float value) {
+template<> eastl::string numberToString(float value) {
    //much better implementation in fixedpoint!
    XASSERT(0, "DO BETTER IMPLEMENTATION!");
    char buffer[80];
