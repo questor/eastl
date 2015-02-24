@@ -120,7 +120,7 @@ namespace eastl
         using base_type::find;
         using base_type::lower_bound;
         using base_type::upper_bound;
-        using base_type::mcompare;
+        using base_type::mCompare;
 
         #if !defined(__GNUC__) || (__GNUC__ >= 3) // GCC 2.x has a bug which we work around.
         using base_type::insert;
@@ -208,7 +208,7 @@ namespace eastl
         using base_type::find;
         using base_type::lower_bound;
         using base_type::upper_bound;
-        using base_type::mcompare;
+        using base_type::mCompare;
 
         #if !defined(__GNUC__) || (__GNUC__ >= 3) // GCC 2.x has a bug which we work around.
         using base_type::insert;
@@ -325,7 +325,7 @@ namespace eastl
         // result is a range of size zero or one.
         const iterator itLower(lower_bound(key));
 
-        if((itLower == end()) || mcompare(key, itLower.mpNode->mValue.first)) // If at the end or if (key is < itLower)...
+        if((itLower == end()) || mCompare(key, itLower.mpNode->mValue.first)) // If at the end or if (key is < itLower)...
             return eastl::pair<iterator, iterator>(itLower, itLower);
 
         iterator itUpper(itLower);
@@ -341,7 +341,7 @@ namespace eastl
         // See equalRange above for comments.
         const const_iterator itLower(lower_bound(key));
 
-        if((itLower == end()) || mcompare(key, itLower.mpNode->mValue.first)) // If at the end or if (key is < itLower)...
+        if((itLower == end()) || mCompare(key, itLower.mpNode->mValue.first)) // If at the end or if (key is < itLower)...
             return eastl::pair<const_iterator, const_iterator>(itLower, itLower);
 
         const_iterator itUpper(itLower);
@@ -354,7 +354,7 @@ namespace eastl
     {
         iterator itLower(lower_bound(key)); // itLower->first is >= key.
 
-        if((itLower == end()) || mcompare(key, (*itLower).first))
+        if((itLower == end()) || mCompare(key, (*itLower).first))
         {
             itLower = base_type::insert(itLower, value_type(key, T()));
 
@@ -480,7 +480,7 @@ namespace eastl
         const iterator itLower(lower_bound(key));
         iterator       itUpper(itLower);
 
-        while((itUpper != end()) && !mcompare(key, itUpper.mpNode->mValue.first))
+        while((itUpper != end()) && !mCompare(key, itUpper.mpNode->mValue.first))
             ++itUpper;
 
         return eastl::pair<iterator, iterator>(itLower, itUpper);
@@ -497,7 +497,7 @@ namespace eastl
         const const_iterator itLower(lower_bound(key));
         const_iterator       itUpper(itLower);
 
-        while((itUpper != end()) && !mcompare(key, itUpper.mpNode->mValue.first))
+        while((itUpper != end()) && !mCompare(key, itUpper.mpNode->mValue.first))
             ++itUpper;
 
         return eastl::pair<const_iterator, const_iterator>(itLower, itUpper);

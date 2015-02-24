@@ -104,13 +104,13 @@ namespace eastl
     ///     MemoryPool myPool(sizeof(WidgetSet::node_type), 100);       // Make a pool of 100 Widget nodes.
     ///     WidgetSet mySet(&myPool);                                   // create a map that uses the pool.
     ///
-    template <typename Key, typename compare = eastl::less<Key>, typename Allocator = EASTLAllocatorType>
+    template <typename Key, typename Compare = eastl::less<Key>, typename Allocator = EASTLAllocatorType>
     class set
-        : public rbtree<Key, Key, compare, Allocator, eastl::useSelf<Key>, false, true>
+        : public rbtree<Key, Key, Compare, Allocator, eastl::useSelf<Key>, false, true>
     {
     public:
-        typedef rbtree<Key, Key, compare, Allocator, eastl::useSelf<Key>, false, true> base_type;
-        typedef set<Key, compare, Allocator>                                            this_type;
+        typedef rbtree<Key, Key, Compare, Allocator, eastl::useSelf<Key>, false, true> base_type;
+        typedef set<Key, Compare, Allocator>                                            this_type;
         typedef typename base_type::size_type                                           size_type;
         typedef typename base_type::value_type                                          value_type;
         typedef typename base_type::iterator                                            iterator;
@@ -125,11 +125,11 @@ namespace eastl
         using base_type::find;
         using base_type::lower_bound;
         using base_type::upper_bound;
-        using base_type::mcompare;
+        using base_type::mCompare;
 
     public:
         set(const allocator_type& allocator = EASTL_SET_DEFAULT_ALLOCATOR);
-        set(const compare& compare, const allocator_type& allocator = EASTL_SET_DEFAULT_ALLOCATOR);
+        set(const Compare& compare, const allocator_type& allocator = EASTL_SET_DEFAULT_ALLOCATOR);
         set(const this_type& x);
 
         template <typename Iterator>
@@ -173,13 +173,13 @@ namespace eastl
     ///     MemoryPool myPool(sizeof(WidgetSet::node_type), 100);           // Make a pool of 100 Widget nodes.
     ///     WidgetSet mySet(&myPool);                                       // create a map that uses the pool.
     ///
-    template <typename Key, typename compare = eastl::less<Key>, typename Allocator = EASTLAllocatorType>
+    template <typename Key, typename Compare = eastl::less<Key>, typename Allocator = EASTLAllocatorType>
     class multiset
-        : public rbtree<Key, Key, compare, Allocator, eastl::useSelf<Key>, false, false>
+        : public rbtree<Key, Key, Compare, Allocator, eastl::useSelf<Key>, false, false>
     {
     public:
-        typedef rbtree<Key, Key, compare, Allocator, eastl::useSelf<Key>, false, false>    base_type;
-        typedef multiset<Key, compare, Allocator>                                           this_type;
+        typedef rbtree<Key, Key, Compare, Allocator, eastl::useSelf<Key>, false, false>    base_type;
+        typedef multiset<Key, Compare, Allocator>                                           this_type;
         typedef typename base_type::size_type                                               size_type;
         typedef typename base_type::value_type                                              value_type;
         typedef typename base_type::iterator                                                iterator;
@@ -194,11 +194,11 @@ namespace eastl
         using base_type::find;
         using base_type::lower_bound;
         using base_type::upper_bound;
-        using base_type::mcompare;
+        using base_type::mCompare;
 
     public:
         multiset(const allocator_type& allocator = EASTL_MULTISET_DEFAULT_ALLOCATOR);
-        multiset(const compare& compare, const allocator_type& allocator = EASTL_MULTISET_DEFAULT_ALLOCATOR);
+        multiset(const Compare& compare, const allocator_type& allocator = EASTL_MULTISET_DEFAULT_ALLOCATOR);
         multiset(const this_type& x);
 
         template <typename Iterator>
@@ -233,42 +233,42 @@ namespace eastl
     // set
     ///////////////////////////////////////////////////////////////////////
 
-    template <typename Key, typename compare, typename Allocator>
-    inline set<Key, compare, Allocator>::set(const allocator_type& allocator)
+    template <typename Key, typename Compare, typename Allocator>
+    inline set<Key, Compare, Allocator>::set(const allocator_type& allocator)
         : base_type(allocator)
     {
         // Empty
     }
 
 
-    template <typename Key, typename compare, typename Allocator>
-    inline set<Key, compare, Allocator>::set(const compare& compare, const allocator_type& allocator)
+    template <typename Key, typename Compare, typename Allocator>
+    inline set<Key, Compare, Allocator>::set(const Compare& compare, const allocator_type& allocator)
         : base_type(compare, allocator)
     {
         // Empty
     }
 
 
-    template <typename Key, typename compare, typename Allocator>
-    inline set<Key, compare, Allocator>::set(const this_type& x)
+    template <typename Key, typename Compare, typename Allocator>
+    inline set<Key, Compare, Allocator>::set(const this_type& x)
         : base_type(x)
     {
         // Empty
     }
 
 
-    template <typename Key, typename compare, typename Allocator>
+    template <typename Key, typename Compare, typename Allocator>
     template <typename Iterator>
-    inline set<Key, compare, Allocator>::set(Iterator itBegin, Iterator itEnd)
-        : base_type(itBegin, itEnd, compare(), EASTL_SET_DEFAULT_ALLOCATOR)
+    inline set<Key, Compare, Allocator>::set(Iterator itBegin, Iterator itEnd)
+        : base_type(itBegin, itEnd, Compare(), EASTL_SET_DEFAULT_ALLOCATOR)
     {
         // Empty
     }
 
 
-    template <typename Key, typename compare, typename Allocator>
-    inline typename set<Key, compare, Allocator>::size_type
-    set<Key, compare, Allocator>::erase(const Key& k)
+    template <typename Key, typename Compare, typename Allocator>
+    inline typename set<Key, Compare, Allocator>::size_type
+    set<Key, Compare, Allocator>::erase(const Key& k)
     {
         const iterator it(find(k));
 
@@ -281,9 +281,9 @@ namespace eastl
     }
 
 
-    template <typename Key, typename compare, typename Allocator>
-    inline typename set<Key, compare, Allocator>::iterator
-    set<Key, compare, Allocator>::erase(iterator position)
+    template <typename Key, typename Compare, typename Allocator>
+    inline typename set<Key, Compare, Allocator>::iterator
+    set<Key, Compare, Allocator>::erase(iterator position)
     {
         // We need to provide this version because we override another version 
         // and C++ hiding rules would make the base version of this hidden.
@@ -291,9 +291,9 @@ namespace eastl
     }
 
 
-    template <typename Key, typename compare, typename Allocator>
-    inline typename set<Key, compare, Allocator>::iterator
-    set<Key, compare, Allocator>::erase(iterator first, iterator last)
+    template <typename Key, typename Compare, typename Allocator>
+    inline typename set<Key, Compare, Allocator>::iterator
+    set<Key, Compare, Allocator>::erase(iterator first, iterator last)
     {
         // We need to provide this version because we override another version 
         // and C++ hiding rules would make the base version of this hidden.
@@ -301,26 +301,26 @@ namespace eastl
     }
 
 
-    template <typename Key, typename compare, typename Allocator>
-    inline typename set<Key, compare, Allocator>::size_type
-    set<Key, compare, Allocator>::count(const Key& k) const
+    template <typename Key, typename Compare, typename Allocator>
+    inline typename set<Key, Compare, Allocator>::size_type
+    set<Key, Compare, Allocator>::count(const Key& k) const
     {
         const const_iterator it(find(k));
         return (it != end()) ? (size_type)1 : (size_type)0;
     }
 
 
-    template <typename Key, typename compare, typename Allocator>
-    inline typename set<Key, compare, Allocator>::reverse_iterator
-    set<Key, compare, Allocator>::erase(reverse_iterator position)
+    template <typename Key, typename Compare, typename Allocator>
+    inline typename set<Key, Compare, Allocator>::reverse_iterator
+    set<Key, Compare, Allocator>::erase(reverse_iterator position)
     {
         return reverse_iterator(erase((++position).base()));
     }
 
 
-    template <typename Key, typename compare, typename Allocator>
-    inline typename set<Key, compare, Allocator>::reverse_iterator
-    set<Key, compare, Allocator>::erase(reverse_iterator first, reverse_iterator last)
+    template <typename Key, typename Compare, typename Allocator>
+    inline typename set<Key, Compare, Allocator>::reverse_iterator
+    set<Key, Compare, Allocator>::erase(reverse_iterator first, reverse_iterator last)
     {
         // Version which erases in order from first to last.
         // difference_type i(first.base() - last.base());
@@ -333,10 +333,10 @@ namespace eastl
     }
 
 
-    template <typename Key, typename compare, typename Allocator>
-    inline eastl::pair<typename set<Key, compare, Allocator>::iterator,
-                       typename set<Key, compare, Allocator>::iterator>
-    set<Key, compare, Allocator>::equalRange(const Key& k)
+    template <typename Key, typename Compare, typename Allocator>
+    inline eastl::pair<typename set<Key, Compare, Allocator>::iterator,
+                       typename set<Key, Compare, Allocator>::iterator>
+    set<Key, Compare, Allocator>::equalRange(const Key& k)
     {
         // The resulting range will either be empty or have one element,
         // so instead of doing two tree searches (one for lower_bound and 
@@ -344,7 +344,7 @@ namespace eastl
         // result is a range of size zero or one.
         const iterator itLower(lower_bound(k));
 
-        if((itLower == end()) || mcompare(k, *itLower)) // If at the end or if (k is < itLower)...
+        if((itLower == end()) || mCompare(k, *itLower)) // If at the end or if (k is < itLower)...
             return eastl::pair<iterator, iterator>(itLower, itLower);
 
         iterator itUpper(itLower);
@@ -352,15 +352,15 @@ namespace eastl
     }
     
 
-    template <typename Key, typename compare, typename Allocator>
-    inline eastl::pair<typename set<Key, compare, Allocator>::const_iterator, 
-                       typename set<Key, compare, Allocator>::const_iterator>
-    set<Key, compare, Allocator>::equalRange(const Key& k) const
+    template <typename Key, typename Compare, typename Allocator>
+    inline eastl::pair<typename set<Key, Compare, Allocator>::const_iterator, 
+                       typename set<Key, Compare, Allocator>::const_iterator>
+    set<Key, Compare, Allocator>::equalRange(const Key& k) const
     {
         // See equalRange above for comments.
         const const_iterator itLower(lower_bound(k));
 
-        if((itLower == end()) || mcompare(k, *itLower)) // If at the end or if (k is < itLower)...
+        if((itLower == end()) || mCompare(k, *itLower)) // If at the end or if (k is < itLower)...
             return eastl::pair<const_iterator, const_iterator>(itLower, itLower);
 
         const_iterator itUpper(itLower);
@@ -375,42 +375,42 @@ namespace eastl
     // multiset
     ///////////////////////////////////////////////////////////////////////
 
-    template <typename Key, typename compare, typename Allocator>
-    inline multiset<Key, compare, Allocator>::multiset(const allocator_type& allocator)
+    template <typename Key, typename Compare, typename Allocator>
+    inline multiset<Key, Compare, Allocator>::multiset(const allocator_type& allocator)
         : base_type(allocator)
     {
         // Empty
     }
 
 
-    template <typename Key, typename compare, typename Allocator>
-    inline multiset<Key, compare, Allocator>::multiset(const compare& compare, const allocator_type& allocator)
+    template <typename Key, typename Compare, typename Allocator>
+    inline multiset<Key, Compare, Allocator>::multiset(const Compare& compare, const allocator_type& allocator)
         : base_type(compare, allocator)
     {
         // Empty
     }
 
 
-    template <typename Key, typename compare, typename Allocator>
-    inline multiset<Key, compare, Allocator>::multiset(const this_type& x)
+    template <typename Key, typename Compare, typename Allocator>
+    inline multiset<Key, Compare, Allocator>::multiset(const this_type& x)
         : base_type(x)
     {
         // Empty
     }
 
 
-    template <typename Key, typename compare, typename Allocator>
+    template <typename Key, typename Compare, typename Allocator>
     template <typename Iterator>
-    inline multiset<Key, compare, Allocator>::multiset(Iterator itBegin, Iterator itEnd)
-        : base_type(itBegin, itEnd, compare(), EASTL_MULTISET_DEFAULT_ALLOCATOR)
+    inline multiset<Key, Compare, Allocator>::multiset(Iterator itBegin, Iterator itEnd)
+        : base_type(itBegin, itEnd, Compare(), EASTL_MULTISET_DEFAULT_ALLOCATOR)
     {
         // Empty
     }
 
 
-    template <typename Key, typename compare, typename Allocator>
-    inline typename multiset<Key, compare, Allocator>::size_type
-    multiset<Key, compare, Allocator>::erase(const Key& k)
+    template <typename Key, typename Compare, typename Allocator>
+    inline typename multiset<Key, Compare, Allocator>::size_type
+    multiset<Key, Compare, Allocator>::erase(const Key& k)
     {
         const eastl::pair<iterator, iterator> range(equalRange(k));
         const size_type n = (size_type)eastl::distance(range.first, range.second);
@@ -419,9 +419,9 @@ namespace eastl
     }
 
 
-    template <typename Key, typename compare, typename Allocator>
-    inline typename multiset<Key, compare, Allocator>::iterator
-    multiset<Key, compare, Allocator>::erase(iterator position)
+    template <typename Key, typename Compare, typename Allocator>
+    inline typename multiset<Key, Compare, Allocator>::iterator
+    multiset<Key, Compare, Allocator>::erase(iterator position)
     {
         // We need to provide this version because we override another version 
         // and C++ hiding rules would make the base version of this hidden.
@@ -429,9 +429,9 @@ namespace eastl
     }
 
 
-    template <typename Key, typename compare, typename Allocator>
-    inline typename multiset<Key, compare, Allocator>::iterator
-    multiset<Key, compare, Allocator>::erase(iterator first, iterator last)
+    template <typename Key, typename Compare, typename Allocator>
+    inline typename multiset<Key, Compare, Allocator>::iterator
+    multiset<Key, Compare, Allocator>::erase(iterator first, iterator last)
     {
         // We need to provide this version because we override another version 
         // and C++ hiding rules would make the base version of this hidden.
@@ -439,26 +439,26 @@ namespace eastl
     }
 
 
-    template <typename Key, typename compare, typename Allocator>
-    inline typename multiset<Key, compare, Allocator>::size_type
-    multiset<Key, compare, Allocator>::count(const Key& k) const
+    template <typename Key, typename Compare, typename Allocator>
+    inline typename multiset<Key, Compare, Allocator>::size_type
+    multiset<Key, Compare, Allocator>::count(const Key& k) const
     {
         const eastl::pair<const_iterator, const_iterator> range(equalRange(k));
         return (size_type)eastl::distance(range.first, range.second);
     }
 
 
-    template <typename Key, typename compare, typename Allocator>
-    inline typename multiset<Key, compare, Allocator>::reverse_iterator
-    multiset<Key, compare, Allocator>::erase(reverse_iterator position)
+    template <typename Key, typename Compare, typename Allocator>
+    inline typename multiset<Key, Compare, Allocator>::reverse_iterator
+    multiset<Key, Compare, Allocator>::erase(reverse_iterator position)
     {
         return reverse_iterator(erase((++position).base()));
     }
 
 
-    template <typename Key, typename compare, typename Allocator>
-    inline typename multiset<Key, compare, Allocator>::reverse_iterator
-    multiset<Key, compare, Allocator>::erase(reverse_iterator first, reverse_iterator last)
+    template <typename Key, typename Compare, typename Allocator>
+    inline typename multiset<Key, Compare, Allocator>::reverse_iterator
+    multiset<Key, Compare, Allocator>::erase(reverse_iterator first, reverse_iterator last)
     {
         // Version which erases in order from first to last.
         // difference_type i(first.base() - last.base());
@@ -471,10 +471,10 @@ namespace eastl
     }
 
 
-    template <typename Key, typename compare, typename Allocator>
-    inline eastl::pair<typename multiset<Key, compare, Allocator>::iterator,
-                       typename multiset<Key, compare, Allocator>::iterator>
-    multiset<Key, compare, Allocator>::equalRange(const Key& k)
+    template <typename Key, typename Compare, typename Allocator>
+    inline eastl::pair<typename multiset<Key, Compare, Allocator>::iterator,
+                       typename multiset<Key, Compare, Allocator>::iterator>
+    multiset<Key, Compare, Allocator>::equalRange(const Key& k)
     {
         // There are multiple ways to implement equalRange. The implementation mentioned
         // in the C++ standard and which is used by most (all?) commercial STL implementations
@@ -491,44 +491,44 @@ namespace eastl
     }
 
 
-    template <typename Key, typename compare, typename Allocator>
-    inline eastl::pair<typename multiset<Key, compare, Allocator>::const_iterator, 
-                       typename multiset<Key, compare, Allocator>::const_iterator>
-    multiset<Key, compare, Allocator>::equalRange(const Key& k) const
+    template <typename Key, typename Compare, typename Allocator>
+    inline eastl::pair<typename multiset<Key, Compare, Allocator>::const_iterator, 
+                       typename multiset<Key, Compare, Allocator>::const_iterator>
+    multiset<Key, Compare, Allocator>::equalRange(const Key& k) const
     {
         // See comments above in the non-const version of equalRange.
         return eastl::pair<iterator, iterator>(lower_bound(k), upper_bound(k));
     }
 
 
-    template <typename Key, typename compare, typename Allocator>
-    inline eastl::pair<typename multiset<Key, compare, Allocator>::iterator,
-                       typename multiset<Key, compare, Allocator>::iterator>
-    multiset<Key, compare, Allocator>::equalRangeSmall(const Key& k)
+    template <typename Key, typename Compare, typename Allocator>
+    inline eastl::pair<typename multiset<Key, Compare, Allocator>::iterator,
+                       typename multiset<Key, Compare, Allocator>::iterator>
+    multiset<Key, Compare, Allocator>::equalRangeSmall(const Key& k)
     {
         // We provide alternative version of equalRange here which works faster
         // for the case where there are at most small number of potential duplicated keys.
         const iterator itLower(lower_bound(k));
         iterator       itUpper(itLower);
 
-        while((itUpper != end()) && !mcompare(k, itUpper.mpNode->mValue))
+        while((itUpper != end()) && !mCompare(k, itUpper.mpNode->mValue))
             ++itUpper;
 
         return eastl::pair<iterator, iterator>(itLower, itUpper);
     }
 
 
-    template <typename Key, typename compare, typename Allocator>
-    inline eastl::pair<typename multiset<Key, compare, Allocator>::const_iterator, 
-                       typename multiset<Key, compare, Allocator>::const_iterator>
-    multiset<Key, compare, Allocator>::equalRangeSmall(const Key& k) const
+    template <typename Key, typename Compare, typename Allocator>
+    inline eastl::pair<typename multiset<Key, Compare, Allocator>::const_iterator, 
+                       typename multiset<Key, Compare, Allocator>::const_iterator>
+    multiset<Key, Compare, Allocator>::equalRangeSmall(const Key& k) const
     {
         // We provide alternative version of equalRange here which works faster
         // for the case where there are at most small number of potential duplicated keys.
         const const_iterator itLower(lower_bound(k));
         const_iterator       itUpper(itLower);
 
-        while((itUpper != end()) && !mcompare(k, *itUpper))
+        while((itUpper != end()) && !mCompare(k, *itUpper))
             ++itUpper;
 
         return eastl::pair<const_iterator, const_iterator>(itLower, itUpper);
