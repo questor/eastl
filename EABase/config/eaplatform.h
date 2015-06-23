@@ -206,9 +206,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #endif
     #define EA_PLATFORM_DESKTOP 1
 
-#elif (defined(CS_UNDEFINED_STRING) || (defined(_WIN32) || defined(__WIN32__) || defined(_WIN64) || (defined(CS_UNDEFINED_STRING) && defined(_X86_)))) && !defined(CS_UNDEFINED_STRING)
-    #undef  CS_UNDEFINED_STRING
-    #define CS_UNDEFINED_STRING 1
+#elif (defined(EA_PLATFORM_WINDOWS) || (defined(_WIN32) || defined(__WIN32__) || defined(_WIN64) || (defined(__MWERKS__) && defined(_X86_)))) && !defined(_XBOX)
+    #undef  EA_PLATFORM_WINDOWS
+    #define EA_PLATFORM_WINDOWS 1
     #define EA_PLATFORM_NAME "Windows"
     #ifdef _WIN64 // VC++ defines both _WIN32 and _WIN64 when compiling for Win64.
         #define EA_PLATFORM_WIN64 1
@@ -220,7 +220,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         #define EA_SYSTEM_LITTLE_ENDIAN 1
         #define EA_PLATFORM_DESCRIPTION "Windows on X86-64"
     #elif defined(_M_IX86) || defined(_X86_)
-        #define CS_UNDEFINED_STRING 1
+        #define EA_PROCESSOR_X86 1
         #define EA_SYSTEM_LITTLE_ENDIAN 1
         #define EA_PLATFORM_DESCRIPTION "Windows on X86"
     #elif defined(_M_IA64) || defined(_IA64_)
@@ -229,7 +229,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         #define EA_PLATFORM_DESCRIPTION "Windows on IA-64"
     #elif defined(_M_ARM)
         #define EA_ABI_ARM_WINCE 1
-        #define CS_UNDEFINED_STRING 1
+//        #define CS_UNDEFINED_STRING 1           //????
         #define EA_SYSTEM_LITTLE_ENDIAN 1
         #define EA_PLATFORM_DESCRIPTION "Windows on ARM"
     #else //Possibly other Windows CE variants
@@ -351,7 +351,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // have 64 bit registers but 32 bit pointers.
 //
 #ifndef EA_PLATFORM_WORD_SIZE
-   #if defined(CS_UNDEFINED_STRING) || defined(CS_UNDEFINED_STRING) || defined(CS_UNDEFINED_STRING)
+   #if defined(EA_PLATFORM_XENON) || defined(EA_PLATFORM_PS3) || defined(EA_PLATFORM_PS4)
       #define EA_PLATFORM_WORD_SIZE 8
    #else
       #define EA_PLATFORM_WORD_SIZE EA_PLATFORM_PTR_SIZE
