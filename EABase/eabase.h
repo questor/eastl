@@ -385,6 +385,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #define EA_COMPILER_HAS_C99_FORMAT_MACROS 
 #endif
 
+// if in msvc PRId8,... is already defined surpress warning
+#if defined(EA_COMPILER_MSVC) && defined(EA_SURPRESS_FORMAT_ALREADY_DEFINED_WARNING)
+#pragma warning(push)
+#pragma warning(disable:4005)
+#endif
+
 #ifndef EA_COMPILER_HAS_C99_FORMAT_MACROS 
     // ------------------------------------------------------------------------
     // sized printf and scanf format specifiers
@@ -518,6 +524,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #endif
 #endif
 
+#if defined(EA_COMPILER_MSVC)
+#pragma warning(pop)
+#endif
 
 // ------------------------------------------------------------------------
 // bool8_t
