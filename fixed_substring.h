@@ -1,31 +1,6 @@
-/*
-Copyright (C) 2009,2010,2012 Electronic Arts, Inc.  All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
-
-1.  Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer.
-2.  Redistributions in binary form must reproduce the above copyright
-    notice, this list of conditions and the following disclaimer in the
-    documentation and/or other materials provided with the distribution.
-3.  Neither the name of Electronic Arts, Inc. ("EA") nor the names of
-    its contributors may be used to endorse or promote products derived
-    from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY ELECTRONIC ARTS AND ITS CONTRIBUTORS "AS IS" AND ANY
-EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL ELECTRONIC ARTS OR ITS CONTRIBUTORS BE LIABLE FOR ANY
-DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
-THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
-
+///////////////////////////////////////////////////////////////////////////////
+// Copyright (c) Electronic Arts Inc. All rights reserved.
+///////////////////////////////////////////////////////////////////////////////
 
 
 #ifndef EASTL_FIXED_SUBSTRING_H
@@ -34,8 +9,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <eastl/string.h>
 
-#if defined(EA_PRAGMA_ONCE_SUPPORTED)
-    #pragma once // Some compilers (e.g. VC++) benefit significantly from using this. We've measured 3-4% build speed improvements in apps as a result.
+#if defined(EASTL_PRAGMA_ONCE_SUPPORTED)
+	#pragma once // Some compilers (e.g. VC++) benefit significantly from using this. We've measured 3-4% build speed improvements in apps as a result.
 #endif
 
 
@@ -43,241 +18,245 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace eastl
 {
 
-    /// fixed_substring
-    ///
-    /// Implements a string which is a reference to a segment of characters. 
-    /// This class is efficient because it allocates no memory and copies no
-    /// memory during construction and assignment, but rather refers directly 
-    /// to the segment of chracters. A common use of this is to have a 
-    /// fixed_substring efficiently refer to a substring within another string.
-    ///
-    /// You cannot directly resize a fixed_substring (e.g. via resize, insert,
-    /// append, erase), but you can assign a different substring to it. 
-    /// You can modify the characters within a substring in place.
-    /// As of this writing, in the name of being lean and simple it is the 
-    /// user's responsibility to not call unsupported resizing functions
-    /// such as those listed above. A detailed listing of the functions which
-    /// are not supported is given below in the class declaration.
-    ///
-    /// The c_str function doesn't act as one might hope, as it simply 
-    /// returns the pointer to the beginning of the string segment and the
-    /// 0-terminator may be beyond the end of the segment. If you want to 
-    /// always be able to use c_str as expected, use the fixed string solution 
-    /// we describe below.
-    ///
-    /// Another use of fixed_substring is to provide C++ string-like functionality
-    /// with a C character array. This allows you to work on a C character array
-    /// as if it were a C++ string as opposed using the C string API. Thus you 
-    /// can do this:
-    ///
-    ///    void DoSomethingForUser(char* timeStr, size_t timeStrCapacity)
-    ///    {
-    ///        fixed_substring tmp(timeStr, timeStrCapacity);
-    ///        tmp  = "hello ";
-    ///        tmp += "world";
-    ///    }
-    ///
-    /// Note that this class constructs and assigns from const string pointers
-    /// and const string objects, yet this class does not declare its member
-    /// data as const. This is a concession in order to allow this implementation
-    /// to be simple and lean. It is the user's responsibility to make sure
-    /// that strings that should not or can not be modified are either not
-    /// used by fixed_substring or are not modified by fixed_substring.
-    ///
-    /// A more flexible alternative to fixed_substring is fixed_string.
-    /// fixed_string has none of the functional limitations that fixed_substring
-    /// has and like fixed_substring it doesn't allocate memory. However,
-    /// fixed_string makes a *copy* of the source string and uses local
-    /// memory to store that copy. Also, fixed_string objects on the stack
-    /// are going to have a limit as to their maximum size.
-    ///
-    /// Notes:
-    ///     As of this writing, the string class necessarily reallocates when 
-    ///     an insert of self is done into self. As a result, the fixed_substring 
-    ///     class doesn't support inserting self into self. 
-    ///
-    /// Example usage:
-    ///     basic_string<char>    str("hello world");
-    ///     fixed_substring<char> sub(str, 2, 5);      // sub == "llo w"
-    /// 
-    template <typename T>
-    class fixed_substring : public basic_string<T>
-    {
-    public:
-        typedef basic_string<T>                   base_type;
-        typedef fixed_substring<T>                this_type;
-        typedef typename base_type::size_type     size_type;
-        typedef typename base_type::value_type    value_type;
+	/// fixedSubstring
+	///
+	/// Implements a string which is a reference to a segment of characters. 
+	/// This class is efficient because it allocates no memory and copies no
+	/// memory during construction and assignment, but rather refers directly 
+	/// to the segment of chracters. A common use of this is to have a 
+	/// fixedSubstring efficiently refer to a substring within another string.
+	///
+	/// You cannot directly resize a fixedSubstring (e.g. via resize, insert,
+	/// append, erase), but you can assign a different substring to it. 
+	/// You can modify the characters within a substring in place.
+	/// As of this writing, in the name of being lean and simple it is the 
+	/// user's responsibility to not call unsupported resizing functions
+	/// such as those listed above. A detailed listing of the functions which
+	/// are not supported is given below in the class declaration.
+	///
+	/// The c_str function doesn't act as one might hope, as it simply 
+	/// returns the pointer to the beginning of the string segment and the
+	/// 0-terminator may be beyond the end of the segment. If you want to 
+	/// always be able to use c_str as expected, use the fixed string solution 
+	/// we describe below.
+	///
+	/// Another use of fixedSubstring is to provide C++ string-like functionality
+	/// with a C character array. This allows you to work on a C character array
+	/// as if it were a C++ string as opposed using the C string API. Thus you 
+	/// can do this:
+	///
+	///    void DoSomethingForUser(char* timeStr, size_t timeStrCapacity)
+	///    {
+	///        fixedSubstring tmp(timeStr, timeStrCapacity);
+	///        tmp  = "hello ";
+	///        tmp += "world";
+	///    }
+	///
+	/// Note that this class constructs and assigns from const string pointers
+	/// and const string objects, yet this class does not declare its member
+	/// data as const. This is a concession in order to allow this implementation
+	/// to be simple and lean. It is the user's responsibility to make sure
+	/// that strings that should not or can not be modified are either not
+	/// used by fixedSubstring or are not modified by fixedSubstring.
+	///
+	/// A more flexible alternative to fixedSubstring is fixedString.
+	/// fixedString has none of the functional limitations that fixedSubstring
+	/// has and like fixedSubstring it doesn't allocate memory. However,
+	/// fixedString makes a *copy* of the source string and uses local
+	/// memory to store that copy. Also, fixedString objects on the stack
+	/// are going to have a limit as to their maximum size.
+	///
+	/// Notes:
+	///     As of this writing, the string class necessarily reallocates when 
+	///     an insert of self is done into self. As a result, the fixedSubstring 
+	///     class doesn't support inserting self into self. 
+	///
+	/// Example usage:
+	///     basicString<char>    str("hello world");
+	///     fixedSubstring<char> sub(str, 2, 5);      // sub == "llo w"
+	/// 
+	template <typename T>
+	class fixedSubstring : public basicString<T>
+	{
+	public:
+		typedef basicString<T>                     base_type;
+		typedef fixedSubstring<T>                  this_type;
+		typedef typename base_type::size_type       size_type;
+		typedef typename base_type::value_type      value_type;
+		typedef typename base_type::iterator        iterator;
+		typedef typename base_type::const_iterator  const_iterator;
 
-        using base_type::npos;
-        using base_type::mpBegin;
-        using base_type::mpEnd;
-        using base_type::mpCapacity;
-        using base_type::resetLoseMemory;
-        using base_type::mAllocator;
+		using base_type::npos;
+		using base_type::mpBegin;
+		using base_type::mpEnd;
+		using base_type::mpCapacity;
+		using base_type::reset_lose_memory;
+		using base_type::mAllocator;
 
-    public:
-        fixed_substring()
-            : base_type()
-        {
-        }
+	public:
+		fixedSubstring()
+			: base_type()
+		{
+		}
 
-        fixed_substring(const base_type& x)
-            : base_type()
-        {
-            #if EASTL_NAME_ENABLED
-                mAllocator.setName(x.getAllocator().getName());
-            #endif
+		fixedSubstring(const base_type& x)
+			: base_type()
+		{
+			#if EASTL_NAME_ENABLED
+				mAllocator.setName(x.getAllocator().getName());
+			#endif
 
-            assign(x);
-        }
+			assign(x);
+		}
 
-        fixed_substring(const base_type& x, size_type position, size_type n = base_type::npos)
-            : base_type()
-        {
-            #if EASTL_NAME_ENABLED
-                mAllocator.setName(x.getAllocator().getName());
-            #endif
+		// We gain no benefit from having an rvalue move constructor or assignment operator,
+		// as this class is a const class.
 
-            assign(x, position, n);
-        }
+		fixedSubstring(const base_type& x, size_type position, size_type n = base_type::npos)
+			: base_type()
+		{
+			#if EASTL_NAME_ENABLED
+				mAllocator.setName(x.getAllocator().getName());
+			#endif
 
-        fixed_substring(const value_type* p, size_type n)
-            : base_type()
-        {
-            assign(p, n);
-        }
+			assign(x, position, n);
+		}
 
-        fixed_substring(const value_type* p)
-            : base_type()
-        {
-             assign(p);
-        }
+		fixedSubstring(const value_type* p, size_type n)
+			: base_type()
+		{
+			assign(p, n);
+		}
 
-        fixed_substring(const value_type* pBegin, const value_type* pEnd)
-            : base_type()
-        {
-            assign(pBegin, pEnd);
-        }
+		fixedSubstring(const value_type* p)
+			: base_type()
+		{
+			 assign(p);
+		}
 
-        ~fixed_substring()
-        {
-            // We need to reset, as otherwise the parent destructor will
-            // attempt to free our memory.
-            resetLoseMemory();
-        }
+		fixedSubstring(const value_type* pBegin, const value_type* pEnd)
+			: base_type()
+		{
+			assign(pBegin, pEnd);
+		}
 
-        this_type& operator=(const base_type& x)
-        {
-            assign(x);
-            return *this;
-        }
+		~fixedSubstring()
+		{
+			// We need to reset, as otherwise the parent destructor will
+			// attempt to free our memory.
+			reset_lose_memory();
+		}
 
-        this_type& operator=(const value_type* p)
-        {
-            assign(p);
-            return *this;
-        }
+		this_type& operator=(const base_type& x)
+		{
+			assign(x);
+			return *this;
+		}
 
-        this_type& assign(const base_type& x)
-        {
-            // By design, we need to cast away const-ness here. 
-            mpBegin    = const_cast<value_type*>(x.data());
-            mpEnd      = mpBegin + x.size();
-            mpCapacity = mpEnd;
-            return *this;
-        }
+		this_type& operator=(const value_type* p)
+		{
+			assign(p);
+			return *this;
+		}
 
-        this_type& assign(const base_type& x, size_type position, size_type n)
-        {
-            // By design, we need to cast away const-ness here. 
-            mpBegin    = const_cast<value_type*>(x.data()) + position;
-            mpEnd      = mpBegin + n;
-            mpCapacity = mpEnd;
-            return *this;
-        }
+		this_type& assign(const base_type& x)
+		{
+			// By design, we need to cast away const-ness here. 
+			mpBegin    = const_cast<value_type*>(x.data());
+			mpEnd      = mpBegin + x.size();
+			mpCapacity = mpEnd;
+			return *this;
+		}
 
-        this_type& assign(const value_type* p, size_type n)
-        {
-            // By design, we need to cast away const-ness here. 
-            mpBegin    = const_cast<value_type*>(p);
-            mpEnd      = mpBegin + n;
-            mpCapacity = mpEnd;
-            return *this;
-        }
+		this_type& assign(const base_type& x, size_type position, size_type n)
+		{
+			// By design, we need to cast away const-ness here. 
+			mpBegin    = const_cast<value_type*>(x.data()) + position;
+			mpEnd      = mpBegin + n;
+			mpCapacity = mpEnd;
+			return *this;
+		}
 
-        this_type& assign(const value_type* p)
-        {
-            // By design, we need to cast away const-ness here. 
-            mpBegin    = const_cast<value_type*>(p);
-            mpEnd      = mpBegin + CharStrlen(p);
-            mpCapacity = mpEnd;
-            return *this;
-        }
+		this_type& assign(const value_type* p, size_type n)
+		{
+			// By design, we need to cast away const-ness here. 
+			mpBegin    = const_cast<value_type*>(p);
+			mpEnd      = mpBegin + n;
+			mpCapacity = mpEnd;
+			return *this;
+		}
 
-        this_type& assign(const value_type* pBegin, const value_type* pEnd)
-        {
-            // By design, we need to cast away const-ness here. 
-            mpBegin    = const_cast<value_type*>(pBegin);
-            mpEnd      = const_cast<value_type*>(pEnd);
-            mpCapacity = mpEnd;
-            return *this;
-        }
+		this_type& assign(const value_type* p)
+		{
+			// By design, we need to cast away const-ness here. 
+			mpBegin    = const_cast<value_type*>(p);
+			mpEnd      = mpBegin + CharStrlen(p);
+			mpCapacity = mpEnd;
+			return *this;
+		}
 
-
-        // Partially supported functionality
-        //
-        // When using fixed_substring on a character sequence that is within another
-        // string, the following functions may do one of two things:
-        //     1 Attempt to reallocate
-        //     2 Write a 0 char at the end of the fixed_substring
-        //
-        // Item #1 will result in a crash, due to the attempt by the underlying 
-        // string class to free the substring memory. Item #2 will result in a 0 
-        // char being written to the character array. Item #2 may or may not be 
-        // a problem, depending on how you use fixed_substring. Thus the following
-        // functions should be used carefully.
-        //
-        // basic_string&  operator=(const basic_string& x);
-        // basic_string&  operator=(value_type c);
-        // void           resize(size_type n, value_type c);
-        // void           resize(size_type n);
-        // void           reserve(size_type = 0);
-        // void           setCapacity(size_type n);
-        // void           clear();
-        // basic_string&  operator+=(const basic_string& x);
-        // basic_string&  operator+=(const value_type* p);
-        // basic_string&  operator+=(value_type c);
-        // basic_string&  append(const basic_string& x);
-        // basic_string&  append(const basic_string& x, size_type position, size_type n);
-        // basic_string&  append(const value_type* p, size_type n);
-        // basic_string&  append(const value_type* p);
-        // basic_string&  append(size_type n);
-        // basic_string&  append(size_type n, value_type c);
-        // basic_string&  append(const value_type* pBegin, const value_type* pEnd);
-        // basic_string&  append_sprintf_va_list(const value_type* pFormat, va_list arguments);
-        // basic_string&  append_sprintf(const value_type* pFormat, ...);
-        // void           pushBack(value_type c);
-        // void           popBack();
-        // basic_string&  assign(const value_type* p, size_type n);
-        // basic_string&  assign(size_type n, value_type c);
-        // basic_string&  insert(size_type position, const basic_string& x);
-        // basic_string&  insert(size_type position, const basic_string& x, size_type beg, size_type n);
-        // basic_string&  insert(size_type position, const value_type* p, size_type n);
-        // basic_string&  insert(size_type position, const value_type* p);
-        // basic_string&  insert(size_type position, size_type n, value_type c);
-        // iterator       insert(iterator p, value_type c);
-        // void           insert(iterator p, size_type n, value_type c);
-        // void           insert(iterator p, const value_type* pBegin, const value_type* pEnd);
-        // basic_string&  erase(size_type position = 0, size_type n = npos);
-        // iterator       erase(iterator p);
-        // iterator       erase(iterator pBegin, iterator pEnd);
-        // void           swap(basic_string& x);
-        // basic_string&  sprintf_va_list(const value_type* pFormat, va_list arguments);
-        // basic_string&  sprintf(const value_type* pFormat, ...);
+		this_type& assign(const value_type* pBegin, const value_type* pEnd)
+		{
+			// By design, we need to cast away const-ness here. 
+			mpBegin    = const_cast<value_type*>(pBegin);
+			mpEnd      = const_cast<value_type*>(pEnd);
+			mpCapacity = mpEnd;
+			return *this;
+		}
 
 
-    }; // fixed_substring
+		// Partially supported functionality
+		//
+		// When using fixedSubstring on a character sequence that is within another
+		// string, the following functions may do one of two things:
+		//     1 Attempt to reallocate
+		//     2 Write a 0 char at the end of the fixedSubstring
+		//
+		// Item #1 will result in a crash, due to the attempt by the underlying 
+		// string class to free the substring memory. Item #2 will result in a 0 
+		// char being written to the character array. Item #2 may or may not be 
+		// a problem, depending on how you use fixedSubstring. Thus the following
+		// functions cannot be used safely.
+
+		#if 0 // !defined(EA_COMPILER_NO_DELETED_FUNCTIONS) We may want to enable these deletions after some investigation of possible user impact.
+			this_type&  operator=(value_type c) = delete;
+			void        resize(size_type n, value_type c) = delete;
+			void        resize(size_type n) = delete;
+			void        reserve(size_type = 0) = delete;
+			void        setCapacity(size_type n) = delete;
+			void        clear() = delete;
+			this_type&  operator+=(const base_type& x) = delete;
+			this_type&  operator+=(const value_type* p) = delete;
+			this_type&  operator+=(value_type c) = delete;
+			this_type&  append(const base_type& x) = delete;
+			this_type&  append(const base_type& x, size_type position, size_type n) = delete;
+			this_type&  append(const value_type* p, size_type n) = delete;
+			this_type&  append(const value_type* p) = delete;
+			this_type&  append(size_type n) = delete;
+			this_type&  append(size_type n, value_type c) = delete;
+			this_type&  append(const value_type* pBegin, const value_type* pEnd) = delete;
+			this_type&  appendSprintfVaList(const value_type* pFormat, va_list arguments) = delete;
+			this_type&  appendSprintf(const value_type* pFormat, ...) = delete;
+			void        pushBack(value_type c) = delete;
+			void        popBack() = delete;
+			this_type&  assign(size_type n, value_type c) = delete;
+			this_type&  insert(size_type position, const base_type& x) = delete;
+			this_type&  insert(size_type position, const base_type& x, size_type beg, size_type n) = delete;
+			this_type&  insert(size_type position, const value_type* p, size_type n) = delete;
+			this_type&  insert(size_type position, const value_type* p) = delete;
+			this_type&  insert(size_type position, size_type n, value_type c) = delete;
+			iterator    insert(const_iterator p, value_type c) = delete;
+			void        insert(const_iterator p, size_type n, value_type c) = delete;
+			void        insert(const_iterator p, const value_type* pBegin, const value_type* pEnd) = delete;
+			this_type&  erase(size_type position = 0, size_type n = npos) = delete;
+			iterator    erase(const_iterator p) = delete;
+			iterator    erase(const_iterator pBegin, const_iterator pEnd) = delete;
+			void        swap(base_type& x) = delete;
+			this_type&  sprintfVaList(const value_type* pFormat, va_list arguments) = delete;
+			this_type&  sprintf(const value_type* pFormat, ...) = delete;
+		#endif
+
+	}; // fixedSubstring
 
 
 } // namespace eastl

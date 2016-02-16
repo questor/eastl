@@ -46,7 +46,7 @@ public:
     typedef std::vector<path>::const_iterator const_iterator;
 
     resolver() {
-        m_paths.push_back(path::getcwd());
+        m_paths.pushBack(path::getcwd());
     }
 
     size_t size() const { return m_paths.size(); }
@@ -60,7 +60,7 @@ public:
     void erase(iterator it) { m_paths.erase(it); }
 
     void prepend(const path &path) { m_paths.insert(m_paths.begin(), path); }
-    void append(const path &path) { m_paths.push_back(path); }
+    void append(const path &path) { m_paths.pushBack(path); }
 
 
     path resolve(const path &value) const {

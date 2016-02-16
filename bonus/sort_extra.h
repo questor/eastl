@@ -51,7 +51,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <eastl/heap.h>
 #include <eastl/allocator.h>
 
-#if defined(EA_PRAGMA_ONCE_SUPPORTED)
+#if defined(EASTL_PRAGMA_ONCE_SUPPORTED)
     #pragma once // Some compilers (e.g. VC++) benefit significantly from using this. We've measured 3-4% build speed improvements in apps as a result.
 #endif
 
@@ -95,19 +95,19 @@ namespace eastl
     ///     Element elementArray[100];
     ///     Element buffer[100];
     ///
-    ///     radixSort<Element*, extract_radix_key<Element> >(elementArray, elementArray + 100, buffer);
+    ///     radixSort<Element*, extractRadixKey<Element> >(elementArray, elementArray + 100, buffer);
     ///
     /// To consider: A static linked-list implementation may be faster than the version here.
 
     namespace Internal
     {
-        /// extract_radix_key
+        /// extractRadixKey
         ///
         /// Default radix sort integer value reader. It expects the sorted elements 
         /// to have an integer member of type radix_type and of name "mKey". 
         ///
         template <typename Node>
-        struct extract_radix_key
+        struct extractRadixKey
         {
             typedef typename Node::radix_type radix_type;
 
@@ -119,8 +119,8 @@ namespace eastl
         template <typename RandomAccessIterator, typename ExtractKey>
         void radixSort_impl(RandomAccessIterator first, RandomAccessIterator last, RandomAccessIterator buffer, ExtractKey extractKey, uint8_t)
         {
-            uint32_t EA_PREFIX_ALIGN(EASTL_PLATFORM_PREFERRED_ALIGNMENT) bucketSize[256];       // The alignment of this variable isn't required; it merely 
-            uint32_t EA_PREFIX_ALIGN(EASTL_PLATFORM_PREFERRED_ALIGNMENT) bucketPosition[256];   // allows the code below to be faster on some platforms.
+            uint32_t EASTL_PREFIX_ALIGN(EASTL_PLATFORM_PREFERRED_ALIGNMENT) bucketSize[256];       // The alignment of this variable isn't required; it merely 
+            uint32_t EASTL_PREFIX_ALIGN(EASTL_PLATFORM_PREFERRED_ALIGNMENT) bucketPosition[256];   // allows the code below to be faster on some platforms.
             RandomAccessIterator temp;
             uint32_t i;
 
@@ -143,8 +143,8 @@ namespace eastl
         template <typename RandomAccessIterator, typename ExtractKey>
         void radixSort_impl(RandomAccessIterator first, RandomAccessIterator last, RandomAccessIterator buffer, ExtractKey extractKey, uint16_t)
         {
-            uint32_t EA_PREFIX_ALIGN(EASTL_PLATFORM_PREFERRED_ALIGNMENT) bucketSize[256];       // The alignment of this variable isn't required; it merely 
-            uint32_t EA_PREFIX_ALIGN(EASTL_PLATFORM_PREFERRED_ALIGNMENT) bucketPosition[256];   // allows the code below to be faster on some platforms.
+            uint32_t EASTL_PREFIX_ALIGN(EASTL_PLATFORM_PREFERRED_ALIGNMENT) bucketSize[256];       // The alignment of this variable isn't required; it merely 
+            uint32_t EASTL_PREFIX_ALIGN(EASTL_PLATFORM_PREFERRED_ALIGNMENT) bucketPosition[256];   // allows the code below to be faster on some platforms.
             RandomAccessIterator temp;
             uint32_t i;
 
@@ -185,8 +185,8 @@ namespace eastl
         template <typename RandomAccessIterator, typename ExtractKey, typename IntegerType>
         void radixSort_impl(RandomAccessIterator first, RandomAccessIterator last, RandomAccessIterator buffer, ExtractKey extractKey, IntegerType)
         {
-            uint32_t EA_PREFIX_ALIGN(EASTL_PLATFORM_PREFERRED_ALIGNMENT) bucketSize[256];       // The alignment of this variable isn't required; it merely 
-            uint32_t EA_PREFIX_ALIGN(EASTL_PLATFORM_PREFERRED_ALIGNMENT) bucketPosition[256];   // allows the code below to be faster on some platforms.
+            uint32_t EASTL_PREFIX_ALIGN(EASTL_PLATFORM_PREFERRED_ALIGNMENT) bucketSize[256];       // The alignment of this variable isn't required; it merely 
+            uint32_t EASTL_PREFIX_ALIGN(EASTL_PLATFORM_PREFERRED_ALIGNMENT) bucketPosition[256];   // allows the code below to be faster on some platforms.
             RandomAccessIterator temp;
             uint32_t i;
 
@@ -255,7 +255,7 @@ namespace eastl
                 if(compare(*iNext, *iCurrent))
                 {
                     EASTL_VALIDATE_COMPARE(!compare(*iCurrent, *iNext)); // Validate that the compare function is sane.
-                    eastl::iter_swap(iCurrent, iNext);
+                    eastl::iterSwap(iCurrent, iNext);
                     bSwapped = true;
                 }
             }
@@ -295,7 +295,7 @@ namespace eastl
                     if(compare(*iNext, *iCurrent))
                     {
                         EASTL_VALIDATE_COMPARE(!compare(*iCurrent, *iNext)); // Validate that the compare function is sane.
-                        eastl::iter_swap(iCurrent, iNext);
+                        eastl::iterSwap(iCurrent, iNext);
                     }
                 }
                 last = iCurrent;
@@ -321,7 +321,7 @@ namespace eastl
                         {
                             EASTL_VALIDATE_COMPARE(!compare(*iCurrent, *iNext)); // Validate that the compare function is sane.
                             iLastModified = iCurrent;
-                            eastl::iter_swap(iCurrent, iNext);
+                            eastl::iterSwap(iCurrent, iNext);
                         }
                     }
 
@@ -376,7 +376,7 @@ namespace eastl
                 }
 
                 if(first != iMin)
-                    eastl::iter_swap(first, iMin);
+                    eastl::iterSwap(first, iMin);
             }
         }
     } // selectionSort
@@ -419,7 +419,7 @@ namespace eastl
                     {
                         EASTL_VALIDATE_COMPARE(!compare(*iCurrent, *iNext)); // Validate that the compare function is sane.
                         iLastModified = iCurrent;
-                        eastl::iter_swap(iCurrent, iNext);
+                        eastl::iterSwap(iCurrent, iNext);
                     }
                 }
 
@@ -436,7 +436,7 @@ namespace eastl
                         {
                             EASTL_VALIDATE_COMPARE(!compare(*iNext, *iCurrent)); // Validate that the compare function is sane.
                             iLastModified = iCurrent;
-                            eastl::iter_swap(iNext, iCurrent);
+                            eastl::iterSwap(iNext, iCurrent);
                         }
                     }
                     first = iLastModified;

@@ -456,7 +456,7 @@ namespace tracking_allocator
         {
             return &r;
         }
-        size_type max_size() const throw()
+        size_type maxSize() const throw()
         {
             return std::numeric_limits<size_t>::max()/sizeof(T);
         }

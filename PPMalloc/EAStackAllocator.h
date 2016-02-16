@@ -407,7 +407,7 @@ namespace EA
             // optimized build.
 
             // We do this the following way of checking because it deals with address space overflow as well as current block overflow.
-            if(EA_UNLIKELY(bBoundsCheck && (((intptr_t)mpCurrentBlockEnd - ((intptr_t)mpCurrentObjectBegin + (intptr_t)nSize)) < 0)))
+            if(EASTL_UNLIKELY(bBoundsCheck && (((intptr_t)mpCurrentBlockEnd - ((intptr_t)mpCurrentObjectBegin + (intptr_t)nSize)) < 0)))
             {
                 if(!AllocateNewBlock(nSize))
                     return NULL;
@@ -578,7 +578,7 @@ namespace EA
         inline bool StackAllocator::ExtendCurrentObject(size_t nSize, bool bBoundsCheck)
         {
             // In an optimized build, the bBoundsCheck test is optimized away as long as it is passed as a constant.
-            if(EA_UNLIKELY(bBoundsCheck && ((mpCurrentObjectEnd + nSize) > mpCurrentBlockEnd)))
+            if(EASTL_UNLIKELY(bBoundsCheck && ((mpCurrentObjectEnd + nSize) > mpCurrentBlockEnd)))
             {
                 if(!AllocateNewBlock(nSize))
                     return false;
@@ -592,7 +592,7 @@ namespace EA
         inline bool StackAllocator::appendToCurrentObject(const void* pData, size_t nSize, bool bBoundsCheck)
         {
             // In an optimized build, the bBoundsCheck test is optimized away as long as it is passed as a constant.
-            if(EA_UNLIKELY(bBoundsCheck && ((mpCurrentObjectEnd + nSize) > mpCurrentBlockEnd)))
+            if(EASTL_UNLIKELY(bBoundsCheck && ((mpCurrentObjectEnd + nSize) > mpCurrentBlockEnd)))
             {
                 if(!AllocateNewBlock(nSize))
                     return false;
@@ -608,7 +608,7 @@ namespace EA
         inline bool StackAllocator::appendToCurrentObjectMemcpy(const T& t, bool bBoundsCheck)
         {
             // In an optimized build, the bBoundsCheck test is optimized away as long as it is passed as a constant.
-            if(EA_UNLIKELY(bBoundsCheck && ((mpCurrentObjectEnd + sizeof(T)) > mpCurrentBlockEnd)))
+            if(EASTL_UNLIKELY(bBoundsCheck && ((mpCurrentObjectEnd + sizeof(T)) > mpCurrentBlockEnd)))
             {
                 if(!AllocateNewBlock(sizeof(T)))
                     return false;
@@ -624,7 +624,7 @@ namespace EA
         inline bool StackAllocator::appendToCurrentObject(const T& t, bool bBoundsCheck)
         {
             // In an optimized build, the bBoundsCheck test is optimized away as long as it is passed as a constant.
-            if(EA_UNLIKELY(bBoundsCheck && ((mpCurrentObjectEnd + sizeof(T)) > mpCurrentBlockEnd)))
+            if(EASTL_UNLIKELY(bBoundsCheck && ((mpCurrentObjectEnd + sizeof(T)) > mpCurrentBlockEnd)))
             {
                 if(!AllocateNewBlock(sizeof(T)))
                     return false;

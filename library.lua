@@ -1,4 +1,3 @@
-
 require "tundra.syntax.glob"
 require "tundra.syntax.files"
 local native = require "tundra.native"

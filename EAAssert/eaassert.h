@@ -260,8 +260,8 @@ namespace Detail
             #define EA_ASSERT_PREFIX_DEPRECATED
             #define EA_ASSERT_POSTFIX_DEPRECATED
         #else
-            #define EA_ASSERT_PREFIX_DEPRECATED EA_PREFIX_DEPRECATED
-            #define EA_ASSERT_POSTFIX_DEPRECATED EA_POSTFIX_DEPRECATED
+            #define EA_ASSERT_PREFIX_DEPRECATED EASTL_PREFIX_DEPRECATED
+            #define EA_ASSERT_POSTFIX_DEPRECATED EASTL_POSTFIX_DEPRECATED
         #endif
 
         struct Forwarder

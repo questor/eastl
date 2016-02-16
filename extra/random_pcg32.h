@@ -202,7 +202,7 @@ struct pcg32 {
      */
     template <typename Iterator> void shuffle(Iterator begin, Iterator end) {
         for (Iterator it = end - 1; it > begin; --it)
-            std::iter_swap(it, begin + nextUInt((uint32_t) (it - begin + 1)));
+            std::iterSwap(it, begin + nextUInt((uint32_t) (it - begin + 1)));
     }
 
     /// Compute the distance between two PCG32 pseudorandom number generators

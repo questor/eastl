@@ -186,7 +186,7 @@ public:
         if (empty())
             return "";
         const std::string &last = m_path[m_path.size()-1];
-        size_t pos = last.find_last_of(".");
+        size_t pos = last.findLastOf(".");
         if (pos == std::string::npos)
             return "";
         return last.substr(pos+1);
@@ -198,11 +198,11 @@ public:
 
         if (m_path.empty()) {
             if (!m_absolute)
-                result.m_path.push_back("..");
+                result.m_path.pushBack("..");
         } else {
             size_t until = m_path.size() - 1;
             for (size_t i = 0; i < until; ++i)
-                result.m_path.push_back(m_path[i]);
+                result.m_path.pushBack(m_path[i]);
         }
         return result;
     }
@@ -216,7 +216,7 @@ public:
         path result(*this);
 
         for (size_t i=0; i<other.m_path.size(); ++i)
-            result.m_path.push_back(other.m_path[i]);
+            result.m_path.pushBack(other.m_path[i]);
 
         return result;
     }
@@ -317,16 +317,16 @@ public:
 
 protected:
     static std::vector<std::string> tokenize(const std::string &string, const std::string &delim) {
-        std::string::size_type lastPos = 0, pos = string.find_first_of(delim, lastPos);
+        std::string::size_type lastPos = 0, pos = string.findFirstOf(delim, lastPos);
         std::vector<std::string> tokens;
 
         while (lastPos != std::string::npos) {
             if (pos != lastPos)
-                tokens.push_back(string.substr(lastPos, pos - lastPos));
+                tokens.pushBack(string.substr(lastPos, pos - lastPos));
             lastPos = pos;
             if (lastPos == std::string::npos || lastPos + 1 == string.length())
                 break;
-            pos = string.find_first_of(delim, ++lastPos);
+            pos = string.findFirstOf(delim, ++lastPos);
         }
 
         return tokens;
