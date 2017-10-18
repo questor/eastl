@@ -8,6 +8,7 @@
 #define EASTL_EXTRA_FLOATUTILS_H_
 
 #include "eastl/algorithm.h"  //min/max
+#include "eastl/EAAssert/eaassert.h"
 
 namespace eastl {
 
@@ -51,7 +52,7 @@ inline bool floatCombinedEqual(const float x, const float y, const float EPSILON
 inline bool almostEqual2sComplement(float A, float B, int maxUlps) {
     // Make sure maxUlps is non-negative and small enough that the
     // default NAN won't compare as equal to anything.
-    ASSERT(maxUlps > 0 && maxUlps < 4 * 1024 * 1024);
+    EA_ASSERT(maxUlps > 0 && maxUlps < 4 * 1024 * 1024);
     int aInt = *(int*)&A;
     // Make aInt lexicographically ordered as a twos-complement int
     if (aInt < 0)
