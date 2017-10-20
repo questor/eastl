@@ -13,7 +13,7 @@
 
 
 #include <eastl/map.h>
-#include <eastl/fixedSet.h> // Included because fixed_rbtree_base resides here.
+#include <eastl/fixed_set.h> // Included because fixed_rbtree_base resides here.
 
 #if defined(EASTL_PRAGMA_ONCE_SUPPORTED)
 	#pragma once // Some compilers (e.g. VC++) benefit significantly from using this. We've measured 3-4% build speed improvements in apps as a result.

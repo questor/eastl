@@ -55,15 +55,10 @@
 	#include <exception>
 #endif
 
-#ifdef _MSC_VER
-	#pragma warning(push, 0)
+EA_DISABLE_ALL_VC_WARNINGS()
 	#include <new>
 	#include <stddef.h>
-	#pragma warning(pop)
-#else
-	#include <new>
-	#include <stddef.h>
-#endif
+EA_RESTORE_ALL_VC_WARNINGS()
 
 #ifdef _MSC_VER
 	#pragma warning(push)
@@ -150,7 +145,7 @@ namespace eastl
 	};
 
 
-	inline ref_count_sp::ref_count_sp(int refCount, int weakRefCount) EASTL_NOEXCEPT
+	inline ref_count_sp::ref_count_sp(int32_t refCount, int32_t weakRefCount) EASTL_NOEXCEPT
 		: mRefCount(refCount), mWeakRefCount(weakRefCount) {}
 
 	inline int32_t ref_count_sp::use_count() const EASTL_NOEXCEPT
@@ -793,21 +788,8 @@ namespace eastl
 			{
 				// Note that this will use the default EASTL allocator
 				this_type(eastl::move(uniquePtr)).swap(*this);
+				return *this;
 			}
-
-
-			// To consider: Enable this support for auto_ptr, though it's deprecated by the C++11 Standard.
-			// template <typename U>
-			// inline typename eastl::enable_if<!eastl::is_array<U>::value && eastl::is_convertible<U*, element_type*>::value, this_type&>::type
-			// #if EASTL_MOVE_SEMANTICS_ENABLED
-			//     operator=(auto_ptr<U>&& autoPtr)
-			// #else
-			//     operator=(auto_ptr<U>   autoPtr)
-			// #endif
-			// {
-			//     shared_ptr(eastl::move(autoPtr)).swap(*this);
-			//     return *this;
-			// }
 		#endif
 
 

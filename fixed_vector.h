@@ -85,10 +85,10 @@ namespace eastl
 
 		enum { kMaxSize = nodeCount };
 
-		using base_type::mAllocator;
+		using base_type::getAllocator;
 		using base_type::mpBegin;
 		using base_type::mpEnd;
-		using base_type::mpCapacity;
+		using base_type::internalCapacityPtr;
 		using base_type::resize;
 		using base_type::clear;
 		using base_type::size;
@@ -179,11 +179,11 @@ namespace eastl
 		: base_type(fixedAllocator_type(mBuffer.buffer))
 	{
 		#if EASTL_NAME_ENABLED
-			mAllocator.setName(EASTL_FIXED_VECTOR_DEFAULT_NAME);
+			getAllocator().setName(EASTL_FIXED_VECTOR_DEFAULT_NAME);
 		#endif
 
 		mpBegin = mpEnd = (value_type*)&mBuffer.buffer[0];
-		mpCapacity = mpBegin + nodeCount;
+		internalCapacityPtr() = mpBegin + nodeCount;
 	}
 
 	template <typename T, size_t nodeCount, bool bEnableOverflow, typename OverflowAllocator>
@@ -191,11 +191,11 @@ namespace eastl
 		: base_type(fixedAllocator_type(mBuffer.buffer, overflowAllocator))
 	{
 		#if EASTL_NAME_ENABLED
-			mAllocator.setName(EASTL_FIXED_VECTOR_DEFAULT_NAME);
+			getAllocator().setName(EASTL_FIXED_VECTOR_DEFAULT_NAME);
 		#endif
 
 		mpBegin = mpEnd = (value_type*)&mBuffer.buffer[0];
-		mpCapacity = mpBegin + nodeCount;
+		internalCapacityPtr() = mpBegin + nodeCount;
 	}
 
 	template <typename T, size_t nodeCount, bool bEnableOverflow, typename OverflowAllocator>
@@ -203,11 +203,11 @@ namespace eastl
 		: base_type(fixedAllocator_type(mBuffer.buffer))
 	{
 		#if EASTL_NAME_ENABLED
-			mAllocator.setName(EASTL_FIXED_VECTOR_DEFAULT_NAME);
+			getAllocator().setName(EASTL_FIXED_VECTOR_DEFAULT_NAME);
 		#endif
 
 		mpBegin = mpEnd = (value_type*)&mBuffer.buffer[0];
-		mpCapacity = mpBegin + nodeCount;
+		internalCapacityPtr() = mpBegin + nodeCount;
 		resize(n);
 	}
 
@@ -217,11 +217,11 @@ namespace eastl
 		: base_type(fixedAllocator_type(mBuffer.buffer))
 	{
 		#if EASTL_NAME_ENABLED
-			mAllocator.setName(EASTL_FIXED_VECTOR_DEFAULT_NAME);
+			getAllocator().setName(EASTL_FIXED_VECTOR_DEFAULT_NAME);
 		#endif
 
 		mpBegin = mpEnd = (value_type*)&mBuffer.buffer[0];
-		mpCapacity = mpBegin + nodeCount;
+		internalCapacityPtr() = mpBegin + nodeCount;
 		resize(n, value);
 	}
 
@@ -230,14 +230,14 @@ namespace eastl
 	inline fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::fixedVector(const this_type& x)
 		: base_type(fixedAllocator_type(mBuffer.buffer))
 	{
-		mAllocator.copy_overflow_allocator(x.mAllocator);
+		getAllocator().copy_overflow_allocator(x.getAllocator());
 
 		#if EASTL_NAME_ENABLED
-			mAllocator.setName(x.mAllocator.getName());
+			getAllocator().setName(x.getAllocator().getName());
 		#endif
 
 		mpBegin = mpEnd = (value_type*)&mBuffer.buffer[0];
-		mpCapacity = mpBegin + nodeCount;
+		internalCapacityPtr() = mpBegin + nodeCount;
 		base_type::template DoAssign<const_iterator, false>(x.begin(), x.end(), false_type());
 	}
 
@@ -262,15 +262,15 @@ namespace eastl
 
 			// The following is currently identical to the fixedVector(const this_type& x) code above. If it stays that
 			// way then we may want to make a shared implementation.
-			mAllocator.copy_overflow_allocator(x.mAllocator);
+			getAllocator().copy_overflow_allocator(x.getAllocator());
 
 			#if EASTL_NAME_ENABLED
-				mAllocator.setName(x.mAllocator.getName());
+				getAllocator().setName(x.getAllocator().getName());
 			#endif
 
 			mpBegin = mpEnd = (value_type*)&mBuffer.buffer[0];
-			mpCapacity = mpBegin + nodeCount;
-			base_type::template DoAssign<iterator, true>(x.begin(), x.end(), false_type());
+			internalCapacityPtr() = mpBegin + nodeCount;
+			base_type::template DoAssign<move_iterator<iterator>, true>(make_move_iterator(x.begin()), make_move_iterator(x.end()), false_type());
 		}
 
 
@@ -282,14 +282,14 @@ namespace eastl
 
 			// The following is currently identical to the fixedVector(const this_type& x) code above. If it stays that
 			// way then we may want to make a shared implementation.
-			mAllocator.copy_overflow_allocator(x.mAllocator);
+			getAllocator().copy_overflow_allocator(x.getAllocator());
 
 			#if EASTL_NAME_ENABLED
-				mAllocator.setName(x.mAllocator.getName());
+				getAllocator().setName(x.getAllocator().getName());
 			#endif
 
 			mpBegin = mpEnd = (value_type*)&mBuffer.buffer[0];
-			mpCapacity = mpBegin + nodeCount;
+			internalCapacityPtr() = mpBegin + nodeCount;
 			base_type::template DoAssign<iterator, true>(x.begin(), x.end(), false_type());
 		}
 	#endif
@@ -303,7 +303,7 @@ namespace eastl
 		typedef typename eastl::iterator_traits<InputIterator>::iterator_category IC;
 
 		mpBegin = mpEnd = (value_type*)&mBuffer.buffer[0];
-		mpCapacity = mpBegin + nodeCount;
+		internalCapacityPtr() = mpBegin + nodeCount;
 		base_type::template DoAssignFromIterator<InputIterator, false>(ilist.begin(), ilist.end(), IC());
 	}
 
@@ -314,11 +314,11 @@ namespace eastl
 		: base_type(fixedAllocator_type(mBuffer.buffer))
 	{
 		#if EASTL_NAME_ENABLED
-			mAllocator.setName(EASTL_FIXED_VECTOR_DEFAULT_NAME);
+			getAllocator().setName(EASTL_FIXED_VECTOR_DEFAULT_NAME);
 		#endif
 
 		mpBegin = mpEnd = (value_type*)&mBuffer.buffer[0];
-		mpCapacity = mpBegin + nodeCount;
+		internalCapacityPtr() = mpBegin + nodeCount;
 		base_type::template DoAssign<InputIterator, false>(first, last, is_integral<InputIterator>());
 	}
 
@@ -332,7 +332,7 @@ namespace eastl
 			clear();
 
 			#if EASTL_ALLOCATOR_COPY_ENABLED
-				mAllocator = x.mAllocator; // The primary effect of this is to copy the overflow allocator.
+				getAllocator() = x.getAllocator(); // The primary effect of this is to copy the overflow allocator.
 			#endif
 
 			base_type::template DoAssign<const_iterator, false>(x.begin(), x.end(), false_type()); // Shorter route.
@@ -359,12 +359,22 @@ namespace eastl
 		inline typename fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::this_type& 
 		fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::operator=(this_type&& x)
 		{
-			// Since we are a fixedVector, we can't swap pointers. We can possibly so something like fixedSwap or
+			// Since we are a fixedVector, we can't swap pointers. We can possibly do something like fixedSwap or
 			// we can just do an assignment from x. If we want to do the former then we need to have some complicated
 			// code to deal with overflow or no overflow, and whether the memory is in the fixed-size buffer or in 
 			// the overflow allocator. 90% of the time the memory should be in the fixed buffer, in which case
 			// a simple assignment is no worse than the fancy pathway.
-			return operator=(x);
+			if (this != &x)
+			{
+				clear();
+
+				#if EASTL_ALLOCATOR_COPY_ENABLED
+					getAllocator() = x.getAllocator(); // The primary effect of this is to copy the overflow allocator.
+				#endif
+
+				base_type::template DoAssign<move_iterator<iterator>, true>(make_move_iterator(x.begin()), make_move_iterator(x.end()), false_type()); // Shorter route.
+			}
+			return *this;
 		}
 	#endif
 
@@ -376,7 +386,7 @@ namespace eastl
 		{                                                                                                        // then we can do a fast pointer swap instead of content swap.
 			eastl::swap(mpBegin,    x.mpBegin);
 			eastl::swap(mpEnd,      x.mpEnd);
-			eastl::swap(mpCapacity, x.mpCapacity);
+			eastl::swap(internalCapacityPtr(), x.internalCapacityPtr());
 		}
 		else
 		{
@@ -390,7 +400,7 @@ namespace eastl
 	inline void fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::setCapacity(size_type n)
 	{
 		const size_type nPrevSize     = (size_type)(mpEnd - mpBegin);
-		const size_type nPrevCapacity = (size_type)(mpCapacity - mpBegin);
+		const size_type nPrevCapacity = (size_type)(internalCapacityPtr() - mpBegin);
 
 		if(n == npos)       // If the user means to set the capacity so that it equals the size (i.e. free excess capacity)...
 			n = nPrevSize;
@@ -404,11 +414,11 @@ namespace eastl
 				eastl::uninitializedMove_ptr(mpBegin, pCopyEnd, pNewData); // Move [mpBegin, pCopyEnd) to p.
 				eastl::destruct(mpBegin, mpEnd);
 				if((uintptr_t)mpBegin != (uintptr_t)mBuffer.buffer)
-					DoFree(mpBegin, (size_type)(mpCapacity - mpBegin));
+					DoFree(mpBegin, (size_type)(internalCapacityPtr() - mpBegin));
 
 				mpEnd      = pNewData + (pCopyEnd - mpBegin);
 				mpBegin    = pNewData;
-				mpCapacity = mpBegin + n;
+				internalCapacityPtr() = mpBegin + n;
 			} // Else the new capacity would be within our fixed buffer.
 			else if(n < nPrevSize) // If the newly requested capacity is less than our size, we do what vector::setCapacity does and resize, even though we actually aren't reducing the capacity.
 				resize(n);
@@ -422,9 +432,9 @@ namespace eastl
 		base_type::clear();
 		if (freeOverflow && mpBegin != (value_type*)&mBuffer.buffer[0])
 		{
-			EASTLFree(mAllocator, mpBegin, (mpCapacity - mpBegin) * sizeof(T));
+			EASTLFree(getAllocator(), mpBegin, (internalCapacityPtr() - mpBegin) * sizeof(T));
 			mpBegin = mpEnd = (value_type*)&mBuffer.buffer[0];
-			mpCapacity = mpBegin + nodeCount;
+			internalCapacityPtr() = mpBegin + nodeCount;
 		}
 	}
 
@@ -443,7 +453,7 @@ namespace eastl
 	inline void fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::reset_lose_memory()
 	{
 		mpBegin = mpEnd = (value_type*)&mBuffer.buffer[0];
-		mpCapacity = mpBegin + nodeCount;
+		internalCapacityPtr() = mpBegin + nodeCount;
 	}
 
 
@@ -499,7 +509,7 @@ namespace eastl
 	template <typename T, size_t nodeCount, bool bEnableOverflow, typename OverflowAllocator>
 	inline void* fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::DoPushBackUninitialized(false_type)
 	{
-		EASTL_ASSERT(mpEnd < mpCapacity);
+		EASTL_ASSERT(mpEnd < internalCapacityPtr());
 
 		return mpEnd++;
 	}
@@ -524,7 +534,7 @@ namespace eastl
 	template <typename T, size_t nodeCount, bool bEnableOverflow, typename OverflowAllocator>
 	inline void fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::DoPushBack(false_type, const value_type& value)
 	{
-		EASTL_ASSERT(mpEnd < mpCapacity);
+		EASTL_ASSERT(mpEnd < internalCapacityPtr());
 
 		::new((void*)mpEnd++) value_type(value);
 	}
@@ -549,7 +559,7 @@ namespace eastl
 	template <typename T, size_t nodeCount, bool bEnableOverflow, typename OverflowAllocator>
 	inline typename fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::reference fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::DoPushBack(false_type)
 	{
-		EASTL_ASSERT(mpEnd < mpCapacity);
+		EASTL_ASSERT(mpEnd < internalCapacityPtr());
 
 		::new((void*)mpEnd++) value_type;    // Note that this isn't value_type() as that syntax doesn't work on all compilers for POD types.
 
@@ -577,7 +587,7 @@ namespace eastl
 		template <typename T, size_t nodeCount, bool bEnableOverflow, typename OverflowAllocator>
 		inline void fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::DoPushBackMove(false_type, value_type&& value)
 		{
-			EASTL_ASSERT(mpEnd < mpCapacity);
+			EASTL_ASSERT(mpEnd < internalCapacityPtr());
 
 			::new((void*)mpEnd++) value_type(eastl::move(value)); // This will call the value_type(value_type&&) constructor, and possibly swap value with *mpEnd.
 		}
@@ -588,7 +598,7 @@ namespace eastl
 	inline const typename fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::overflow_allocator_type& 
 	fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::getOverflowAllocator() const EASTL_NOEXCEPT
 	{
-		return mAllocator.getOverflowAllocator();
+		return getAllocator().getOverflowAllocator();
 	}
 
 
@@ -596,7 +606,7 @@ namespace eastl
 	inline typename fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::overflow_allocator_type& 
 	fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::getOverflowAllocator() EASTL_NOEXCEPT
 	{
-		return mAllocator.getOverflowAllocator();
+		return getAllocator().getOverflowAllocator();
 	}
 
 
@@ -604,7 +614,7 @@ namespace eastl
 	inline void 
 	fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::setOverflowAllocator(const overflow_allocator_type& allocator)
 	{
-		mAllocator.setOverflowAllocator(allocator);
+		getAllocator().setOverflowAllocator(allocator);
 	}
 
 

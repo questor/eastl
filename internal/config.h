@@ -105,8 +105,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef EASTL_VERSION
-	#define EASTL_VERSION   "3.00.00"
-	#define EASTL_VERSION_N  30000
+	#define EASTL_VERSION   "3.05.08"
+	#define EASTL_VERSION_N  30508
 #endif
 
 
@@ -532,6 +532,29 @@ namespace eastl
 
 
 ///////////////////////////////////////////////////////////////////////////////
+// EASTL_ASSERT_MSG
+//
+// Example usage:
+//    EASTL_ASSERT_MSG(false, "detected error condition!");
+//
+///////////////////////////////////////////////////////////////////////////////
+#ifndef EASTL_ASSERT_MSG
+	#if EASTL_ASSERT_ENABLED
+		#define EASTL_ASSERT_MSG(expression, message) \
+			EA_DISABLE_VC_WARNING(4127) \
+			do { \
+				EA_ANALYSIS_ASSUME(expression); \
+				(void)((expression) || (eastl::AssertionFailure(message), 0)); \
+			} while (0) \
+			EA_RESTORE_VC_WARNING()
+	#else
+		#define EASTL_ASSERT_MSG(expression, message)
+	#endif
+#endif
+
+
+
+///////////////////////////////////////////////////////////////////////////////
 // EASTL_FAIL_MSG
 //
 // Failure macro. Can be overridden by user with a different value.
@@ -585,42 +608,61 @@ namespace eastl
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// EASTL_DEBUG_BREAK
+// EASTL_DEBUG_BREAK / EASTL_DEBUG_BREAK_OVERRIDE
 //
 // This function causes an app to immediately stop under the debugger.
 // It is implemented as a macro in order to allow stopping at the site 
 // of the call.
 //
+// EASTL_DEBUG_BREAK_OVERRIDE allows one to define EASTL_DEBUG_BREAK directly.
+// This is useful in cases where you desire to disable EASTL_DEBUG_BREAK
+// but do not wish to (or cannot) define a custom void function() to replace
+// EASTL_DEBUG_BREAK callsites.
 //
 // Example usage:
 //     EASTL_DEBUG_BREAK();
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef EASTL_DEBUG_BREAK
-	#if defined(_MSC_VER) && (_MSC_VER >= 1300)
-		#define EASTL_DEBUG_BREAK() __debugbreak()    // This is a compiler intrinsic which will map to appropriate inlined asm for the platform.
-	#elif (defined(EA_PROCESSOR_ARM) && !defined(EA_PROCESSOR_ARM64)) && defined(__APPLE__)
-		#define EASTL_DEBUG_BREAK() asm("trap")
-	#elif defined(EA_PROCESSOR_ARM64) && defined(__APPLE__)
-		#include <signal.h>
-		#include <unistd.h>
-		#define EASTL_DEBUG_BREAK() kill( getpid(), SIGINT )
-	#elif defined(EA_PROCESSOR_ARM) && defined(__GNUC__)
-		#define EASTL_DEBUG_BREAK() asm("BKPT 10")     // The 10 is arbitrary. It's just a unique id.
-	#elif defined(EA_PROCESSOR_ARM) && defined(__ARMCC_VERSION)
-		#define EASTL_DEBUG_BREAK() __breakpoint(10)
-	#elif defined(EA_PROCESSOR_POWERPC)               // Generic PowerPC. 
-		#define EASTL_DEBUG_BREAK() asm(".long 0")    // This triggers an exception by executing opcode 0x00000000.
-	#elif (defined(EA_PROCESSOR_X86) || defined(EA_PROCESSOR_X86_64)) && defined(EA_ASM_STYLE_INTEL)
-		#define EASTL_DEBUG_BREAK() { __asm int 3 }
-	#elif (defined(EA_PROCESSOR_X86) || defined(EA_PROCESSOR_X86_64)) && (defined(EA_ASM_STYLE_ATT) || defined(__GNUC__))
-		#define EASTL_DEBUG_BREAK() asm("int3") 
-	#else
-		void EASTL_DEBUG_BREAK(); // User must define this externally.
-	#endif
+#ifndef EASTL_DEBUG_BREAK_OVERRIDE
+    #ifndef EASTL_DEBUG_BREAK
+        #if defined(_MSC_VER) && (_MSC_VER >= 1300)
+            #define EASTL_DEBUG_BREAK() __debugbreak()    // This is a compiler intrinsic which will map to appropriate inlined asm for the platform.
+        #elif (defined(EA_PROCESSOR_ARM) && !defined(EA_PROCESSOR_ARM64)) && defined(__APPLE__)
+            #define EASTL_DEBUG_BREAK() asm("trap")
+        #elif defined(EA_PROCESSOR_ARM64) && defined(__APPLE__)
+            #include <signal.h>
+            #include <unistd.h>
+            #define EASTL_DEBUG_BREAK() kill( getpid(), SIGINT )
+		#elif defined(EA_PROCESSOR_ARM64) && defined(__GNUC__)
+			#define EASTL_DEBUG_BREAK() asm("brk 10")
+        #elif defined(EA_PROCESSOR_ARM) && defined(__GNUC__)
+            #define EASTL_DEBUG_BREAK() asm("BKPT 10")     // The 10 is arbitrary. It's just a unique id.
+        #elif defined(EA_PROCESSOR_ARM) && defined(__ARMCC_VERSION)
+            #define EASTL_DEBUG_BREAK() __breakpoint(10)
+        #elif defined(EA_PROCESSOR_POWERPC)               // Generic PowerPC. 
+            #define EASTL_DEBUG_BREAK() asm(".long 0")    // This triggers an exception by executing opcode 0x00000000.
+        #elif (defined(EA_PROCESSOR_X86) || defined(EA_PROCESSOR_X86_64)) && defined(EA_ASM_STYLE_INTEL)
+            #define EASTL_DEBUG_BREAK() { __asm int 3 }
+        #elif (defined(EA_PROCESSOR_X86) || defined(EA_PROCESSOR_X86_64)) && (defined(EA_ASM_STYLE_ATT) || defined(__GNUC__))
+            #define EASTL_DEBUG_BREAK() asm("int3") 
+        #else
+            void EASTL_DEBUG_BREAK(); // User must define this externally.
+        #endif
+    #else
+        void EASTL_DEBUG_BREAK(); // User must define this externally.
+    #endif
 #else
-	void EASTL_DEBUG_BREAK(); // User must define this externally.
+    #ifndef EASTL_DEBUG_BREAK
+		#if EASTL_DEBUG_BREAK_OVERRIDE == 1 
+			// define an empty callable to satisfy the call site. 
+			#define EASTL_DEBUG_BREAK ([]{}) 
+		#else
+			#define EASTL_DEBUG_BREAK EASTL_DEBUG_BREAK_OVERRIDE
+		#endif
+    #else
+        #error EASTL_DEBUG_BREAK is already defined yet you would like to override it. Please ensure no other headers are already defining EASTL_DEBUG_BREAK before this header (config.h) is included
+    #endif
 #endif
 
 
@@ -1424,6 +1466,20 @@ namespace eastl
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
+// EASTL_INLINE_VARIABLE_ENABLED
+//
+// Defined as 0 or 1. 
+// If enabled then C++17-like functionality with inline variable is enabled.
+///////////////////////////////////////////////////////////////////////////////
+#if !defined(EASTL_INLINE_VARIABLE_ENABLED)
+	#if((EABASE_VERSION_N < 20707) || defined(EA_COMPILER_NO_INLINE_VARIABLES))
+		#define EASTL_INLINE_VARIABLE_ENABLED 0
+	#else
+		#define EASTL_INLINE_VARIABLE_ENABLED 1
+	#endif
+#endif
+
+///////////////////////////////////////////////////////////////////////////////
 // EASTL_HAVE_CPP11_TYPE_TRAITS
 //
 // Defined as 0 or 1. 
@@ -1451,7 +1507,7 @@ namespace eastl
 ///////////////////////////////////////////////////////////////////////////////
 // EA_COMPILER_NO_FUNCTION_TEMPLATE_DEFAULT_ARGS undef
 //
-// We need revise this macro to be unefined in some cases, in case the user
+// We need revise this macro to be undefined in some cases, in case the user
 // isn't using an updated EABase.
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(__EDG_VERSION__) && (__EDG_VERSION__ >= 403) // It may in fact be supported by 4.01 or 4.02 but we don't have compilers to test with.
@@ -1745,13 +1801,30 @@ typedef EASTL_SSIZE_T eastl_ssize_t; // Signed version of eastl_size_t. Concept 
 
 /// EASTL_USER_LITERALS_ENABLED
 #ifndef EASTL_USER_LITERALS_ENABLED
-	#define EASTL_USER_LITERALS_ENABLED 0
+	#if defined(EA_COMPILER_CPP14_ENABLED)
+		#define EASTL_USER_LITERALS_ENABLED 1
+
+		// Disabling the Clang/GCC/MSVC warning about using user defined literals without a leading '_' as they are
+		// reserved for standard libary usage.
+		EA_DISABLE_CLANG_WARNING(-Wuser-defined-literals)
+		EA_DISABLE_CLANG_WARNING(-Wreserved-user-defined-literal)
+		EA_DISABLE_GCC_WARNING(-Wliteral-suffix)
+		#ifdef _MSC_VER
+			#pragma warning(disable: 4455) // disable warning C4455: literal suffix identifiers that do not start with an underscore are reserved
+		#endif
+	#else
+		#define EASTL_USER_LITERALS_ENABLED 0
+	#endif
 #endif
 
 
 /// EASTL_INLINE_NAMESPACES_ENABLED
 #ifndef EASTL_INLINE_NAMESPACES_ENABLED
-	#define EASTL_INLINE_NAMESPACES_ENABLED 0
+	#if defined(EA_COMPILER_CPP14_ENABLED)
+		#define EASTL_INLINE_NAMESPACES_ENABLED 1
+	#else
+		#define EASTL_INLINE_NAMESPACES_ENABLED 0
+	#endif
 #endif
 
 
@@ -1768,6 +1841,20 @@ typedef EASTL_SSIZE_T eastl_ssize_t; // Signed version of eastl_size_t. Concept 
 /// 
 #ifndef EASTL_OPENSOURCE
 	#define EASTL_OPENSOURCE 0
+#endif
+
+
+/// EASTL_OPTIONAL_ENABLED
+#if defined(EA_COMPILER_MSVC_2012)
+	#define EASTL_OPTIONAL_ENABLED 0
+#elif defined(EA_COMPILER_MSVC_2013)
+	#define EASTL_OPTIONAL_ENABLED 0
+#elif defined(EA_COMPILER_MSVC_2015)
+	#define EASTL_OPTIONAL_ENABLED 1
+#elif EASTL_VARIADIC_TEMPLATES_ENABLED && !defined(EA_COMPILER_NO_TEMPLATE_ALIASES) && !defined(EA_COMPILER_NO_DEFAULTED_FUNCTIONS) && defined(EASTL_COMPILER_CPP11_ENABLED)
+	#define EASTL_OPTIONAL_ENABLED 1
+#else
+	#define EASTL_OPTIONAL_ENABLED 0
 #endif
 
 #endif // Header include guard

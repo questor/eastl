@@ -112,11 +112,13 @@ namespace eastl
 		//
 		// Potentially we could provide a constructor that would satisfy the compiler and change the code to use this constructor
 		// instead of constructing mValue in place within an unconstructed rbtree_node.
-		#if !defined(EA_COMPILER_NO_DELETED_FUNCTIONS)
-			rbtree_node(const rbtree_node&) = delete;
-		#else
-			private:
-				rbtree_node(const rbtree_node&);
+		#if defined(_MSC_VER)
+			#if !defined(EA_COMPILER_NO_DELETED_FUNCTIONS)
+				rbtree_node(const rbtree_node&) = delete;
+			#else
+				private:
+					rbtree_node(const rbtree_node&);
+			#endif
 		#endif
 	};
 
@@ -2020,7 +2022,10 @@ namespace eastl
 	inline typename rbtree<K, V, C, A, E, bM, bU>::node_type*
 	rbtree<K, V, C, A, E, bM, bU>::DoAllocateNode()
 	{
-		return (node_type*)allocate_memory(mAllocator, sizeof(node_type), EASTL_ALIGN_OF(value_type), 0);
+		auto* pNode = (node_type*)allocate_memory(mAllocator, sizeof(node_type), EASTL_ALIGN_OF(value_type), 0);
+		EASTL_ASSERT_MSG(pNode != nullptr, "the behaviour of eastl::allocators that return nullptr is not defined.");
+
+		return pNode;
 	}
 
 

@@ -939,6 +939,24 @@ namespace eastl
 		return eastl::makePair(*iteratorPair.first, *iteratorPair.second);
 	}
 
+	template <typename T>
+	inline T&& median_impl(T&& a, T&& b, T&& c)
+	{
+		if(a < b)
+		{
+			if(b < c)
+				return eastl::forward<T>(b);
+			else if(a < c)
+				return eastl::forward<T>(c);
+			else
+				return eastl::forward<T>(a);
+		}
+		else if(a < c)
+			return eastl::forward<T>(a);
+		else if(b < c)
+			return eastl::forward<T>(c);
+		return eastl::forward<T>(b);
+	}
 
 	/// median
 	///
@@ -951,20 +969,41 @@ namespace eastl
 	template <typename T>
 	inline const T& median(const T& a, const T& b, const T& c)
 	{
-		if(a < b)
+		return median_impl(a, b, c);
+	}
+
+	/// median
+	///
+	/// median finds which element of three (a, b, d) is in-between the other two.
+	/// If two or more elements are equal, the first (e.g. a before b) is chosen.
+	///
+	/// Complexity: Either two or three comparisons will be required, depending 
+	/// on the values.
+	///
+	template <typename T>
+	inline T&& median(T&& a, T&& b, T&& c)
+	{
+		return eastl::forward<T>(median_impl(eastl::forward<T>(a), eastl::forward<T>(b), eastl::forward<T>(c)));
+	}
+
+
+	template <typename T, typename Compare>
+	inline T&& median_impl(T&& a, T&& b, T&& c, Compare compare)
+	{
+		if(compare(a, b))
 		{
-			if(b < c)
-				return b;
-			else if(a < c)
-				return c;
+			if(compare(b, c))
+				return eastl::forward<T>(b);
+			else if(compare(a, c))
+				return eastl::forward<T>(c);
 			else
-				return a;
+				return eastl::forward<T>(a);
 		}
-		else if(a < c)
-			return a;
-		else if(b < c)
-			return c;
-		return b;
+		else if(compare(a, c))
+			return eastl::forward<T>(a);
+		else if(compare(b, c))
+			return eastl::forward<T>(c);
+		return eastl::forward<T>(b);
 	}
 
 
@@ -979,20 +1018,21 @@ namespace eastl
 	template <typename T, typename Compare>
 	inline const T& median(const T& a, const T& b, const T& c, Compare compare)
 	{
-		if(compare(a, b))
-		{
-			if(compare(b, c))
-				return b;
-			else if(compare(a, c))
-				return c;
-			else
-				return a;
-		}
-		else if(compare(a, c))
-			return a;
-		else if(compare(b, c))
-			return c;
-		return b;
+		return median_impl<const T&, Compare>(a, b, c, compare);
+	}
+
+	/// median
+	///
+	/// median finds which element of three (a, b, d) is in-between the other two.
+	/// If two or more elements are equal, the first (e.g. a before b) is chosen.
+	///
+	/// Complexity: Either two or three comparisons will be required, depending 
+	/// on the values.
+	///
+	template <typename T, typename Compare>
+	inline T&& median(T&& a, T&& b, T&& c, Compare compare)
+	{
+		return eastl::forward<T>(median_impl<T&&, Compare>(eastl::forward<T>(a), eastl::forward<T>(b), eastl::forward<T>(c), compare));
 	}
 
 
@@ -3897,6 +3937,8 @@ namespace eastl
 		template<typename ForwardIterator>
 		ForwardIterator rotate_general_impl(ForwardIterator first, ForwardIterator middle, ForwardIterator last)
 		{
+			using eastl::swap;
+
 			ForwardIterator current = middle;
 
 			do {
@@ -4144,6 +4186,27 @@ namespace eastl
 		return eastl::copy(first, middle, eastl::copy(middle, last, result));
 	}
 
+
+
+	/// clamp
+	///
+	/// Returns a reference to a clamped value within the range of [lo, hi].
+	///
+	/// http://en.cppreference.com/w/cpp/algorithm/clamp
+	///
+	template <class T>
+	EA_CONSTEXPR const T& clamp(const T& v, const T& lo, const T& hi)
+	{
+		return clamp(v, lo, hi, eastl::less<>());
+	}
+
+	template <class T, class Compare>
+	EA_CONSTEXPR const T& clamp(const T& v, const T& lo, const T& hi, Compare comp)
+	{
+		// code collapsed to a single line due to constexpr requirements
+		return [&] { EASTL_ASSERT(!comp(hi, lo)); }(),
+			   comp(v, lo) ? lo : comp(hi, v) ? hi : v;
+	}
 
 
 } // namespace eastl

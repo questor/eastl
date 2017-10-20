@@ -468,7 +468,7 @@ namespace eastl
 			move_iterator operator++(int)
 			{
 				move_iterator tempMoveIterator = *this;
-				++tempMoveIterator;
+				++mIterator;
 				return tempMoveIterator;
 			}
 
@@ -481,7 +481,7 @@ namespace eastl
 			move_iterator operator--(int)
 			{
 				move_iterator tempMoveIterator = *this;
-				--tempMoveIterator;
+				--mIterator;
 				return tempMoveIterator;
 			}
 
@@ -1012,6 +1012,62 @@ namespace eastl
 		eastl::advance(it, -n);
 		return it;
 	}
+
+
+#if defined(EASTL_COMPILER_CPP11_ENABLED) && EASTL_COMPILER_CPP11_ENABLED
+	
+	// eastl::data
+	//
+	// http://en.cppreference.com/w/cpp/iterator/data
+	//
+	template <class Container>
+	EA_CONSTEXPR auto data(Container& c) -> decltype(c.data())
+		{ return c.data(); }
+
+	template <class Container>
+	EA_CONSTEXPR auto data(const Container& c) -> decltype(c.data())
+		{ return c.data(); }
+
+	template <class T, std::size_t N>
+	EA_CONSTEXPR T* data(T(&array)[N]) EASTL_NOEXCEPT 
+		{ return array; }
+
+	template <class E>
+	EA_CONSTEXPR const E* data(std::initializer_list<E> il) EASTL_NOEXCEPT
+		{ return il.begin(); }
+
+
+	// eastl::size
+	//
+	// http://en.cppreference.com/w/cpp/iterator/size
+	//
+	template <class C> 
+	EA_CONSTEXPR auto size(const C& c) -> decltype(c.size())
+		{ return c.size(); }
+
+	template <class T, std::size_t N>
+	EA_CONSTEXPR std::size_t size(const T (&)[N]) EASTL_NOEXCEPT
+		{ return N; }
+
+
+	// eastl::empty
+	// 
+	// http://en.cppreference.com/w/cpp/iterator/empty
+	//
+	template <class Container> 
+	EA_CONSTEXPR auto empty(const Container& c) -> decltype(c.empty())
+		{ return c.empty(); }
+
+	template <class T, std::size_t N>
+	EA_CONSTEXPR bool empty(const T (&)[N]) EASTL_NOEXCEPT
+		{ return false; }
+
+	template <class E> 
+	EA_CONSTEXPR bool empty(std::initializer_list<E> il) EASTL_NOEXCEPT
+		{ return il.size() == 0; }
+
+#endif // defined(EASTL_COMPILER_CPP11_ENABLED) && EASTL_COMPILER_CPP11_ENABLED
+
 
 	// eastl::begin / eastl::end
 	// http://en.cppreference.com/w/cpp/iterator/begin

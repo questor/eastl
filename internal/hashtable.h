@@ -112,10 +112,23 @@ namespace eastl
 	template <typename Value, bool bCacheHashCode>
 	struct hash_node;
 
-	EA_DISABLE_VC_WARNING(4625) // disable warning: "copy constructor could not be generated because a base class copy constructor is inaccessible or deleted"
+	EA_DISABLE_VC_WARNING(4625 4626) // "copy constructor / assignment operator could not be generated because a base class copy constructor is inaccessible or deleted"
+	#ifdef EA_COMPILER_MSVC_2015
+		EA_DISABLE_VC_WARNING(5026) // disable warning: "move constructor was implicitly defined as deleted"
+	#endif
 		template <typename Value>
 		struct hash_node<Value, true>
 		{
+			#if defined(_MSC_VER) && (EA_COMPILER_VERSION == 1800) // VS2013
+				hash_node() : mValue(0), mpNext(nullptr), mnHashCode(0) {}
+				hash_node(const hash_node& x) : mValue(x.mValue), mpNext(x.mpNext), mnHashCode(x.mnHashCode) {}
+				hash_node(hash_node&& x) : mValue(eastl::move(x.mValue)), mpNext(x.mpNext), mnHashCode(x.mnHashCode) {}
+			#elif EASTL_MOVE_SEMANTICS_ENABLED && !defined(EA_COMPILER_NO_DEFAULTED_FUNCTIONS)
+				hash_node() = default;
+				hash_node(const hash_node&) = default;
+				hash_node(hash_node&&) = default;
+			#endif
+
 			Value        mValue;
 			hash_node*   mpNext;
 			eastl_size_t mnHashCode;      // See config.h for the definition of eastl_size_t, which defaults to uint32_t.
@@ -124,11 +137,57 @@ namespace eastl
 		template <typename Value>
 		struct hash_node<Value, false>
 		{
-			Value      mValue;
+			#if defined(_MSC_VER) && (EA_COMPILER_VERSION == 1800) // VS2013
+				hash_node() : mValue(0), mpNext(nullptr) {}
+				hash_node(const hash_node& x) : mValue(x.mValue), mpNext(x.mpNext) {}
+				hash_node(hash_node&& x) : mValue(eastl::move(x.mValue)), mpNext(x.mpNext) {}
+			#elif EASTL_MOVE_SEMANTICS_ENABLED && !defined(EA_COMPILER_NO_DEFAULTED_FUNCTIONS)
+				hash_node() = default;
+				hash_node(const hash_node&) = default;
+				hash_node(hash_node&&) = default;
+			#endif
+
+		    Value      mValue;
 			hash_node* mpNext;
 		} EASTL_MAY_ALIAS;
+
+	#ifdef EA_COMPILER_MSVC_2015
+		EA_RESTORE_VC_WARNING()
+	#endif
 	EA_RESTORE_VC_WARNING()
 
+
+	// has_hashcode_member
+	//
+	// Custom type-trait that checks for the existence of a class data member 'mnHashCode'.  
+	//
+	// In order to explicitly instantiate the hashtable without error we need to SFINAE away the functions that will
+	// fail to compile based on if the 'hash_node' contains a 'mnHashCode' member dictated by the hashtable template
+	// parameters. The hashtable support this level of configuration to allow users to choose which between the space vs.
+	// time optimization.
+	//
+	namespace Internal
+	{
+		template <class T>
+		struct has_hashcode_member 
+		{
+		private:
+			template <class U> static eastl::no_type test(...);
+			template <class U> static eastl::yes_type test(decltype(U::mnHashCode)* = 0);
+		public:
+			static const bool value = sizeof(test<T>(0)) == sizeof(eastl::yes_type);
+		};
+	}
+	
+	static_assert(Internal::has_hashcode_member<hash_node<int, true>>::value, "contains a mnHashCode member");
+	static_assert(!Internal::has_hashcode_member<hash_node<int, false>>::value, "doesn't contain a mnHashCode member");
+
+	// convenience macros to increase the readability of the code paths that must SFINAE on if the 'hash_node'
+	// contains the cached hashed value or not. 
+	#define ENABLE_IF_HAS_HASHCODE(T, RT) typename eastl::enable_if<Internal::has_hashcode_member<T>::value, RT>::type*
+	#define ENABLE_IF_HASHCODE_EASTLSIZET(T, RT) typename eastl::enable_if<eastl::is_convertible<T, eastl_size_t>::value, RT>::type
+	#define ENABLE_IF_TRUETYPE(T) typename eastl::enable_if<T::value>::type*
+	#define DISABLE_IF_TRUETYPE(T) typename eastl::enable_if<!T::value>::type*
 
 
 	/// node_iterator_base
@@ -1029,6 +1088,7 @@ namespace eastl
 		void clear(bool clearBuckets);                  // If clearBuckets is true, we free the bucket memory and set the bucket count back to the newly constructed count.
 		void reset_lose_memory() EASTL_NOEXCEPT;           // This is a unilateral reset to an initially empty state. No destructors are called, no deallocation occurs.
 		void rehash(size_type nBucketCount);
+		void reserve(size_type nElementCount);
 
 		#if EASTL_RESET_ENABLED
 			void reset() EASTL_NOEXCEPT; // This function name is deprecated; use reset_lose_memory instead.
@@ -1072,10 +1132,55 @@ namespace eastl
 
 		/// Implements a find whereby the user supplies the node's hash code.
 		/// It returns an iterator to the first element that matches the given hash. However, there may be multiple elements that match the given hash.
-		iterator       find_by_hash(hash_code_t c);
-		const_iterator find_by_hash(hash_code_t c) const;
-		iterator       find_by_hash(const key_type& k, hash_code_t c);
-		const_iterator find_by_hash(const key_type& k, hash_code_t c) const;
+
+		template<typename HashCodeT>
+		ENABLE_IF_HASHCODE_EASTLSIZET(HashCodeT, iterator) find_by_hash(HashCodeT c)
+		{
+			EASTL_CT_ASSERT_MSG(bCacheHashCode,
+				"find_by_hash(hash_code_t c) is designed to avoid recomputing hashes, "
+				"so it requires cached hash codes.  Consider setting template parameter "
+				"bCacheHashCode to true or using find_by_hash(const key_type& k, hash_code_t c) instead.");
+
+			const size_type n = (size_type)bucket_index(c, (uint32_t)mnBucketCount);
+
+			node_type* const pNode = DoFindNode(mpBucketArray[n], c);
+
+			return pNode ? iterator(pNode, mpBucketArray + n) :
+						   iterator(mpBucketArray + mnBucketCount); // iterator(mpBucketArray + mnBucketCount) == end()
+		}
+
+		template<typename HashCodeT>
+		ENABLE_IF_HASHCODE_EASTLSIZET(HashCodeT, const_iterator) find_by_hash(HashCodeT c) const
+		{
+			EASTL_CT_ASSERT_MSG(bCacheHashCode,
+								"find_by_hash(hash_code_t c) is designed to avoid recomputing hashes, "
+								"so it requires cached hash codes.  Consider setting template parameter "
+								"bCacheHashCode to true or using find_by_hash(const key_type& k, hash_code_t c) instead.");
+
+			const size_type n = (size_type)bucket_index(c, (uint32_t)mnBucketCount);
+
+			node_type* const pNode = DoFindNode(mpBucketArray[n], c);
+
+			return pNode ?
+					   const_iterator(pNode, mpBucketArray + n) :
+					   const_iterator(mpBucketArray + mnBucketCount); // iterator(mpBucketArray + mnBucketCount) == end()
+		}
+
+		iterator find_by_hash(const key_type& k, hash_code_t c)
+		{
+			const size_type n = (size_type)bucket_index(c, (uint32_t)mnBucketCount);
+
+			node_type* const pNode = DoFindNode(mpBucketArray[n], k, c);
+			return pNode ? iterator(pNode, mpBucketArray + n) : iterator(mpBucketArray + mnBucketCount); // iterator(mpBucketArray + mnBucketCount) == end()
+		}
+
+		const_iterator find_by_hash(const key_type& k, hash_code_t c) const
+		{
+			const size_type n = (size_type)bucket_index(c, (uint32_t)mnBucketCount);
+
+			node_type* const pNode = DoFindNode(mpBucketArray[n], k, c);
+			return pNode ? const_iterator(pNode, mpBucketArray + n) : const_iterator(mpBucketArray + mnBucketCount); // iterator(mpBucketArray + mnBucketCount) == end()
+		}
 
 		// Returns a pair that allows iterating over all nodes in a hash bucket
 		//   first in the pair returned holds the iterator for the beginning of the bucket,
@@ -1096,10 +1201,31 @@ namespace eastl
 		int  validateIterator(const_iterator i) const;
 
 	protected:
-		iterator DoGetResultIterator(true_type, const insert_return_type& irt)  const EASTL_NOEXCEPT { return irt.first; }
-		iterator DoGetResultIterator(false_type, const insert_return_type& irt) const EASTL_NOEXCEPT { return irt; }
+		// We must remove one of the 'DoGetResultIterator' overloads from the overload-set (via SFINAE) because both can
+		// not compile successfully at the same time. The 'bUniqueKeys' template parameter chooses at compile-time the
+		// type of 'insert_return_type' between a pair<iterator,bool> and a raw iterator. We must pick between the two
+		// overloads that unpacks the iterator from the pair or simply passes the provided iterator to the caller based
+		// on the class template parameter.
+		template <typename BoolConstantT>
+		iterator DoGetResultIterator(BoolConstantT,
+		                             const insert_return_type& irt,
+		                             ENABLE_IF_TRUETYPE(BoolConstantT) = 0) const EASTL_NOEXCEPT
+		{
+			return irt.first;
+		}
+
+		template <typename BoolConstantT>
+		iterator DoGetResultIterator(BoolConstantT,
+		                             const insert_return_type& irt,
+		                             DISABLE_IF_TRUETYPE(BoolConstantT) = 0) const EASTL_NOEXCEPT
+		{
+			return irt;
+		}
 
 		node_type*  DoAllocateNodeFromKey(const key_type& key);
+		#if EASTL_MOVE_SEMANTICS_ENABLED
+			node_type*  DoAllocateNodeFromKey(const key_type&& key);
+		#endif
 		void        DoFreeNode(node_type* pNode);
 		void        DoFreeNodes(node_type** pBucketArray, size_type);
 
@@ -1107,36 +1233,91 @@ namespace eastl
 		void        DoFreeBuckets(node_type** pBucketArray, size_type n);
 
 		#if EASTL_MOVE_SEMANTICS_ENABLED && EASTL_VARIADIC_TEMPLATES_ENABLED
-			template <class... Args>
-			eastl::pair<iterator, bool> DoInsertValue(true_type, Args&&... args);
+			template <typename BoolConstantT, class... Args, ENABLE_IF_TRUETYPE(BoolConstantT) = 0>
+			eastl::pair<iterator, bool> DoInsertValue(BoolConstantT, Args&&... args);
 
-			template <class... Args>
-			iterator DoInsertValue(false_type, Args&&... args);
+			template <typename BoolConstantT, class... Args, DISABLE_IF_TRUETYPE(BoolConstantT) = 0>
+			iterator DoInsertValue(BoolConstantT, Args&&... args);
 
 			template <class... Args>
 			node_type* DoAllocateNode(Args&&... args);
 		#endif
 
 		#if EASTL_MOVE_SEMANTICS_ENABLED
-			eastl::pair<iterator, bool> DoInsertValueExtra(true_type, const key_type& k, hash_code_t c, node_type* pNodeNew, value_type&& value);
-			eastl::pair<iterator, bool> DoInsertValue(true_type, value_type&& value);
-			iterator   DoInsertValueExtra(false_type, const key_type& k, hash_code_t c, node_type* pNodeNew, value_type&& value);
-			iterator   DoInsertValue(false_type, value_type&& value);
-			node_type* DoAllocateNode(value_type&& value);
+		    template <typename BoolConstantT>
+		    eastl::pair<iterator, bool> DoInsertValueExtra(BoolConstantT,
+		                                                   const key_type& k,
+		                                                   hash_code_t c,
+		                                                   node_type* pNodeNew,
+		                                                   value_type&& value,
+		                                                   ENABLE_IF_TRUETYPE(BoolConstantT) = 0);
+
+		    template <typename BoolConstantT>
+		    eastl::pair<iterator, bool> DoInsertValue(BoolConstantT,
+		                                              value_type&& value,
+		                                              ENABLE_IF_TRUETYPE(BoolConstantT) = 0);
+
+		    template <typename BoolConstantT>
+		    iterator DoInsertValueExtra(BoolConstantT,
+		                                const key_type& k,
+		                                hash_code_t c,
+		                                node_type* pNodeNew,
+		                                value_type&& value,
+										DISABLE_IF_TRUETYPE(BoolConstantT) = 0);
+
+		    template <typename BoolConstantT>
+		    iterator DoInsertValue(BoolConstantT, value_type&& value, DISABLE_IF_TRUETYPE(BoolConstantT) = 0);
+
+		    node_type* DoAllocateNode(value_type&& value);
 		#endif
 
-		eastl::pair<iterator, bool> DoInsertValueExtra(true_type, const key_type& k, hash_code_t c, node_type* pNodeNew, const value_type& value);
-		eastl::pair<iterator, bool> DoInsertValue(true_type, const value_type& value);
-		iterator   DoInsertValueExtra(false_type, const key_type& k, hash_code_t c, node_type* pNodeNew, const value_type& value);
-		iterator   DoInsertValue(false_type, const value_type& value);
+		template <typename BoolConstantT>
+		eastl::pair<iterator, bool> DoInsertValueExtra(BoolConstantT,
+													   const key_type& k,
+													   hash_code_t c,
+													   node_type* pNodeNew,
+													   const value_type& value,
+													   ENABLE_IF_TRUETYPE(BoolConstantT) = 0);
+
+		template <typename BoolConstantT>
+		eastl::pair<iterator, bool> DoInsertValue(BoolConstantT,
+		                                          const value_type& value,
+		                                          ENABLE_IF_TRUETYPE(BoolConstantT) = 0);
+
+		template <typename BoolConstantT>
+		iterator DoInsertValueExtra(BoolConstantT,
+		                            const key_type& k,
+		                            hash_code_t c,
+		                            node_type* pNodeNew,
+		                            const value_type& value,
+		                            DISABLE_IF_TRUETYPE(BoolConstantT) = 0);
+
+		template <typename BoolConstantT>
+		iterator DoInsertValue(BoolConstantT, const value_type& value, DISABLE_IF_TRUETYPE(BoolConstantT) = 0);
+
+
 		node_type* DoAllocateNode(const value_type& value);
 
 		eastl::pair<iterator, bool> DoInsertKey(true_type, const key_type& key);
 		iterator                    DoInsertKey(false_type, const key_type& key);
+		#if EASTL_MOVE_SEMANTICS_ENABLED
+			eastl::pair<iterator, bool> DoInsertKey(true_type, const key_type&& key);
+			iterator                    DoInsertKey(false_type, const key_type&& key);
+		#endif
 
 		void       DoRehash(size_type nBucketCount);
 		node_type* DoFindNode(node_type* pNode, const key_type& k, hash_code_t c) const;
-		node_type* DoFindNode(node_type* pNode, hash_code_t c) const;
+
+		template <typename T>
+		ENABLE_IF_HAS_HASHCODE(T, node_type) DoFindNode(T* pNode, hash_code_t c) const
+		{
+			for (; pNode; pNode = pNode->mpNext)
+			{
+				if (pNode->mnHashCode == c)
+					return pNode;
+			}
+			return NULL;
+		}
 
 		template <typename U, typename BinaryPredicate>
 		node_type* DoFindNodeT(node_type* pNode, const U& u, BinaryPredicate predicate) const;
@@ -1425,6 +1606,7 @@ namespace eastl
 	hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoAllocateNodeFromKey(const key_type& key)
 	{
 		node_type* const pNode = (node_type*)allocate_memory(mAllocator, sizeof(node_type), EASTL_ALIGN_OF(value_type), 0);
+		EASTL_ASSERT_MSG(pNode != nullptr, "the behaviour of eastl::allocators that return nullptr is not defined.");
 
 		#if EASTL_EXCEPTIONS_ENABLED
 			try
@@ -1443,6 +1625,33 @@ namespace eastl
 		#endif
 	}
 
+
+	#if EASTL_MOVE_SEMANTICS_ENABLED
+		template <typename K, typename V, typename A, typename EK, typename Eq,
+					typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
+		typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::node_type*
+		hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoAllocateNodeFromKey(const key_type&& key)
+		{
+			node_type* const pNode = (node_type*)allocate_memory(mAllocator, sizeof(node_type), EASTL_ALIGN_OF(value_type), 0);
+			EASTL_ASSERT_MSG(pNode != nullptr, "the behaviour of eastl::allocators that return nullptr is not defined.");
+
+			#if EASTL_EXCEPTIONS_ENABLED
+				try
+				{
+			#endif
+					::new((void*)&pNode->mValue) value_type(eastl::move(key));
+					pNode->mpNext = NULL;
+					return pNode;
+			#if EASTL_EXCEPTIONS_ENABLED
+				}
+				catch(...)
+				{
+					EASTLFree(mAllocator, pNode, sizeof(node_type));
+					throw;
+				}
+			#endif
+		}
+	#endif
 
 
 	template <typename K, typename V, typename A, typename EK, typename Eq,
@@ -1508,20 +1717,15 @@ namespace eastl
 			  typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
 	void hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::swap(this_type& x)
 	{
-		if(mAllocator == x.mAllocator) // If allocators are equivalent...
+		hash_code_base<K, V, EK, Eq, H1, H2, H, bC>::base_swap(x); // hash_code_base has multiple implementations, so we let them handle the swap.
+		eastl::swap(mRehashPolicy, x.mRehashPolicy);
+		EASTL_MACRO_SWAP(node_type**, mpBucketArray, x.mpBucketArray);
+		eastl::swap(mnBucketCount, x.mnBucketCount);
+		eastl::swap(mnElementCount, x.mnElementCount);
+
+		if (mAllocator != x.mAllocator) // If allocators are not equivalent...
 		{
-			// We leave mAllocator as-is.
-			hash_code_base<K, V, EK, Eq, H1, H2, H, bC>::base_swap(x); // hash_code_base has multiple implementations, so we let them handle the swap.
-			eastl::swap(mRehashPolicy,  x.mRehashPolicy);
-			EASTL_MACRO_SWAP(node_type**, mpBucketArray, x.mpBucketArray); // Use EASTL_MACRO_SWAP because GCC (at least v4.6-4.8) has a bug where it fails to compile eastl::swap(mpBucketArray, x.mpBucketArray).
-			eastl::swap(mnBucketCount,  x.mnBucketCount);
-			eastl::swap(mnElementCount, x.mnElementCount);
-		}
-		else
-		{
-			const this_type temp(*this); // Can't call eastl::swap because that would
-			*this = x;                   // itself call this member swap function.
-			x     = temp;
+			eastl::swap(mAllocator, x.mAllocator);
 		}
 	}
 
@@ -1642,59 +1846,6 @@ namespace eastl
 		// So we implement the workaround above until we can straighten this out.
 		//{ return find_as(other, eastl::hash<U>(), eastl::equal_to_2<const key_type, U>()); }
 
-
-	template <typename K, typename V, typename A, typename EK, typename Eq,
-			  typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
-	inline typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::iterator
-	hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::find_by_hash(hash_code_t c)
-	{
-		EASTL_CT_ASSERT_MSG(bC, "find_by_hash(hash_code_t c) is designed to avoid recomputing hashes, "
-								"so it requires cached hash codes.  Consider setting template parameter "
-								"bCacheHashCode to true or using find_by_hash(const key_type& k, hash_code_t c) instead.");
-		const size_type n = (size_type)bucket_index(c, (uint32_t)mnBucketCount);
-
-		node_type* const pNode = DoFindNode(mpBucketArray[n], c);
-		return pNode ? iterator(pNode, mpBucketArray + n) : iterator(mpBucketArray + mnBucketCount); // iterator(mpBucketArray + mnBucketCount) == end()
-	}
-
-
-	template <typename K, typename V, typename A, typename EK, typename Eq,
-			  typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
-	inline typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::const_iterator
-	hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::find_by_hash(hash_code_t c) const
-	{
-		EASTL_CT_ASSERT_MSG(bC, "find_by_hash(hash_code_t c) is designed to avoid recomputing hashes, "
-								"so it requires cached hash codes.  Consider setting template parameter "
-								"bCacheHashCode to true or using find_by_hash(const key_type& k, hash_code_t c) instead.");
-		const size_type n = (size_type)bucket_index(c, (uint32_t)mnBucketCount);
-
-		node_type* const pNode = DoFindNode(mpBucketArray[n], c);
-		return pNode ? const_iterator(pNode, mpBucketArray + n) : const_iterator(mpBucketArray + mnBucketCount); // iterator(mpBucketArray + mnBucketCount) == end()
-	}
-
-	
-	template <typename K, typename V, typename A, typename EK, typename Eq,
-		typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
-		inline typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::iterator
-		hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::find_by_hash(const key_type& k, hash_code_t c)
-	{
-		const size_type n = (size_type)bucket_index(c, (uint32_t)mnBucketCount);
-
-		node_type* const pNode = DoFindNode(mpBucketArray[n], k, c);
-		return pNode ? iterator(pNode, mpBucketArray + n) : iterator(mpBucketArray + mnBucketCount); // iterator(mpBucketArray + mnBucketCount) == end()
-	}
-
-
-	template <typename K, typename V, typename A, typename EK, typename Eq,
-		typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
-		inline typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::const_iterator
-		hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::find_by_hash(const key_type& k, hash_code_t c) const
-	{
-		const size_type n = (size_type)bucket_index(c, (uint32_t)mnBucketCount);
-
-		node_type* const pNode = DoFindNode(mpBucketArray[n], k, c);
-		return pNode ? const_iterator(pNode, mpBucketArray + n) : const_iterator(mpBucketArray + mnBucketCount); // iterator(mpBucketArray + mnBucketCount) == end()
-	}
 
 
 	template <typename K, typename V, typename A, typename EK, typename Eq, 
@@ -1869,26 +2020,12 @@ namespace eastl
 
 
 
-	template <typename K, typename V, typename A, typename EK, typename Eq,
-			  typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
-	inline typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::node_type* 
-	hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoFindNode(node_type* pNode, hash_code_t c) const
-	{
-		for(; pNode; pNode = pNode->mpNext)
-		{
-			if(pNode->mnHashCode == c)
-				return pNode;
-		}
-		return NULL;
-	}
-
-
 	#if EASTL_MOVE_SEMANTICS_ENABLED && EASTL_VARIADIC_TEMPLATES_ENABLED
 		template <typename K, typename V, typename A, typename EK, typename Eq,
 				  typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
-		template <class... Args>
+		template <typename BoolConstantT, class... Args, ENABLE_IF_TRUETYPE(BoolConstantT)>
 		eastl::pair<typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::iterator, bool>
-		hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoInsertValue(true_type, Args&&... args) // true_type means bUniqueKeys is true.
+		hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoInsertValue(BoolConstantT, Args&&... args) // true_type means bUniqueKeys is true.
 		{
 			// Adds the value to the hash table if not already present. 
 			// If already present then the existing value is returned via an iterator/bool pair.
@@ -1956,9 +2093,9 @@ namespace eastl
 
 		template <typename K, typename V, typename A, typename EK, typename Eq,
 				  typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
-		template <class... Args>
+		template <typename BoolConstantT, class... Args, DISABLE_IF_TRUETYPE(BoolConstantT)>
 		typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::iterator
-		hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoInsertValue(false_type, Args&&... args) // false_type means bUniqueKeys is false.
+		hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoInsertValue(BoolConstantT, Args&&... args) // false_type means bUniqueKeys is false.
 		{
 			const eastl::pair<bool, uint32_t> bRehash = mRehashPolicy.GetRehashRequired((uint32_t)mnBucketCount, (uint32_t)mnElementCount, (uint32_t)1);
 
@@ -2005,6 +2142,7 @@ namespace eastl
 		hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoAllocateNode(Args&&... args)
 		{
 			node_type* const pNode = (node_type*)allocate_memory(mAllocator, sizeof(node_type), EASTL_ALIGN_OF(value_type), 0);
+			EASTL_ASSERT_MSG(pNode != nullptr, "the behaviour of eastl::allocators that return nullptr is not defined.");
 
 			#if EASTL_EXCEPTIONS_ENABLED
 				try
@@ -2038,8 +2176,10 @@ namespace eastl
 
 		template <typename K, typename V, typename A, typename EK, typename Eq,
 				  typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
+		template <typename BoolConstantT>
 		eastl::pair<typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::iterator, bool>
-		hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoInsertValueExtra(true_type, const key_type& k, hash_code_t c, node_type* pNodeNew, value_type&& value) // true_type means bUniqueKeys is true.
+		hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoInsertValueExtra(BoolConstantT, const key_type& k,
+			hash_code_t c, node_type* pNodeNew, value_type&& value, ENABLE_IF_TRUETYPE(BoolConstantT)) // true_type means bUniqueKeys is true.
 		{
 			// Adds the value to the hash table if not already present. 
 			// If already present then the existing value is returned via an iterator/bool pair.
@@ -2107,8 +2247,9 @@ namespace eastl
 
 		template <typename K, typename V, typename A, typename EK, typename Eq,
 				  typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
+		template <typename BoolConstantT>
 		eastl::pair<typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::iterator, bool>
-		hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoInsertValue(true_type, value_type&& value) // true_type means bUniqueKeys is true.
+		hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoInsertValue(BoolConstantT, value_type&& value, ENABLE_IF_TRUETYPE(BoolConstantT)) // true_type means bUniqueKeys is true.
 		{
 			const key_type&   k = mExtractKey(value);
 			const hash_code_t c = get_hash_code(k);
@@ -2117,11 +2258,12 @@ namespace eastl
 		}
 
 
-
 		template <typename K, typename V, typename A, typename EK, typename Eq,
 				  typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
-		typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::iterator
-		hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoInsertValueExtra(false_type, const key_type& k, hash_code_t c, node_type* pNodeNew, value_type&& value) // false_type means bUniqueKeys is false.
+	    template <typename BoolConstantT>
+	    typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::iterator
+	    hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoInsertValueExtra(BoolConstantT, const key_type& k, hash_code_t c, node_type* pNodeNew, value_type&& value, 
+				DISABLE_IF_TRUETYPE(BoolConstantT)) // false_type means bUniqueKeys is false.
 		{
 			const eastl::pair<bool, uint32_t> bRehash = mRehashPolicy.GetRehashRequired((uint32_t)mnBucketCount, (uint32_t)mnElementCount, (uint32_t)1);
 
@@ -2165,8 +2307,9 @@ namespace eastl
 
 		template <typename K, typename V, typename A, typename EK, typename Eq,
 				  typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
+		template<typename BoolConstantT>
 		typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::iterator
-		hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoInsertValue(false_type, value_type&& value) // false_type means bUniqueKeys is false.
+		hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoInsertValue(BoolConstantT, value_type&& value, DISABLE_IF_TRUETYPE(BoolConstantT)) // false_type means bUniqueKeys is false.
 		{
 			const key_type&   k = mExtractKey(value);
 			const hash_code_t c = get_hash_code(k);
@@ -2181,6 +2324,7 @@ namespace eastl
 		hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoAllocateNode(value_type&& value)
 		{
 			node_type* const pNode = (node_type*)allocate_memory(mAllocator, sizeof(node_type), EASTL_ALIGN_OF(value_type), 0);
+			EASTL_ASSERT_MSG(pNode != nullptr, "the behaviour of eastl::allocators that return nullptr is not defined.");
 
 			#if EASTL_EXCEPTIONS_ENABLED
 				try
@@ -2203,8 +2347,10 @@ namespace eastl
 
 	template <typename K, typename V, typename A, typename EK, typename Eq,
 			  typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
+	template<typename BoolConstantT>
 	eastl::pair<typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::iterator, bool>
-	hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoInsertValueExtra(true_type, const key_type& k, hash_code_t c, node_type* pNodeNew, const value_type& value) // true_type means bUniqueKeys is true.
+	hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoInsertValueExtra(BoolConstantT, const key_type& k, hash_code_t c, node_type* pNodeNew, const value_type& value, 
+			ENABLE_IF_TRUETYPE(BoolConstantT)) // true_type means bUniqueKeys is true.
 	{
 		// Adds the value to the hash table if not already present. 
 		// If already present then the existing value is returned via an iterator/bool pair.
@@ -2272,8 +2418,9 @@ namespace eastl
 
 	template <typename K, typename V, typename A, typename EK, typename Eq,
 				typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
+	template<typename BoolConstantT>
 	eastl::pair<typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::iterator, bool>
-	hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoInsertValue(true_type, const value_type& value) // true_type means bUniqueKeys is true.
+	hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoInsertValue(BoolConstantT, const value_type& value, ENABLE_IF_TRUETYPE(BoolConstantT)) // true_type means bUniqueKeys is true.
 	{
 		const key_type&   k = mExtractKey(value);
 		const hash_code_t c = get_hash_code(k);
@@ -2284,8 +2431,10 @@ namespace eastl
 
 	template <typename K, typename V, typename A, typename EK, typename Eq,
 				typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
+	template <typename BoolConstantT>
 	typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::iterator
-	hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoInsertValueExtra(false_type, const key_type& k, hash_code_t c, node_type* pNodeNew, const value_type& value) // false_type means bUniqueKeys is false.
+	hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoInsertValueExtra(BoolConstantT, const key_type& k, hash_code_t c, node_type* pNodeNew, const value_type& value,
+			DISABLE_IF_TRUETYPE(BoolConstantT)) // false_type means bUniqueKeys is false.
 	{
 		const eastl::pair<bool, uint32_t> bRehash = mRehashPolicy.GetRehashRequired((uint32_t)mnBucketCount, (uint32_t)mnElementCount, (uint32_t)1);
 
@@ -2329,8 +2478,9 @@ namespace eastl
 
 	template <typename K, typename V, typename A, typename EK, typename Eq,
 				typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
+	template<typename BoolConstantT>
 	typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::iterator
-	hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoInsertValue(false_type, const value_type& value) // true_type means bUniqueKeys is true.
+	hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoInsertValue(BoolConstantT, const value_type& value, DISABLE_IF_TRUETYPE(BoolConstantT)) // false_type means bUniqueKeys is false.
 	{
 		const key_type&   k = mExtractKey(value);
 		const hash_code_t c = get_hash_code(k);
@@ -2345,6 +2495,7 @@ namespace eastl
 	hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoAllocateNode(const value_type& value)
 	{
 		node_type* const pNode = (node_type*)allocate_memory(mAllocator, sizeof(node_type), EASTL_ALIGN_OF(value_type), 0);
+		EASTL_ASSERT_MSG(pNode != nullptr, "the behaviour of eastl::allocators that return nullptr is not defined.");
 
 		#if EASTL_EXCEPTIONS_ENABLED
 			try
@@ -2371,6 +2522,7 @@ namespace eastl
 	{
 		// We don't wrap this in try/catch because users of this function are expected to do that themselves as needed.
 		node_type* const pNode = (node_type*)allocate_memory(mAllocator, sizeof(node_type), EASTL_ALIGN_OF(value_type), 0);
+		EASTL_ASSERT_MSG(pNode != nullptr, "the behaviour of eastl::allocators that return nullptr is not defined.");
 		// Leave pNode->mValue uninitialized.
 		pNode->mpNext = NULL;
 		return pNode;
@@ -2475,6 +2627,100 @@ namespace eastl
 
 		return iterator(pNodeNew, mpBucketArray + n);
 	}
+
+
+	#if EASTL_MOVE_SEMANTICS_ENABLED
+		template <typename K, typename V, typename A, typename EK, typename Eq,
+					typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
+		eastl::pair<typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::iterator, bool>
+		hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoInsertKey(true_type, const key_type&& key) // true_type means bUniqueKeys is true.
+		{
+			const hash_code_t c     = get_hash_code(key);
+			size_type         n     = (size_type)bucket_index(key, c, (uint32_t)mnBucketCount);
+			node_type* const  pNode = DoFindNode(mpBucketArray[n], key, c);
+
+			if(pNode == NULL)
+			{
+				const eastl::pair<bool, uint32_t> bRehash = mRehashPolicy.GetRehashRequired((uint32_t)mnBucketCount, (uint32_t)mnElementCount, (uint32_t)1);
+
+				// Allocate the new node before doing the rehash so that we don't
+				// do a rehash if the allocation throws.
+				node_type* const pNodeNew = DoAllocateNodeFromKey(eastl::move(key));
+				set_code(pNodeNew, c); // This is a no-op for most hashtables.
+
+				#if EASTL_EXCEPTIONS_ENABLED
+					try
+					{
+				#endif
+						if(bRehash.first)
+						{
+							n = (size_type)bucket_index(key, c, (uint32_t)bRehash.second);
+							DoRehash(bRehash.second);
+						}
+
+						EASTL_ASSERT((void**)mpBucketArray != &gpEmptyBucketArray[0]);
+						pNodeNew->mpNext = mpBucketArray[n];
+						mpBucketArray[n] = pNodeNew;
+						++mnElementCount;
+
+						return eastl::pair<iterator, bool>(iterator(pNodeNew, mpBucketArray + n), true);
+				#if EASTL_EXCEPTIONS_ENABLED
+					}
+					catch(...)
+					{
+						DoFreeNode(pNodeNew);
+						throw;
+					}
+				#endif
+			}
+
+			return eastl::pair<iterator, bool>(iterator(pNode, mpBucketArray + n), false);
+		}
+	#endif
+
+
+	#if EASTL_MOVE_SEMANTICS_ENABLED
+		template <typename K, typename V, typename A, typename EK, typename Eq,
+					typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
+		typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::iterator
+		hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::DoInsertKey(false_type, const key_type&& key) // false_type means bUniqueKeys is false.
+		{
+			const eastl::pair<bool, uint32_t> bRehash = mRehashPolicy.GetRehashRequired((uint32_t)mnBucketCount, (uint32_t)mnElementCount, (uint32_t)1);
+
+			if(bRehash.first)
+				DoRehash(bRehash.second);
+
+			const hash_code_t c = get_hash_code(key);
+			const size_type   n = (size_type)bucket_index(key, c, (uint32_t)mnBucketCount);
+
+			node_type* const pNodeNew = DoAllocateNodeFromKey(eastl::move(key));
+			set_code(pNodeNew, c); // This is a no-op for most hashtables.
+
+			// To consider: Possibly make this insertion not make equal elements contiguous.
+			// As it stands now, we insert equal values contiguously in the hashtable.
+			// The benefit is that equalRange can work in a sensible manner and that
+			// erase(value) can more quickly find equal values. The downside is that
+			// this insertion operation taking some extra time. How important is it to
+			// us that equalRange span all equal items? 
+			node_type* const pNodePrev = DoFindNode(mpBucketArray[n], key, c);
+
+			if(pNodePrev == NULL)
+			{
+				EASTL_ASSERT((void**)mpBucketArray != &gpEmptyBucketArray[0]);
+				pNodeNew->mpNext = mpBucketArray[n];
+				mpBucketArray[n] = pNodeNew;
+			}
+			else
+			{
+				pNodeNew->mpNext  = pNodePrev->mpNext;
+				pNodePrev->mpNext = pNodeNew;
+			}
+
+			++mnElementCount;
+
+			return iterator(pNodeNew, mpBucketArray + n);
+		}
+	#endif
 
 
 	#if EASTL_MOVE_SEMANTICS_ENABLED && EASTL_VARIADIC_TEMPLATES_ENABLED
@@ -2765,6 +3011,14 @@ namespace eastl
 
 		mnElementCount = 0;
 		mRehashPolicy.mnNextResize = 0;
+	}
+
+
+	template <typename K, typename V, typename A, typename EK, typename Eq,
+			  typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
+	inline void hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::reserve(size_type nElementCount)
+	{
+		rehash(mRehashPolicy.GetBucketCount(uint32_t(nElementCount)));
 	}
 
 

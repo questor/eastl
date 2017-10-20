@@ -158,6 +158,7 @@
 //    result_of
 //
 //    integral_constant
+//    bool_constant
 //    true_type
 //    false_type
 //
@@ -263,6 +264,9 @@ namespace eastl
 		static const T value = v;
 		typedef T value_type;
 		typedef integral_constant<T, v> type;
+
+		EA_CONSTEXPR operator value_type() const EASTL_NOEXCEPT { return value; }
+		EA_CONSTEXPR value_type operator()() const EASTL_NOEXCEPT { return value; }
 	};
 
 
@@ -276,6 +280,19 @@ namespace eastl
 	typedef integral_constant<bool, false> false_type;
 
 
+	///////////////////////////////////////////////////////////////////////
+	// bool_constant 
+	//
+	// This is a convenience helper for the often used integral_constant<bool, value>.
+	//
+	#if defined(EA_COMPILER_NO_TEMPLATE_ALIASES)
+		template <bool B>
+		struct bool_constant : public integral_constant<bool, B> {};
+	#else
+		template <bool B>
+		using bool_constant = integral_constant<bool, B>;
+	#endif
+
 
 	///////////////////////////////////////////////////////////////////////
 	// yes_type / no_type
@@ -286,12 +303,6 @@ namespace eastl
 	struct       no_type { char padding[8]; };  // sizeof(no_type)  != 1
 
 
-	///////////////////////////////////////////////////////////////////////
-	// empty
-	//
-	template <typename T>
-	struct empty{ };
-
 
 	///////////////////////////////////////////////////////////////////////
 	// unused
@@ -299,7 +310,7 @@ namespace eastl
 	// Used internally to denote a special template argument that means 
 	// it's an unused argument.
 	//
-	struct unused{ };
+	struct unused { };
 
 
 	///////////////////////////////////////////////////////////////////////
@@ -307,7 +318,6 @@ namespace eastl
 	//
 	// Used as a type which constructs from anything. 
 	//
-
 	#if defined(EA_COMPILER_NO_VARIADIC_TEMPLATES) 
 		struct argument_sink{ argument_sink(...){} };
 	#else
@@ -334,7 +344,7 @@ namespace eastl
 	// in template metaprogramming.
 	//
 	// Example usage:
-	//    typedef ChosenType = type_select<is_integral<SomeType>::value, ChoiceAType, ChoiceBType>::type;
+	//    typedef ChosenType = typename type_select<is_integral<SomeType>::value, ChoiceAType, ChoiceBType>::type;
 	//
 	template <bool bCondition, class ConditionIsTrueType, class ConditionIsFalseType>
 	struct type_select { typedef ConditionIsTrueType type; };
@@ -451,6 +461,97 @@ namespace eastl
 	template <typename T, typename F>
 	struct conditional<false, T, F> { typedef F type; };
 
+	#if EASTL_VARIABLE_TEMPLATES_ENABLED
+		template <bool B, class T, class F>
+		using conditional_t = typename conditional<B, T, F>::type;
+	#endif
+
+
+
+	///////////////////////////////////////////////////////////////////////
+	// conjunction 
+	//
+	// This is a C++17 standard utility class that performs a short-circuiting
+	// logical AND on a sequence of type traits.
+	//
+	// http://en.cppreference.com/w/cpp/types/conjunction
+	//
+	#if !defined(EA_COMPILER_NO_VARIADIC_TEMPLATES)
+		template <class...>
+		struct conjunction : eastl::true_type {};
+
+		template <class B>
+		struct conjunction<B> : B {};
+
+	    template <class B, class... Bn>
+	    struct conjunction<B, Bn...> : conditional<bool(B::value), conjunction<Bn...>, B>::type {};
+
+        #if EASTL_VARIABLE_TEMPLATES_ENABLED
+			#if EASTL_INLINE_VARIABLE_ENABLED
+				template<class... Bn>
+				inline constexpr bool conjunction_v = conjunction<Bn...>::value;
+			#else
+				template<class... Bn>
+				static const constexpr bool conjunction_v = conjunction<Bn...>::value;
+			#endif
+		#endif
+    #endif
+
+
+
+	///////////////////////////////////////////////////////////////////////
+	// disjunction 
+	//
+	// This is a C++17 standard utility class that performs a short-circuiting
+	// logical OR on a sequence of type traits.
+	//
+	// http://en.cppreference.com/w/cpp/types/disjunction
+	//
+	#if !defined(EA_COMPILER_NO_VARIADIC_TEMPLATES)
+		template <class...>
+		struct disjunction : eastl::false_type {};
+
+		template <class B>
+		struct disjunction<B> : B {};
+
+	    template <class B, class... Bn>
+	    struct disjunction<B, Bn...> : conditional<bool(B::value), B, disjunction<Bn...>>::type {};
+
+        #if EASTL_VARIABLE_TEMPLATES_ENABLED
+			#if EASTL_INLINE_VARIABLE_ENABLED
+				template<class... B>
+				inline constexpr bool disjunction_v = disjunction<B...>::value;
+			#else
+				template<class... B>
+				static const constexpr bool disjunction_v = disjunction<B...>::value;
+			#endif
+		#endif
+    #endif
+
+
+
+	///////////////////////////////////////////////////////////////////////
+	// negation 
+	//
+	// This is a C++17 standard utility class that performs a logical NOT on a
+	// single type trait.
+	//
+	// http://en.cppreference.com/w/cpp/types/negation
+	//
+	template <class B>
+	struct negation : eastl::bool_constant<!bool(B::value)> {};
+
+	#if EASTL_VARIABLE_TEMPLATES_ENABLED
+		#if EASTL_INLINE_VARIABLE_ENABLED
+			template<class B>
+			inline constexpr bool negation_v = negation<B>::value;
+		#else
+			template<class B>
+			static const constexpr bool negation_v = negation<B>::value;
+		#endif
+	#endif
+
+
 
 	///////////////////////////////////////////////////////////////////////
 	// identity
@@ -488,9 +589,13 @@ namespace eastl
 	template <typename T>
 	struct is_same<T, T> : public eastl::true_type { };
 
+	#if EASTL_VARIABLE_TEMPLATES_ENABLED
+		template <class T, class U>
+		EA_CONSTEXPR bool is_same_v = is_same<T, U>::value;
+	#endif
 
 
-	///////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
 	// is_const
 	//
 	// is_const<T>::value == true if and only if T has const-qualification.
@@ -615,13 +720,35 @@ namespace eastl
 		struct is_function
 			: public eastl::false_type {};
 
-		template <typename ReturnValue, typename... ArgPack>
-		struct is_function<ReturnValue /*FunctionName*/(ArgPack...)>
-			: public eastl::true_type {};
+		#if EA_PLATFORM_PTR_SIZE == 4 && defined(EA_PLATFORM_MICROSOFT) && defined(_MSC_EXTENSIONS)
+			// __cdecl specialization
+			template <typename ReturnValue, typename... ArgPack>
+			struct is_function<ReturnValue __cdecl (ArgPack...)>
+				: public eastl::true_type {};
 
-		template <typename ReturnValue, typename... ArgPack>
-		struct is_function<ReturnValue /*FunctionName*/(ArgPack..., ...)>    // The second ellipsis handles the case of a function that takes ellipsis, like printf.
-			: public eastl::true_type {};
+			template <typename ReturnValue, typename... ArgPack>
+			struct is_function<ReturnValue __cdecl (ArgPack..., ...)>    // The second ellipsis handles the case of a function that takes ellipsis, like printf.
+				: public eastl::true_type {};
+
+			// __stdcall specialization
+			template <typename ReturnValue, typename... ArgPack>
+			struct is_function<ReturnValue __stdcall (ArgPack...)>
+				: public eastl::true_type {};
+
+			// When functions use a variable number of arguments, it is the caller that cleans the stack (cf. cdecl).
+			//
+			// template <typename ReturnValue, typename... ArgPack>
+			// struct is_function<ReturnValue __stdcall (ArgPack..., ...)>    // The second ellipsis handles the case of a function that takes ellipsis, like printf.
+			//     : public eastl::true_type {};
+		#else 
+			template <typename ReturnValue, typename... ArgPack>
+			struct is_function<ReturnValue (ArgPack...)>
+				: public eastl::true_type {};
+
+			template <typename ReturnValue, typename... ArgPack>
+			struct is_function<ReturnValue (ArgPack..., ...)>    // The second ellipsis handles the case of a function that takes ellipsis, like printf.
+				: public eastl::true_type {};
+		#endif
 	#endif
 
 
@@ -740,6 +867,10 @@ namespace eastl
 		template <typename T> struct remove_reference<T&&>{ typedef T type; };
 	#endif
 
+	#if EASTL_VARIABLE_TEMPLATES_ENABLED
+		template<typename T>
+		using remove_reference_t = typename remove_reference<T>::type;
+	#endif
 
 
 	///////////////////////////////////////////////////////////////////////
@@ -783,7 +914,7 @@ namespace eastl
 	// shall name T&&; otherwise, type shall name T. [ Note: This rule reflects
 	// the semantics of reference collapsing (8.3.2). For example, when a type T
 	// names a type T1&, the type add_rvalue_reference<T>::type is not an
-	// rvalue reference. — end note ]
+	// rvalue reference. end note ]
 	//
 	// Rules (8.3.2 p6):
 	//      void + &&  -> void
@@ -865,7 +996,9 @@ namespace eastl
 	// 
 	///////////////////////////////////////////////////////////////////////
 
-	#if defined(EA_COMPILER_NO_VARIADIC_TEMPLATES) || defined(EA_COMPILER_MSVC) // VS2013 fails to compile the variadic code below due to what looks like a deficiency in their handling of integral variadic template parameters.
+	// VS2013 fails to compile the variadic code below due to what looks like a deficiency in their handling of integral variadic template parameters.
+	// Also mingw's clang and gcc fail to compile the code on windows.
+	#if defined(EA_COMPILER_NO_VARIADIC_TEMPLATES) || defined(EA_COMPILER_MSVC) || (defined(EA_PLATFORM_MINGW) && (defined(EA_COMPILER_CLANG) || defined(EA_COMPILER_GNUC)))
 		// We support only two parameters.
 
 		#define EASTL_TYPE_TRAIT_static_min_CONFORMANCE 0
@@ -883,28 +1016,27 @@ namespace eastl
 		#define EASTL_TYPE_TRAIT_static_min_CONFORMANCE 1
 		#define EASTL_TYPE_TRAIT_static_max_CONFORMANCE 1
 
-		template <size_t I0, size_t ...IN>
+		template <size_t I0, size_t ...in>
 		struct static_min;
 
 		template <size_t I0>
 		struct static_min<I0>
 			{ static const size_t value = I0; };
 
-		template <size_t I0, size_t I1, size_t ...IN>
-		struct static_min<I0, I1, IN...>
-			{ static const size_t value = ((I0 <= I1) ? static_min<I0, IN...>::value : static_min<I1, IN...>::value); };
+		template <size_t I0, size_t I1, size_t ...in>
+		struct static_min<I0, I1, in...>
+			{ static const size_t value = ((I0 <= I1) ? static_min<I0, in...>::value : static_min<I1, in...>::value); };
 
-
-		template <size_t I0, size_t ...IN>
+		template <size_t I0, size_t ...in>
 		struct static_max;
 
 		template <size_t I0>
 		struct static_max<I0>
 			{ static const size_t value = I0; };
 
-		template <size_t I0, size_t I1, size_t ...IN>
-		struct static_max<I0, I1, IN...>
-			{ static const size_t value = ((I0 >= I1) ? static_max<I0, IN...>::value : static_max<I1, IN...>::value); };
+		template <size_t I0, size_t I1, size_t ...in>
+		struct static_max<I0, I1, in...>
+			{ static const size_t value = ((I0 >= I1) ? static_max<I0, in...>::value : static_max<I1, in...>::value); };
 	#endif
 
 
@@ -921,24 +1053,3 @@ namespace eastl
 
 
 #endif // Header include guard
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

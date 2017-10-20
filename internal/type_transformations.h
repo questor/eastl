@@ -45,7 +45,16 @@ namespace eastl
 	template <typename T>
 	struct  add_const
 		{ typedef typename eastl::add_const_helper<T>::type type; };
-
+	
+	// add_const_t is the C++17 using typedef for typename add_const<T>::type.
+	// We provide a backwards-compatible means to access it through a macro for pre-C++11 compilers.
+	#if defined(EA_COMPILER_NO_TEMPLATE_ALIASES)
+		#define EASTL_ADD_CONST_T(T) typename add_const<T>::type
+	#else
+		template <typename T>
+		using add_const_t = typename add_const<T>::type;
+		#define EASTL_ADD_CONST_T(T) add_const_t<T>
+	#endif
 
 
 	///////////////////////////////////////////////////////////////////////
@@ -513,6 +522,31 @@ namespace eastl
 
 		return u.destValue;
 	}
+
+
+
+	///////////////////////////////////////////////////////////////////////
+	// void_t 
+	//
+	// Maps a sequence of any types to void.  This utility class is used in
+	// template meta programming to simplify compile time reflection mechanisms
+	// required by the standard library.
+	//
+	// http://en.cppreference.com/w/cpp/types/void_t
+	//
+	// Example:
+	//    template <typename T, typename = void>
+	//    struct is_iterable : false_type {};
+	//
+	//    template <typename T>
+	//    struct is_iterable<T, void_t<decltype(declval<T>().begin()), 
+	//                                 decltype(declval<T>().end())>> : true_type {};
+	//
+	///////////////////////////////////////////////////////////////////////
+	#if EASTL_VARIABLE_TEMPLATES_ENABLED
+		template <class...>
+		using void_t = void;
+	#endif
 
 
 } // namespace eastl
