@@ -44,7 +44,7 @@ inline bool floatRelativeEqual(const float x, const float y, const float EPSILON
 //combined
 //equal(float) = fabs(x-y) <= EPSILON * max(1.0f, fabs(x), fabs(y))
 inline bool floatCombinedEqual(const float x, const float y, const float EPSILON=0.000061f) {
-   return fabs(x-y) <= EPSILON*max(1.0f, max(fabs(x), fabs(y)));
+   return fabs(x-y) <= EPSILON*max(1.0, max(fabs(x), fabs(y)));
 }
 
 // from http://www.cygnus-software.com/papers/comparingfloats/comparingfloats.htm

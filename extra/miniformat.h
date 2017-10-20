@@ -27,55 +27,6 @@
 //    -  https://www.facebook.com/notes/facebook-engineering/three-optimization-tips-for-c/10151361643253920
 // -------------------------------------------------------------------------
 //////////////////////////////////////////////////////////////////////////
-/*  test<std::string>();
-    test<char[128]>();
-
-    T str;
-    mini::format(str, "String: %1 Int: %0, Float: %(.3)2\n", 100, "JJ", 3.141592);
-    assert(std::string(str) == "String: JJ Int: 100, Float: 3.142\n");
-    mini::format(str, "%1 %1 %1\n", 100, "JJ", 3.141592);
-    assert(std::string(str) == "JJ JJ JJ\n");
-    mini::format(str, "%(.2)2 %(.3)2 %(.4)2\n", 100, "JJ", 3.141592);
-    assert(std::string(str) == "3.14 3.142 3.1416\n");
-    mini::format(str, "%2 %1 %0 %0 %1 %2\n", 100, "JJ", 3.141592);
-    assert(std::string(str) == "3.141592 JJ 100 100 JJ 3.141592\n");
-    mini::format(str, "%0\n", "P1");
-    assert(std::string(str) == "P1\n");
-    mini::format(str, "%0\n", 7);
-    assert(std::string(str) == "7\n");
-    mini::format(str, "%0\n", 3.14);
-    assert(std::string(str) == "3.140000\n");
-    mini::format(str, "%0 %1\n", "one", "two");
-    assert(std::string(str) == "one two\n");
-    mini::format(str, "%0 %1 %2 %3\n", "one", "two", "three", "four");
-    assert(std::string(str) == "one two three four\n");
-    mini::format(str, "%0 %1 %2 %3 %4\n", "one", "two", "three", "four", "five");
-    assert(std::string(str) == "one two three four five\n");
-    mini::format(str, "%0 %1 %2 %3 %4 %5\n", "one", "two", "three", "four", "five", "six");
-    assert(std::string(str) == "one two three four five six\n");
-    mini::format(str, "%0 %1 %2 %3 %4 %5 %6\n", "one", "two", "three", "four", "five", "six", "seven");
-    assert(std::string(str) == "one two three four five six seven\n");
-    mini::format(str, "%0 %1 %2 %3 %4 %5 %6 %7\n", "one", "two", "three", "four", "five", "six", "seven", "eight");
-    assert(std::string(str) == "one two three four five six seven eight\n");
-    mini::format(str, "%0 %1 %2 %3 %4 %5 %6 %7 %8\n", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine");
-    assert(std::string(str) == "one two three four five six seven eight nine\n");
-    mini::format(str, "%0 %%, %%0\n", "Literal");
-    assert(std::string(str) == "Literal %, %0\n");
-    mini::format(str, "%(6)0\n", 100);
-    assert(std::string(str) == "   100\n");
-    mini::format(str, "%(2)0\n", 100);
-    assert(std::string(str) == "100\n");
-    mini::format(str, "%(3)0\n", 100);
-    assert(std::string(str) == "100\n");
-    mini::format(str, "%(6.2)0\n", 3.14);
-    assert(std::string(str) == "  3.14\n");
-    mini::format(str, "%(6.2)0\n", -3.14);
-    assert(std::string(str) == " -3.14\n");
-    // Followings should assert in debug.
-    //mini::format(std::string(str), "%0 %n\n", 3);
-    //mini::format(std::string(str), "%(.3)1\n", 3.141592);
-    //mini::format(std::string(str), "String: %1 Int: %0, Float: %(.3)3\n", 100, "JJ", 3.141592); 
-*/
 
 #pragma  once
 
@@ -83,6 +34,7 @@
 #include <cassert>
 #include <cstdint>
 #include <cstring>
+#include <algorithm>
 
 #define _FORMAT_JOIN(x,y)		_FORMAT_JOIN2(x,y)
 #define _FORMAT_JOIN2(x,y)	x##y
@@ -118,50 +70,55 @@ namespace mini = miniformat;
 
 namespace miniformat
 {
-	template <typename String>
-	void format(String& outputText, const char *formatText);
-	template <typename String, _FORMAT_LIST(1, typename P)>
-	void format(String& outputText, const char *formatText, _FORMAT_ARG(1, P, p));
-	template <typename String, _FORMAT_LIST(2, typename P)>
-	void format(String& outputText, const char *formatText, _FORMAT_ARG(2, P, p));
-	template <typename String, _FORMAT_LIST(3, typename P)>
-	void format(String& outputText, const char *formatText, _FORMAT_ARG(3, P, p));
-	template <typename String, _FORMAT_LIST(4, typename P)>
-	void format(String& outputText, const char *formatText, _FORMAT_ARG(4, P, p));
-	template <typename String, _FORMAT_LIST(5, typename P)>
-	void format(String& outputText, const char *formatText, _FORMAT_ARG(5, P, p));
-	template <typename String, _FORMAT_LIST(6, typename P)>
-	void format(String& outputText, const char *formatText, _FORMAT_ARG(6, P, p));
-	template <typename String, _FORMAT_LIST(7, typename P)>
-	void format(String& outputText, const char *formatText, _FORMAT_ARG(7, P, p));
-	template <typename String, _FORMAT_LIST(8, typename P)>
-	void format(String& outputText, const char *formatText, _FORMAT_ARG(8, P, p));
-	template <typename String, _FORMAT_LIST(9, typename P)>
-	void format(String& outputText, const char *formatText, _FORMAT_ARG(9, P, p));
+#if __cplusplus > 199711L || (defined(_MSC_VER) && _MSC_VER >= 1800) // if this is a C++11-compliant compiler or VS2013 and above
+    template <typename String, typename... Args>
+    void format(String& outputText, const char *formatText, Args&&... args);
+#else
+    template <typename String>
+    void format(String& outputText, const char *formatText);
+    template <typename String, _FORMAT_LIST(1, typename P)>
+    void format(String& outputText, const char *formatText, _FORMAT_ARG(1, P, p));
+    template <typename String, _FORMAT_LIST(2, typename P)>
+    void format(String& outputText, const char *formatText, _FORMAT_ARG(2, P, p));
+    template <typename String, _FORMAT_LIST(3, typename P)>
+    void format(String& outputText, const char *formatText, _FORMAT_ARG(3, P, p));
+    template <typename String, _FORMAT_LIST(4, typename P)>
+    void format(String& outputText, const char *formatText, _FORMAT_ARG(4, P, p));
+    template <typename String, _FORMAT_LIST(5, typename P)>
+    void format(String& outputText, const char *formatText, _FORMAT_ARG(5, P, p));
+    template <typename String, _FORMAT_LIST(6, typename P)>
+    void format(String& outputText, const char *formatText, _FORMAT_ARG(6, P, p));
+    template <typename String, _FORMAT_LIST(7, typename P)>
+    void format(String& outputText, const char *formatText, _FORMAT_ARG(7, P, p));
+    template <typename String, _FORMAT_LIST(8, typename P)>
+    void format(String& outputText, const char *formatText, _FORMAT_ARG(8, P, p));
+    template <typename String, _FORMAT_LIST(9, typename P)>
+    void format(String& outputText, const char *formatText, _FORMAT_ARG(9, P, p));
+#endif // __cplusplus > 199711L || (defined(_MSC_VER) && _MSC_VER >= 1800)
 
-	namespace string_adaptor
-	{
+    namespace string_adaptor
+    {
         // Function overloads for std::string and similiars 
-		template <typename String>
-		void reserve(String& self, int size) { self.reserve(size); }
-		template <typename String>
-		int append(String& self, int, const char *str) { self.append(str); return length(self); }
-		template <typename String>
-		int append(String& self, int, const char *str, int count) { self.append(str, count); return length(self); }
-		template <typename String>
-		int append(String& self, int, int count, char c) { self.append(count, c); return length(self); }
-		template <typename String>
-		int length(const String& self) { return static_cast<int>(self.length()); }
-		template <typename String>
-		char * at(String& self, int index) { return &self[index]; }
+        template <typename String>
+        void reserve(String& self, int size) { self.reserve(size); }
+        template <typename String>
+        int length(const String& self) { return static_cast<int>(self.length()); }
+        template <typename String>
+        int append(String& self, int, const char *str) { self.append(str); return length(self); }
+        template <typename String>
+        int append(String& self, int, const char *str, int count) { self.append(str, count); return length(self); }
+        template <typename String>
+        int append(String& self, int, int count, char c) { self.append(count, c); return length(self); }
+        template <typename String>
+        char * at(String& self, int index) { return &self[index]; }
         template <typename String>
         void copy(String& self, const char *str) { self = str; }
 
         // Function overloads for fixed-size char arrays
-		template <int N>
-		void reserve(char (&self)[N], int size) {}
-		template <int N>
-		int append(char (&self)[N], int currentLength, const char *str)
+        template <int N>
+        void reserve(char (&self)[N], int size) {}
+        template <int N>
+        int append(char (&self)[N], int currentLength, const char *str)
         {
             assert(self[currentLength] == 0);
             assert(currentLength+strlen(str)<N);
@@ -174,8 +131,8 @@ namespace miniformat
             self[currentLength] = 0;
             return currentLength;
         }
-		template <int N>
-		int append(char (&self)[N], int currentLength, const char *str, int count)
+        template <int N>
+        int append(char (&self)[N], int currentLength, const char *str, int count)
         {
             assert(self[currentLength] == 0);
             assert(currentLength+count<N);
@@ -189,8 +146,8 @@ namespace miniformat
             self[currentLength] = 0;
             return currentLength;
         }
-		template <int N>
-		int append(char (&self)[N], int currentLength, int count, char c)
+        template <int N>
+        int append(char (&self)[N], int currentLength, int count, char c)
         { 
             assert(self[currentLength] == 0);
             assert(currentLength+count<N);
@@ -203,56 +160,197 @@ namespace miniformat
             self[currentLength] = 0;
             return currentLength;
         }
-		template <int N>
+        template <int N>
         int length(const char (&self)[N]) { return static_cast<int>(strlen(self)); }
-		template <int N>
-		char * at(char (&self)[N], int index)
+        template <int N>
+        char * at(char (&self)[N], int index)
         {
             assert(index<N);
             return &self[index];
         }
-		template <int N>
+        template <int N>
         void copy(char (&self)[N], const char *str)
         {
-#if _MSC_VER
+#if defined(_MSC_VER)
             strcpy_s(self, N-1, str);
 #else
-            strlcpy(self, str, N-1);
+            strncpy(self, str, N-1);
+            self[N-1] = '\0';
 #endif
         }
-	}
+    }
 
-	namespace detail
-	{
-		const int kGranulity = 32;	// This determines the reservation size for non-string arguments.
-		static const double pow10[] = { 1, 10, 100, 1000, 10000, 100000, 1000000,
-																		10000000, 100000000, 1000000000 };
+    namespace detail
+    {
+        const int kGranulity = 32;	// This determines the reservation size for non-string arguments.
+        static const double pow10[] = { 1, 10, 100, 1000, 10000, 100000, 1000000,
+                                                                        10000000, 100000000, 1000000000 };
         // Integer render functions are inspired(optimized) from this: 
         // https://www.facebook.com/notes/facebook-engineering/three-optimization-tips-for-c/10151361643253920
         int digits10(uint32_t v);
         int digits10(uint64_t v);
 
-		template <typename String>
-		int render(String& wstr, int currentLength, int32_t value, int width, int precision);
-		template <typename String>
-		int render(String& wstr, int currentLength,  uint32_t value, int width, int precision);
-		template <typename String>
-		int render(String& wstr, int currentLength,  int64_t value, int width, int precision);
-		template <typename String>
-		int render(String& wstr, int currentLength,  uint64_t value, int width, int precision);
-		template <typename String>
-		int render(String& wstr, int currentLength,  double value, int width, int precision);
-		template <typename String>
-		int render(String& wstr, int currentLength,  const char *value, int width, int precision);
-		template <typename T>
-		int size_enough(T value);
+        template <typename String>
+        int render(String& wstr, int currentLength, int32_t value, int width, int precision);
+        template <typename String>
+        int render(String& wstr, int currentLength,  uint32_t value, int width, int precision);
+        template <typename String>
+        int render(String& wstr, int currentLength,  int64_t value, int width, int precision);
+        template <typename String>
+        int render(String& wstr, int currentLength,  uint64_t value, int width, int precision);
+        template <typename String>
+        int render(String& wstr, int currentLength,  double value, int width, int precision);
+        template <typename String>
+        int render(String& wstr, int currentLength,  char value, int width, int precision);
+        template <typename String>
+        int render(String& wstr, int currentLength,  const char *value, int width, int precision);
+        template <typename String, typename T>
+        int render(String& wstr, int currentLength,  T *value, int width, int precision);
+        template <typename T>
+        int size_enough(T value);
         template <>
         int size_enough(const char *value);
-		void strreverse(char *begin, char *end);
-	}
+        template <typename T>
+        int size_enough(T *value);
+        void strreverse(char *begin, char *end);
+    }
 }
 
-#define _FORMAT_GET_NEW_LENGTH_0		strlen(formatText)
+#if __cplusplus > 199711L || (defined(_MSC_VER) && _MSC_VER >= 1800) // if this is a C++11-compliant compiler or VS2013 and above
+// Variadic template from C++11 is supported. Let's use it!
+namespace miniformat
+{
+    namespace detail
+    {
+        int sumSizes();
+
+        template <typename H, typename... Ts>
+        int sumSizes(H&& h, Ts&&... ts)
+        {
+            return detail::size_enough(std::forward<H>(h)) + sumSizes(std::forward<Ts>(ts)...);
+        }
+
+        template <typename String>
+        int renderByToken(int, String&, char, int, int, int)
+        {
+            return -1;
+        }
+        template <typename String, typename H, typename... Ts>
+        int renderByToken(int cnt, String& outputText, char c, int currentLength, int w, int p, H&& h, Ts&&... ts)
+        {
+            if (c == '0' + cnt - sizeof...(Ts) - 1)
+                return detail::render(outputText, currentLength, std::forward<H>(h), w, p);
+            else
+                return renderByToken(cnt, outputText, c, currentLength, w, p, std::forward<Ts>(ts)...);
+        }
+    }
+}
+
+template <typename String, typename... Args>
+void miniformat::format(String& outputText, const char *formatText, Args&&... args)
+{
+    int newLength = static_cast<int>(strlen(formatText)) + detail::sumSizes(args...);
+    string_adaptor::reserve(outputText, newLength);
+    string_adaptor::copy(outputText, "");
+    const char *itr = formatText;
+    int currentLength = 0;
+    char c = 0;
+
+    while ((c = *itr++))
+    {
+        if (c == '%')
+        {
+            if (*itr == '%')										/* "%%" */
+            {
+                currentLength = string_adaptor::append(outputText, currentLength, 1, '%');
+                ++itr;
+            }
+            else if (*itr >= '0' && *itr <= '9')					/* "%n" */
+            {
+                int const newLength = detail::renderByToken(sizeof...(Args), outputText, *itr, currentLength, 0, 6, std::forward<Args>(args)...);
+                if (newLength == -1)
+                {
+                    currentLength = string_adaptor::append(outputText, currentLength, 1, c);
+                    currentLength = string_adaptor::append(outputText, currentLength, 1, *itr);
+                    assert(!"An out-of-range format specifier given!");
+                }
+                else
+                {
+                    currentLength = newLength;
+                }
+                ++itr;
+            }
+            else if (*itr == '(' &&
+                (*(itr + 1) >= '0' && *(itr + 1) <= '9') &&
+                *(itr + 2) == ')' &&
+                (*(itr + 3) >= '0' && *(itr + 3) <= '9'))			/* %(w)n */
+            {
+                int const newLength = detail::renderByToken(sizeof...(Args), outputText, *(itr + 3), currentLength, *(itr + 1) - '0', 6, std::forward<Args>(args)...);
+                if (newLength == -1)
+                {
+                    currentLength = string_adaptor::append(outputText, currentLength, 1, c);
+                    currentLength = string_adaptor::append(outputText, currentLength, itr, 4);
+                    assert(!"An out-of-range format specifier given!");
+                }
+                else
+                {
+                    currentLength = newLength;
+                }
+                itr += 4;
+            }
+            else if (*itr == '(' &&
+                *(itr + 1) == '.' &&
+                (*(itr + 2) >= '0' && *(itr + 2) <= '9') &&
+                *(itr + 3) == ')' &&
+                (*(itr + 4) >= '0' && *(itr + 4) <= '9'))			/* "%(.p)n" */
+            {
+                int const newLength = detail::renderByToken(sizeof...(Args), outputText, *(itr + 4), currentLength, 0, *(itr + 2) - '0', std::forward<Args>(args)...);
+                if (newLength == -1)
+                {
+                    currentLength = string_adaptor::append(outputText, currentLength, 1, c);
+                    currentLength = string_adaptor::append(outputText, currentLength, itr, 5);
+                    assert(!"An out-of-range format specifier given!");
+                }
+                else
+                {
+                    currentLength = newLength;
+                }
+                itr += 5;
+            }
+            else if (*itr == '(' &&
+                (*(itr + 1) >= '0' && *(itr + 1) <= '9') &&
+                *(itr + 2) == '.' &&
+                (*(itr + 3) >= '0' && *(itr + 3) <= '9') &&
+                *(itr + 4) == ')' &&
+                (*(itr + 5) >= '0' && *(itr + 5) <= '9'))			/* %(w.p)n */
+            {
+                int const newLength = detail::renderByToken(sizeof...(Args), outputText, *(itr + 5), currentLength, *(itr + 1) - '0', *(itr + 3) - '0', std::forward<Args>(args)...);
+                if (newLength == -1)
+                {
+                    currentLength = string_adaptor::append(outputText, currentLength, 1, c);
+                    currentLength = string_adaptor::append(outputText, currentLength, itr, 6);
+                    assert(!"An out-of-range format specifier given!");
+                }
+                else
+                {
+                    currentLength = newLength;
+                }
+                itr += 6;
+            }
+            else
+            {
+                currentLength = string_adaptor::append(outputText, currentLength, 1, c);
+                assert(!"An invalid format specifier given!");
+            }
+        }
+        else
+        {
+            currentLength = string_adaptor::append(outputText, currentLength, 1, c);
+        }
+    }
+}
+#else // No luck. We should resort to the old preprocessor tricks without variadic template.
+#define _FORMAT_GET_NEW_LENGTH_0		static_cast<int>(strlen(formatText))
 #define _FORMAT_GET_NEW_LENGTH_1		_FORMAT_GET_NEW_LENGTH_0 + detail::size_enough(p1)
 #define _FORMAT_GET_NEW_LENGTH_2		_FORMAT_GET_NEW_LENGTH_1 + detail::size_enough(p2)
 #define _FORMAT_GET_NEW_LENGTH_3		_FORMAT_GET_NEW_LENGTH_2 + detail::size_enough(p3)
@@ -280,100 +378,100 @@ namespace miniformat
 template <typename String>
 void miniformat::format(String& outputText, const char *formatText)
 {
-	outputText = formatText;
+    outputText = formatText;
 }
 
 #define _FORMAT_FUNCTION_TEMPLATE(cnt) \
-	int newLength = _FORMAT_GET_NEW_LENGTH(cnt); \
-	string_adaptor::reserve(outputText, newLength); \
+    int newLength = _FORMAT_GET_NEW_LENGTH(cnt); \
+    string_adaptor::reserve(outputText, newLength); \
     string_adaptor::copy(outputText, ""); \
-	const char *itr = formatText; \
+    const char *itr = formatText; \
     int currentLength = 0; \
-	char c = 0; \
-	while((c=*itr++)) \
-	{ \
-		if(c == '%') \
-		{ \
-			if(*itr == '%')										/* "%%" */ \
-			{ \
+    char c = 0; \
+    while((c=*itr++)) \
+    { \
+        if(c == '%') \
+        { \
+            if(*itr == '%')										/* "%%" */ \
+            { \
                 currentLength = string_adaptor::append(outputText, currentLength, 1, '%'); \
-				++itr; \
-			} \
-			else if(*itr >= '0' && *itr <= '9')					/* "%n" */ \
-			{ \
-				switch(*itr) \
-				{ \
-					_FORMAT_RENDER_CASES(cnt, 0, 6); \
-				default: \
+                ++itr; \
+            } \
+            else if(*itr >= '0' && *itr <= '9')					/* "%n" */ \
+            { \
+                switch(*itr) \
+                { \
+                    _FORMAT_RENDER_CASES(cnt, 0, 6); \
+                default: \
                     currentLength = string_adaptor::append(outputText, currentLength, 1, c); \
                     currentLength = string_adaptor::append(outputText, currentLength, 1, *itr); \
-					assert(!"An out-of-range format specifier given!"); \
-					break; \
-				} \
-				++itr; \
-			} \
-			else if(*itr == '(' && \
-				(*(itr+1) >= '0' && *(itr+1) <= '9') && \
-				*(itr+2) == ')' && \
-				(*(itr+3) >= '0' && *(itr+3) <= '9'))			/* %(w)n */ \
-			{ \
-				switch(*(itr+3)) \
-				{ \
-					_FORMAT_RENDER_CASES(cnt, *(itr+1)-'0', 6); \
-				default: \
+                    assert(!"An out-of-range format specifier given!"); \
+                    break; \
+                } \
+                ++itr; \
+            } \
+            else if(*itr == '(' && \
+                (*(itr+1) >= '0' && *(itr+1) <= '9') && \
+                *(itr+2) == ')' && \
+                (*(itr+3) >= '0' && *(itr+3) <= '9'))			/* %(w)n */ \
+            { \
+                switch(*(itr+3)) \
+                { \
+                    _FORMAT_RENDER_CASES(cnt, *(itr+1)-'0', 6); \
+                default: \
                     currentLength = string_adaptor::append(outputText, currentLength, 1, c); \
                     currentLength = string_adaptor::append(outputText, currentLength, itr, 4); \
-					assert(!"An out-of-range format specifier given!"); \
-					break; \
-				} \
-				itr += 4; \
-			} \
-			else if(*itr == '(' && \
-				*(itr+1) == '.' && \
-				(*(itr+2) >= '0' && *(itr+2) <= '9') && \
-				*(itr+3) == ')' && \
-				(*(itr+4) >= '0' && *(itr+4) <= '9'))			/* "%(.p)n" */ \
-			{ \
-				switch(*(itr+4)) \
-				{ \
-					_FORMAT_RENDER_CASES(cnt, 0, *(itr+2)-'0'); \
-				default: \
+                    assert(!"An out-of-range format specifier given!"); \
+                    break; \
+                } \
+                itr += 4; \
+            } \
+            else if(*itr == '(' && \
+                *(itr+1) == '.' && \
+                (*(itr+2) >= '0' && *(itr+2) <= '9') && \
+                *(itr+3) == ')' && \
+                (*(itr+4) >= '0' && *(itr+4) <= '9'))			/* "%(.p)n" */ \
+            { \
+                switch(*(itr+4)) \
+                { \
+                    _FORMAT_RENDER_CASES(cnt, 0, *(itr+2)-'0'); \
+                default: \
                     currentLength = string_adaptor::append(outputText, currentLength, 1, c); \
                     currentLength = string_adaptor::append(outputText, currentLength, itr, 5); \
-					assert(!"An out-of-range format specifier given!"); \
-					break; \
-				} \
-				itr += 5; \
-			} \
-			else if(*itr == '(' && \
-				(*(itr+1) >= '0' && *(itr+1) <= '9') && \
-				*(itr+2) == '.' && \
-				(*(itr+3) >= '0' && *(itr+3) <= '9') && \
-				*(itr+4) == ')' && \
-				(*(itr+5) >= '0' && *(itr+5) <= '9'))			/* %(w.p)n */ \
-			{ \
-				switch(*(itr+5)) \
-				{ \
-					_FORMAT_RENDER_CASES(cnt, *(itr+1)-'0', *(itr+3)-'0'); \
-				default: \
+                    assert(!"An out-of-range format specifier given!"); \
+                    break; \
+                } \
+                itr += 5; \
+            } \
+            else if(*itr == '(' && \
+                (*(itr+1) >= '0' && *(itr+1) <= '9') && \
+                *(itr+2) == '.' && \
+                (*(itr+3) >= '0' && *(itr+3) <= '9') && \
+                *(itr+4) == ')' && \
+                (*(itr+5) >= '0' && *(itr+5) <= '9'))			/* %(w.p)n */ \
+            { \
+                switch(*(itr+5)) \
+                { \
+                    _FORMAT_RENDER_CASES(cnt, *(itr+1)-'0', *(itr+3)-'0'); \
+                default: \
                     currentLength = string_adaptor::append(outputText, currentLength, 1, c); \
                     currentLength = string_adaptor::append(outputText, currentLength, itr, 6); \
-					assert(!"An out-of-range format specifier given!"); \
-					break; \
-				} \
-				itr += 6; \
-			} \
-			else \
-			{ \
+                    assert(!"An out-of-range format specifier given!"); \
+                    break; \
+                } \
+                itr += 6; \
+            } \
+            else \
+            { \
                 currentLength = string_adaptor::append(outputText, currentLength, 1, c); \
-				assert(!"An invalid format specifier given!"); \
-			} \
-		} \
-		else \
-		{ \
+                assert(!"An invalid format specifier given!"); \
+            } \
+        } \
+        else \
+        { \
             currentLength = string_adaptor::append(outputText, currentLength, 1, c); \
-		} \
-	}
+        } \
+    }
 
 /*[[[cog
 import cog
@@ -382,7 +480,7 @@ void miniformat::format(String& outputText, const char *formatText, ARG({0}, P, 
 {{ FORMAT_FUNCTION_TEMPLATE({0}) }}
 '''
 for i in range(1, 10):
-	cog.outl(format_method_template.format(i))
+    cog.outl(format_method_template.format(i))
 ]]]*/
 template <typename String, _FORMAT_LIST(1, typename P)>
 void miniformat::format(String& outputText, const char *formatText, _FORMAT_ARG(1, P, p))
@@ -421,24 +519,38 @@ void miniformat::format(String& outputText, const char *formatText, _FORMAT_ARG(
 { _FORMAT_FUNCTION_TEMPLATE(9) }
 
 //[[[end]]]
+#endif // __cplusplus > 199711L || (defined(_MSC_VER) && _MSC_VER >= 1800)
 
 inline void miniformat::detail::strreverse(char *begin, char *end)
 {
-	char aux;
-	while(end > begin)
-		aux = *end, *end-- = *begin, *begin++ = aux;
+    char aux;
+    while(end > begin)
+        aux = *end, *end-- = *begin, *begin++ = aux;
 }
 
 template <typename T>
 int miniformat::detail::size_enough(T value)
 {
-	return kGranulity;
+    return kGranulity;
 }
 
-template <>
-inline int miniformat::detail::size_enough(const char *value)
+namespace miniformat
 {
-    return strlen(value);
+    namespace detail
+    {
+        template <>
+        inline int size_enough(const char *value)
+        {
+            return static_cast<int>(strlen(value));
+        }
+    }
+}
+
+template <typename T>
+int miniformat::detail::size_enough(T *value)
+{
+    // Pointer to hex digits. Each hex digit deals with 4 bits (a half byte). 
+    return sizeof(T*) * 2;
 }
 
 inline int miniformat::detail::digits10(uint32_t v)
@@ -517,17 +629,17 @@ int miniformat::detail::render(String& wstr, int currentLength, int32_t value, i
         "6061626364656667686970717273747576777879"
         "8081828384858687888990919293949596979899";
 
-	// Take care of sign.
-	unsigned int uvalue = (value < 0) ? -value : value;
+    // Take care of sign.
+    unsigned int uvalue = (value < 0) ? -value : value;
 
-	int next = currentLength;
+    int next = currentLength;
     const int length = digits10(uvalue);
 
-	// Handle the 'width' parameter.
-	int spaceCnt = width - length - (value < 0);
-	if(spaceCnt > 0)
+    // Handle the 'width' parameter.
+    int spaceCnt = width - length - (value < 0);
+    if(spaceCnt > 0)
     {
-		currentLength = string_adaptor::append(wstr, currentLength, spaceCnt, ' ');
+        currentLength = string_adaptor::append(wstr, currentLength, spaceCnt, ' ');
         next += spaceCnt;
     }
 
@@ -574,14 +686,14 @@ int miniformat::detail::render(String& wstr, int currentLength, uint32_t value, 
         "6061626364656667686970717273747576777879"
         "8081828384858687888990919293949596979899";
 
-	int next = currentLength;
+    int next = currentLength;
     const int length = digits10(value);
 
-	// Handle the 'width' parameter.
-	int spaceCnt = width - length;
-	if(spaceCnt > 0)
+    // Handle the 'width' parameter.
+    int spaceCnt = width - length;
+    if(spaceCnt > 0)
     {
-		currentLength = string_adaptor::append(wstr, currentLength, spaceCnt, ' ');
+        currentLength = string_adaptor::append(wstr, currentLength, spaceCnt, ' ');
         next += spaceCnt;
     }
 
@@ -625,7 +737,7 @@ int miniformat::detail::render(String& wstr, int currentLength, int64_t value, i
     // Take care of sign.
     uint64_t uvalue = (value < 0) ? -value : value;
 
-	int next = currentLength;
+    int next = currentLength;
     const int length = digits10(uvalue);
 
     // Handle the 'width' parameter.
@@ -679,7 +791,7 @@ int miniformat::detail::render(String& wstr, int currentLength, uint64_t value, 
         "6061626364656667686970717273747576777879"
         "8081828384858687888990919293949596979899";
 
-	int next = currentLength;
+    int next = currentLength;
     const int length = digits10(value);
 
     // Handle the 'width' parameter.
@@ -720,142 +832,150 @@ int miniformat::detail::render(String& wstr, int currentLength, uint64_t value, 
 template <typename String>
 int miniformat::detail::render(String& wstr, int currentLength, double value, int width, int precision)
 {
-	int beginIndex = currentLength;
-	/* Hacky test for NaN
-	 * under -fast-math this won't work, but then you also won't
-	 * have correct nan values anyways.  The alternative is
-	 * to link with libmath (bad) or hack IEEE double bits (bad)
-	 */
-	if(!(value == value))		
-	{
-		// Handle the 'width' parameter.
-		int spaceCnt = width - 3;
-		if(spaceCnt > 0)
-			currentLength = string_adaptor::append(wstr, currentLength, spaceCnt, ' ');
+    int beginIndex = currentLength;
+    /* Hacky test for NaN
+     * under -fast-math this won't work, but then you also won't
+     * have correct nan values anyways.  The alternative is
+     * to link with libmath (bad) or hack IEEE double bits (bad)
+     */
+    if(!(value == value))		
+    {
+        // Handle the 'width' parameter.
+        int spaceCnt = width - 3;
+        if(spaceCnt > 0)
+            currentLength = string_adaptor::append(wstr, currentLength, spaceCnt, ' ');
 
-		currentLength = string_adaptor::append(wstr, currentLength, 1, 'n'); 
-		currentLength = string_adaptor::append(wstr, currentLength, 1, 'a'); 
-		currentLength = string_adaptor::append(wstr, currentLength, 1, 'n');
-		return currentLength;
-	}
+        currentLength = string_adaptor::append(wstr, currentLength, 1, 'n'); 
+        currentLength = string_adaptor::append(wstr, currentLength, 1, 'a'); 
+        currentLength = string_adaptor::append(wstr, currentLength, 1, 'n');
+        return currentLength;
+    }
 
-	/* if input is larger than thres_max, revert to exponential */
-	const double thres_max = (double)(0x7FFFFFFF);
+    /* if input is larger than thres_max, revert to exponential */
+    const double thres_max = (double)(0x7FFFFFFF);
 
-	double diff = 0.0;
+    double diff = 0.0;
 
-	if(precision < 0) 
-	{
-		precision = 0;
-	} 
-	else if(precision > 9) 
-	{
-		/* precision of >= 10 can lead to overflow errors */
-		precision = 9;
-	}
+    if(precision < 0) 
+    {
+        precision = 0;
+    } 
+    else if(precision > 9) 
+    {
+        /* precision of >= 10 can lead to overflow errors */
+        precision = 9;
+    }
 
-	/* we'll work in positive values and deal with the
-		negative sign issue later */
-	int neg = 0;
-	if(value < 0) 
-	{
-		neg = 1;
-		value = -value;
-	}
+    /* we'll work in positive values and deal with the
+        negative sign issue later */
+    int neg = 0;
+    if(value < 0) 
+    {
+        neg = 1;
+        value = -value;
+    }
 
-	int whole = (int)value;
-	double tmp = (value - whole) * pow10[precision];
-	uint32_t frac = (uint32_t)(tmp);
-	diff = tmp - frac;
+    int whole = (int)value;
+    double tmp = (value - whole) * pow10[precision];
+    uint32_t frac = (uint32_t)(tmp);
+    diff = tmp - frac;
 
-	if(diff > 0.5) 
-	{
-		++frac;
-		/* handle rollover, e.g.  case 0.99 with precision 1 is 1.0  */
-		if(frac >= pow10[precision]) 
-		{
-			frac = 0;
-			++whole;
-		}
-	}
-	else if(diff == 0.5 && ((frac == 0) || (frac & 1)))
-	{
-		/* if halfway, round up if odd, OR
-			if last digit is 0.  That last part is strange */
-		++frac;
-	}
+    if(diff > 0.5) 
+    {
+        ++frac;
+        /* handle rollover, e.g.  case 0.99 with precision 1 is 1.0  */
+        if(frac >= pow10[precision]) 
+        {
+            frac = 0;
+            ++whole;
+        }
+    }
+    else if(diff == 0.5 && ((frac == 0) || (frac & 1)))
+    {
+        /* if halfway, round up if odd, OR
+            if last digit is 0.  That last part is strange */
+        ++frac;
+    }
 
-	/* for very large numbers switch back to native sprintf for exponentials.
-		anyone want to write code to replace this? */
-	/*
-		 normal printf behavior is to print EVERY whole number digit
-		which can be 100s of characters overflowing your buffers == bad
-	*/
-	if(value > thres_max)
-	{
-		const int kSomeEnoughSpace = 128;
-		char buffer[kSomeEnoughSpace+1];
-#if _MSC_VER
+    /* for very large numbers switch back to native sprintf for exponentials.
+        anyone want to write code to replace this? */
+    /*
+         normal printf behavior is to print EVERY whole number digit
+        which can be 100s of characters overflowing your buffers == bad
+    */
+    if(value > thres_max)
+    {
+        const int kSomeEnoughSpace = 128;
+        char buffer[kSomeEnoughSpace+1];
+#if defined(_MSC_VER)
         sprintf_s(buffer, kSomeEnoughSpace, "%*e", width, neg ? -value : value);
 #else
         snprintf(buffer, kSomeEnoughSpace, "%*e", width, neg ? -value : value);
 #endif
-		buffer[kSomeEnoughSpace] = 0;
-		currentLength = string_adaptor::append(wstr, currentLength, buffer);
-		return currentLength;
-	}
+        buffer[kSomeEnoughSpace] = 0;
+        currentLength = string_adaptor::append(wstr, currentLength, buffer);
+        return currentLength;
+    }
 
-	if(precision == 0)
-	{
-		diff = value - whole;
-		if(diff > 0.5) 
-		{
-			/* greater than 0.5, round up, e.g. 1.6 -> 2 */
-			++whole;
-		} 
-		else if(diff == 0.5 && (whole & 1)) 
-		{
-			/* exactly 0.5 and ODD, then round up */
-			/* 1.5 -> 2, but 2.5 -> 2 */
-			++whole;
-		}
-	} 
-	else 
-	{
-		int count = precision;
-		// now do fractional part, as an unsigned number
-		do 
-		{
-			--count;
-			currentLength = string_adaptor::append(wstr, currentLength, 1, (char)(48 + (frac % 10)));
-		} 
-		while((frac /= 10));
-		// add extra 0s
-		currentLength = string_adaptor::append(wstr, currentLength, count, '0');
-		// add decimal
-		currentLength = string_adaptor::append(wstr, currentLength, 1, '.');
-	}
+    if(precision == 0)
+    {
+        diff = value - whole;
+        if(diff > 0.5) 
+        {
+            /* greater than 0.5, round up, e.g. 1.6 -> 2 */
+            ++whole;
+        } 
+        else if(diff == 0.5 && (whole & 1)) 
+        {
+            /* exactly 0.5 and ODD, then round up */
+            /* 1.5 -> 2, but 2.5 -> 2 */
+            ++whole;
+        }
+    } 
+    else 
+    {
+        int count = precision;
+        // now do fractional part, as an unsigned number
+        do 
+        {
+            --count;
+            currentLength = string_adaptor::append(wstr, currentLength, 1, (char)(48 + (frac % 10)));
+        } 
+        while((frac /= 10));
+        // add extra 0s
+        currentLength = string_adaptor::append(wstr, currentLength, count, '0');
+        // add decimal
+        currentLength = string_adaptor::append(wstr, currentLength, 1, '.');
+    }
 
-	// do whole part.
-	// Take care of sign.
-	// Conversion. Number is reversed.
-	do 
-	{
-		currentLength = string_adaptor::append(wstr, currentLength, 1, (char)(48 + (whole % 10))); 
-	}
-	while((whole /= 10));
-	if(neg) 
-	{
-		currentLength = string_adaptor::append(wstr, currentLength, 1, '-');
-	}
+    // do whole part.
+    // Take care of sign.
+    // Conversion. Number is reversed.
+    do 
+    {
+        currentLength = string_adaptor::append(wstr, currentLength, 1, (char)(48 + (whole % 10))); 
+    }
+    while((whole /= 10));
+    if(neg) 
+    {
+        currentLength = string_adaptor::append(wstr, currentLength, 1, '-');
+    }
     
-	// Handle the 'width' parameter.
-	int spaceCnt = width - (currentLength-beginIndex);
-	if(spaceCnt > 0)
-		currentLength = string_adaptor::append(wstr, currentLength, spaceCnt, ' ');
+    // Handle the 'width' parameter.
+    int spaceCnt = width - (currentLength-beginIndex);
+    if(spaceCnt > 0)
+        currentLength = string_adaptor::append(wstr, currentLength, spaceCnt, ' ');
 
-	int endIndex = currentLength-1;
-	strreverse(string_adaptor::at(wstr, beginIndex), string_adaptor::at(wstr, endIndex));
+    int endIndex = currentLength-1;
+    strreverse(string_adaptor::at(wstr, beginIndex), string_adaptor::at(wstr, endIndex));
+
+    return currentLength;
+}
+
+template <typename String>
+int miniformat::detail::render(String& wstr, int currentLength, char value, int, int)
+{
+    currentLength = string_adaptor::append(wstr, currentLength, 1, value);
 
     return currentLength;
 }
@@ -863,12 +983,54 @@ int miniformat::detail::render(String& wstr, int currentLength, double value, in
 template <typename String>
 int miniformat::detail::render(String& wstr, int currentLength, const char *value, int width, int)
 {
-	// Handle the 'width' parameter.
-    int spaceCnt = width - strlen(value);
-	if(spaceCnt > 0)
-		currentLength = string_adaptor::append(wstr, currentLength, spaceCnt, ' ');
+    // Handle the 'width' parameter.
+    int spaceCnt = width - static_cast<int>(strlen(value));
+    if(spaceCnt > 0)
+        currentLength = string_adaptor::append(wstr, currentLength, spaceCnt, ' ');
 
-	currentLength = string_adaptor::append(wstr, currentLength, value);
+    currentLength = string_adaptor::append(wstr, currentLength, value);
+
+    return currentLength;
+}
+
+template <typename String, typename T>
+int miniformat::detail::render(String& wstr, int currentLength,  T *value, int, int)
+{
+    static const char hexDigits[513]=
+        "000102030405060708090A0B0C0D0E0F"
+        "101112131415161718191A1B1C1D1E1F"
+        "202122232425262728292A2B2C2D2E2F"
+        "303132333435363738393A3B3C3D3E3F"
+        "404142434445464748494A4B4C4D4E4F"
+        "505152535455565758595A5B5C5D5E5F"
+        "606162636465666768696A6B6C6D6E6F"
+        "707172737475767778797A7B7C7D7E7F"
+        "808182838485868788898A8B8C8D8E8F"
+        "909192939495969798999A9B9C9D9E9F"
+        "A0A1A2A3A4A5A6A7A8A9AAABACADAEAF"
+        "B0B1B2B3B4B5B6B7B8B9BABBBCBDBEBF"
+        "C0C1C2C3C4C5C6C7C8C9CACBCCCDCECF"
+        "D0D1D2D3D4D5D6D7D8D9DADBDCDDDEDF"
+        "E0E1E2E3E4E5E6E7E8E9EAEBECEDEEEF"
+        "F0F1F2F3F4F5F6F7F8F9FAFBFCFDFEFF";
+
+    const int size = sizeof(T*) * 2;
+    char buffer[size];
+    uint16_t const* pHexDigit = reinterpret_cast<uint16_t const*>(hexDigits);
+    uint16_t *pDest = reinterpret_cast<uint16_t*>(buffer + size - 2);
+    uintptr_t v = reinterpret_cast<uintptr_t>(value);
+
+    // Assume sizeof(T*) is a multiple of 4
+    for(; (void*)pDest >= (void*)buffer; pDest -= 4)
+    {
+        *(pDest+0) = pHexDigit[v & 0xff];
+        *(pDest-1) = pHexDigit[(v >> 8) & 0xff];
+        *(pDest-2) = pHexDigit[(v >> 16) & 0xff];
+        *(pDest-3) = pHexDigit[(v >> 24) & 0xff];
+        v >>= 32;
+    }
+
+    currentLength = string_adaptor::append(wstr, currentLength, buffer, size);
 
     return currentLength;
 }
