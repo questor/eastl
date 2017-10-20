@@ -56,7 +56,9 @@ FORCE_INLINE uint64_t fmix64 ( uint64_t k ) {
   return k;
 }
 
-uint32_t eastl::murmurHash( const uint8_t *data, uint32_t len) {
+namespace eastl {
+
+uint32_t murmurHash( const uint8_t *data, uint32_t len) {
    const uint32_t seed = 0;
 
    const int nblocks = len / 4;
@@ -95,7 +97,7 @@ uint32_t eastl::murmurHash( const uint8_t *data, uint32_t len) {
    return h1;
 }
 
-void eastl::murmurHash_x86_128( const uint8_t *data, uint32_t len, void *out) {
+void murmurHash_x86_128( const uint8_t *data, uint32_t len, void *out) {
    const uint32_t seed = 0;
    const int nblocks = len / 16;
 
@@ -201,7 +203,7 @@ void eastl::murmurHash_x86_128( const uint8_t *data, uint32_t len, void *out) {
    ((uint32_t*)out)[3] = h4;
 }
 
-void eastl::murmurHash_x64_128( const uint8_t *data, uint32_t len, void *out) {
+void murmurHash_x64_128( const uint8_t *data, uint32_t len, void *out) {
    const uint64_t seed = 0;
    const int nblocks = len / 16;
 
@@ -283,3 +285,5 @@ void eastl::murmurHash_x64_128( const uint8_t *data, uint32_t len, void *out) {
    ((uint64_t*)out)[0] = h1;
    ((uint64_t*)out)[1] = h2;
  }
+
+} //namespace eastl

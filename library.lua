@@ -19,7 +19,7 @@ StaticLibrary {
         {Config="linux_x86-*-*"; "EA_PLATFORM_LINUX"},
       },
       CPPPATH = {
-         "extlibs",
+         _G.LIBROOT_EASTL .. "/..",
       },
    },
    Propagate = {
