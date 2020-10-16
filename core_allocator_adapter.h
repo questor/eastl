@@ -161,11 +161,14 @@ namespace EA
 			~CoreDeleterAdapter() EASTL_NOEXCEPT {}
 
 			template <typename T>
-			void operator()(T* p) { mpCoreAllocator->Free(p); }
+			void operator()(T* p)
+			{
+				p->~T();
+				mpCoreAllocator->Free(p);
+			}
 
 			CoreDeleterAdapter(const CoreDeleterAdapter& in) { mpCoreAllocator = in.mpCoreAllocator; }
 
-		#if EASTL_MOVE_SEMANTICS_ENABLED
 			CoreDeleterAdapter(CoreDeleterAdapter&& in)
 			{
 				mpCoreAllocator = in.mpCoreAllocator;
@@ -184,8 +187,6 @@ namespace EA
 				in.mpCoreAllocator = nullptr;
 				return *this;
 			}
-		#endif
-
 		};
 
 

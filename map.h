@@ -95,10 +95,14 @@ namespace eastl
 		using base_type::find;
 		using base_type::lowerBound;
 		using base_type::upperBound;
-		using base_type::mCompare;
 		using base_type::insert;
 		using base_type::erase;
 
+	protected:
+		using base_type::compare;
+		using base_type::get_compare;
+
+	public:
 		class value_compare 
 		{
 		protected:
@@ -119,20 +123,16 @@ namespace eastl
 		map(const allocator_type& allocator = EASTL_MAP_DEFAULT_ALLOCATOR);
 		map(const Compare& compare, const allocator_type& allocator = EASTL_MAP_DEFAULT_ALLOCATOR);
 		map(const this_type& x);
-		#if EASTL_MOVE_SEMANTICS_ENABLED
-			map(this_type&& x);
-			map(this_type&& x, const allocator_type& allocator);
-		#endif
+		map(this_type&& x);
+		map(this_type&& x, const allocator_type& allocator);
 		map(std::initializer_list<value_type> ilist, const Compare& compare = Compare(), const allocator_type& allocator = EASTL_MAP_DEFAULT_ALLOCATOR);
 
 		template <typename Iterator>
 		map(Iterator itBegin, Iterator itEnd); // allocator arg removed because VC7.1 fails on the default arg. To consider: Make a second version of this function without a default arg.
 
-		#if EASTL_MOVE_SEMANTICS_ENABLED // The (this_type&& x) ctor above has the side effect of forcing us to make operator= visible in this subclass.
-			this_type& operator=(const this_type& x) { return (this_type&)base_type::operator=(x); }
-			this_type& operator=(std::initializer_list<value_type> ilist) { return (this_type&)base_type::operator=(ilist); }
-			this_type& operator=(this_type&& x) { return (this_type&)base_type::operator=(eastl::move(x)); }
-		#endif
+		this_type& operator=(const this_type& x) { return (this_type&)base_type::operator=(x); }
+		this_type& operator=(std::initializer_list<value_type> ilist) { return (this_type&)base_type::operator=(ilist); }
+		this_type& operator=(this_type&& x) { return (this_type&)base_type::operator=(eastl::move(x)); }
 
 	public:
 		/// This is an extension to the C++ standard. We insert a default-constructed 
@@ -151,9 +151,7 @@ namespace eastl
 		eastl::pair<const_iterator, const_iterator> equalRange(const Key& key) const;
 
 		T& operator[](const Key& key); // Of map, multimap, set, and multimap, only map has operator[].
-		#if EASTL_MOVE_SEMANTICS_ENABLED
-			T& operator[](Key&& key); 
-		#endif
+		T& operator[](Key&& key); 
 
 		T& at(const Key& key);
 		const T& at(const Key& key) const;
@@ -207,10 +205,14 @@ namespace eastl
 		using base_type::find;
 		using base_type::lowerBound;
 		using base_type::upperBound;
-		using base_type::mCompare;
 		using base_type::insert;
 		using base_type::erase;
 
+	protected:
+		using base_type::compare;
+		using base_type::get_compare;
+
+	public:
 		class value_compare 
 		{
 		protected:
@@ -231,20 +233,16 @@ namespace eastl
 		multimap(const allocator_type& allocator = EASTL_MULTIMAP_DEFAULT_ALLOCATOR);
 		multimap(const Compare& compare, const allocator_type& allocator = EASTL_MULTIMAP_DEFAULT_ALLOCATOR);
 		multimap(const this_type& x);
-		#if EASTL_MOVE_SEMANTICS_ENABLED
 		multimap(this_type&& x);
 		multimap(this_type&& x, const allocator_type& allocator);
-		#endif
 		multimap(std::initializer_list<value_type> ilist, const Compare& compare = Compare(), const allocator_type& allocator = EASTL_MULTIMAP_DEFAULT_ALLOCATOR);
 
 		template <typename Iterator>
 		multimap(Iterator itBegin, Iterator itEnd); // allocator arg removed because VC7.1 fails on the default arg. To consider: Make a second version of this function without a default arg.
 
-		#if EASTL_MOVE_SEMANTICS_ENABLED // The (this_type&& x) ctor above has the side effect of forcing us to make operator= visible in this subclass.
-			this_type& operator=(const this_type& x) { return (this_type&)base_type::operator=(x); }
-			this_type& operator=(std::initializer_list<value_type> ilist) { return (this_type&)base_type::operator=(ilist); }
-			this_type& operator=(this_type&& x) { return (this_type&)base_type::operator=(eastl::move(x)); }
-		#endif
+		this_type& operator=(const this_type& x) { return (this_type&)base_type::operator=(x); }
+		this_type& operator=(std::initializer_list<value_type> ilist) { return (this_type&)base_type::operator=(ilist); }
+		this_type& operator=(this_type&& x) { return (this_type&)base_type::operator=(eastl::move(x)); }
 
 	public:
 		/// This is an extension to the C++ standard. We insert a default-constructed 
@@ -268,6 +266,10 @@ namespace eastl
 		eastl::pair<iterator, iterator>             equalRange_small(const Key& key);
 		eastl::pair<const_iterator, const_iterator> equalRange_small(const Key& key) const;
 
+	private:
+		// these base member functions are not included in multimaps
+		using base_type::try_emplace;
+		using base_type::insert_or_assign;
 	}; // multimap
 
 
@@ -299,19 +301,17 @@ namespace eastl
 	}
 
 
-	#if EASTL_MOVE_SEMANTICS_ENABLED
-		template <typename Key, typename T, typename Compare, typename Allocator>
-		inline map<Key, T, Compare, Allocator>::map(this_type&& x)
-			: base_type(eastl::move(x))
-		{
-		}
+	template <typename Key, typename T, typename Compare, typename Allocator>
+	inline map<Key, T, Compare, Allocator>::map(this_type&& x)
+		: base_type(eastl::move(x))
+	{
+	}
 
-		template <typename Key, typename T, typename Compare, typename Allocator>
-		inline map<Key, T, Compare, Allocator>::map(this_type&& x, const allocator_type& allocator)
-			: base_type(eastl::move(x), allocator)
-		{
-		}
-	#endif
+	template <typename Key, typename T, typename Compare, typename Allocator>
+	inline map<Key, T, Compare, Allocator>::map(this_type&& x, const allocator_type& allocator)
+		: base_type(eastl::move(x), allocator)
+	{
+	}
 
 
 	template <typename Key, typename T, typename Compare, typename Allocator>
@@ -341,7 +341,7 @@ namespace eastl
 	inline typename map<Key, T, Compare, Allocator>::value_compare 
 	map<Key, T, Compare, Allocator>::value_comp() const
 	{
-		return value_compare(mCompare);
+		return value_compare(get_compare());
 	}
 
 
@@ -380,7 +380,7 @@ namespace eastl
 		// result is a range of size zero or one.
 		const iterator itLower(lowerBound(key));
 
-		if((itLower == end()) || mCompare(key, itLower.mpNode->mValue.first)) // If at the end or if (key is < itLower)...
+		if((itLower == end()) || compare(key, itLower.mpNode->mValue.first)) // If at the end or if (key is < itLower)...
 			return eastl::pair<iterator, iterator>(itLower, itLower);
 
 		iterator itUpper(itLower);
@@ -396,7 +396,7 @@ namespace eastl
 		// See equalRange above for comments.
 		const const_iterator itLower(lowerBound(key));
 
-		if((itLower == end()) || mCompare(key, itLower.mpNode->mValue.first)) // If at the end or if (key is < itLower)...
+		if((itLower == end()) || compare(key, itLower.mpNode->mValue.first)) // If at the end or if (key is < itLower)...
 			return eastl::pair<const_iterator, const_iterator>(itLower, itLower);
 
 		const_iterator itUpper(itLower);
@@ -409,7 +409,7 @@ namespace eastl
 	{
 		iterator itLower(lowerBound(key)); // itLower->first is >= key.
 
-		if((itLower == end()) || mCompare(key, (*itLower).first))
+		if((itLower == end()) || compare(key, (*itLower).first))
 		{
 			itLower = base_type::DoInsertKey(true_type(), itLower, key);
 		}
@@ -422,24 +422,22 @@ namespace eastl
 	}
 
 
-	#if EASTL_MOVE_SEMANTICS_ENABLED
-		template <typename Key, typename T, typename Compare, typename Allocator>
-		inline T& map<Key, T, Compare, Allocator>::operator[](Key&& key)
+	template <typename Key, typename T, typename Compare, typename Allocator>
+	inline T& map<Key, T, Compare, Allocator>::operator[](Key&& key)
+	{
+		iterator itLower(lowerBound(key)); // itLower->first is >= key.
+
+		if((itLower == end()) || compare(key, (*itLower).first))
 		{
-			iterator itLower(lowerBound(key)); // itLower->first is >= key.
-
-			if((itLower == end()) || mCompare(key, (*itLower).first))
-			{
-				itLower = base_type::DoInsertKey(true_type(), itLower, eastl::move(key));
-			}
-
-			return (*itLower).second;
-
-			// Reference implementation of this function, which may not be as fast:
-			//iterator it(base_type::insert(eastl::pair<iterator, iterator>(key, T())).first);
-			//return it->second;
+			itLower = base_type::DoInsertKey(true_type(), itLower, eastl::move(key));
 		}
-	#endif
+
+		return (*itLower).second;
+
+		// Reference implementation of this function, which may not be as fast:
+		//iterator it(base_type::insert(eastl::pair<iterator, iterator>(key, T())).first);
+		//return it->second;
+	}
 
 
 	template <typename Key, typename T, typename Compare, typename Allocator>
@@ -478,7 +476,26 @@ namespace eastl
 	}
 
 
-
+	///////////////////////////////////////////////////////////////////////
+	// erase_if
+	//
+	// https://en.cppreference.com/w/cpp/container/map/erase_if
+	///////////////////////////////////////////////////////////////////////
+	template <class Key, class T, class Compare, class Allocator, class Predicate>
+	void erase_if(map<Key, T, Compare, Allocator>& c, Predicate predicate)
+	{
+		for (auto i = c.begin(), last = c.end(); i != last;)
+		{
+			if (predicate(*i))
+			{
+				i = c.erase(i);
+			}
+			else
+			{
+				++i;
+			}
+		}
+	}
 
 
 	///////////////////////////////////////////////////////////////////////
@@ -506,19 +523,17 @@ namespace eastl
 	}
 
 
-	#if EASTL_MOVE_SEMANTICS_ENABLED
-		template <typename Key, typename T, typename Compare, typename Allocator>
-		inline multimap<Key, T, Compare, Allocator>::multimap(this_type&& x)
-			: base_type(eastl::move(x))
-		{
-		}
+	template <typename Key, typename T, typename Compare, typename Allocator>
+	inline multimap<Key, T, Compare, Allocator>::multimap(this_type&& x)
+		: base_type(eastl::move(x))
+	{
+	}
 
-		template <typename Key, typename T, typename Compare, typename Allocator>
-		inline multimap<Key, T, Compare, Allocator>::multimap(this_type&& x, const allocator_type& allocator)
-			: base_type(eastl::move(x), allocator)
-		{
-		}
-	#endif
+	template <typename Key, typename T, typename Compare, typename Allocator>
+	inline multimap<Key, T, Compare, Allocator>::multimap(this_type&& x, const allocator_type& allocator)
+		: base_type(eastl::move(x), allocator)
+	{
+	}
 
 
 	template <typename Key, typename T, typename Compare, typename Allocator>
@@ -548,7 +563,7 @@ namespace eastl
 	inline typename multimap<Key, T, Compare, Allocator>::value_compare 
 	multimap<Key, T, Compare, Allocator>::value_comp() const
 	{
-		return value_compare(mCompare);
+		return value_compare(get_compare());
 	}
 
 
@@ -612,7 +627,7 @@ namespace eastl
 		const iterator itLower(lowerBound(key));
 		iterator       itUpper(itLower);
 
-		while((itUpper != end()) && !mCompare(key, itUpper.mpNode->mValue.first))
+		while((itUpper != end()) && !compare(key, itUpper.mpNode->mValue.first))
 			++itUpper;
 
 		return eastl::pair<iterator, iterator>(itLower, itUpper);
@@ -629,7 +644,7 @@ namespace eastl
 		const const_iterator itLower(lowerBound(key));
 		const_iterator       itUpper(itLower);
 
-		while((itUpper != end()) && !mCompare(key, itUpper.mpNode->mValue.first))
+		while((itUpper != end()) && !compare(key, itUpper.mpNode->mValue.first))
 			++itUpper;
 
 		return eastl::pair<const_iterator, const_iterator>(itLower, itUpper);
@@ -637,6 +652,27 @@ namespace eastl
 
 
 
+	///////////////////////////////////////////////////////////////////////
+	// erase_if
+	//
+	// https://en.cppreference.com/w/cpp/container/multimap/erase_if
+	///////////////////////////////////////////////////////////////////////
+	template <class Key, class T, class Compare, class Allocator, class Predicate>
+	void erase_if(multimap<Key, T, Compare, Allocator>& c, Predicate predicate)
+	{
+		// Erases all elements that satisfy the predicate pred from the container.
+		for (auto i = c.begin(), last = c.end(); i != last;)
+		{
+			if (predicate(*i))
+			{
+				i = c.erase(i);
+			}
+			else
+			{
+				++i;
+			}
+		}
+	}
 
 } // namespace eastl
 

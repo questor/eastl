@@ -22,10 +22,7 @@
 #include <eastl/algorithm.h>
 #include <eastl/bitset.h>
 
-#ifdef _MSC_VER
-	#pragma warning(push)
-	#pragma warning(disable: 4480)  // nonstandard extension used: specifying underlying type for enum
-#endif
+EA_DISABLE_VC_WARNING(4480); // nonstandard extension used: specifying underlying type for enum
 
 #if defined(EASTL_PRAGMA_ONCE_SUPPORTED)
 	#pragma once // Some compilers (e.g. VC++) benefit significantly from using this. We've measured 3-4% build speed improvements in apps as a result.
@@ -333,10 +330,6 @@ namespace eastl
 
 		bool validate() const;
 		int  validateIterator(const_iterator i) const;
-
-		#if EASTL_RESET_ENABLED
-			void reset(); // This function name is deprecated; use reset_lose_memory instead.
-		#endif
 	};
 
 
@@ -770,7 +763,7 @@ namespace eastl
 	typename bitvector<Allocator, Element, Container>::iterator
 	bitvector<Allocator, Element, Container>::begin() EASTL_NOEXCEPT
 	{
-		return iterator(&mContainer[0], 0);
+		return iterator(mContainer.begin(), 0);
 	}
 
 
@@ -778,7 +771,7 @@ namespace eastl
 	typename bitvector<Allocator, Element, Container>::const_iterator
 	bitvector<Allocator, Element, Container>::begin() const EASTL_NOEXCEPT
 	{
-		return const_iterator(&mContainer[0], 0);
+		return const_iterator(mContainer.begin(), 0);
 	}
 
 
@@ -786,7 +779,7 @@ namespace eastl
 	typename bitvector<Allocator, Element, Container>::const_iterator
 	bitvector<Allocator, Element, Container>::cbegin() const EASTL_NOEXCEPT
 	{
-		return const_iterator(&mContainer[0], 0);
+		return const_iterator(mContainer.begin(), 0);
 	}
 
 
@@ -1327,16 +1320,6 @@ namespace eastl
 	}
 
 
-	#if EASTL_RESET_ENABLED
-		// This function name is deprecated; use reset_lose_memory instead.
-		template <typename Allocator, typename Element, typename Container>
-		void bitvector<Allocator, Element, Container>::reset()
-		{
-			reset_lose_memory();
-		}
-	#endif
-
-
 	template <typename Allocator, typename Element, typename Container>
 	void bitvector<Allocator, Element, Container>::reset_lose_memory()
 	{
@@ -1431,7 +1414,7 @@ namespace eastl
 						   const bitvector<Allocator, Element, Container>& b)
 	{
 		// To do: Replace this with a smart compare implementation. This is much slower than it needs to be.
-		return ((a.size() == b.size()) && equal(a.begin(), a.end(), b.begin()));
+		return ((a.size() == b.size()) && eastl::equal(a.begin(), a.end(), b.begin()));
 	}
 
 
@@ -1448,7 +1431,7 @@ namespace eastl
 						  const bitvector<Allocator, Element, Container>& b)
 	{
 		// To do: Replace this with a smart compare implementation. This is much slower than it needs to be.
-		return lexicographicalCompare(a.begin(), a.end(), b.begin(), b.end());
+		return eastl::lexicographicalCompare(a.begin(), a.end(), b.begin(), b.end());
 	}
 
 
@@ -1486,21 +1469,6 @@ namespace eastl
 } // namespace eastl
 
 
-#ifdef _MSC_VER
-	#pragma warning(pop)
-#endif
-
+EA_RESTORE_VC_WARNING();
 
 #endif // Header include guard
-
-
-
-
-
-
-
-
-
-
-
-

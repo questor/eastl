@@ -12,11 +12,21 @@
 #ifndef EASTL_STRING_VIEW_H
 #define EASTL_STRING_VIEW_H
 
-EA_ONCE()
+#if defined(EASTL_PRAGMA_ONCE_SUPPORTED)
+	#pragma once // Some compilers (e.g. VC++) benefit significantly from using this. We've measured 3-4% build speed improvements in apps as a result.
+#endif
 
 #include <eastl/internal/config.h>
 #include <eastl/internal/char_traits.h>
+#include <eastl/algorithm.h>
+#include <eastl/iterator.h>
 #include <eastl/numeric_limits.h>
+
+#if EASTL_EXCEPTIONS_ENABLED
+	EA_DISABLE_ALL_VC_WARNINGS()
+	#include <stdexcept> // std::out_of_range.
+	EA_RESTORE_ALL_VC_WARNINGS()
+#endif
 
 EA_DISABLE_VC_WARNING(4814)
 
@@ -50,7 +60,7 @@ namespace eastl
 		EA_CONSTEXPR basicString_view() EASTL_NOEXCEPT : mpBegin(nullptr), mnCount(0) {}
 		EA_CONSTEXPR basicString_view(const basicString_view& other) EASTL_NOEXCEPT = default;
 		EA_CONSTEXPR basicString_view(const T* s, size_type count) : mpBegin(s), mnCount(count) {}
-		EA_CONSTEXPR basicString_view(const T* s) : mpBegin(s), mnCount(CharStrlen(s)) {}
+		EA_CONSTEXPR basicString_view(const T* s) : mpBegin(s), mnCount(s != nullptr ? CharStrlen(s) : 0) {}
 		basicString_view& operator=(const basicString_view& view) = default;
 
 		// 21.4.2.2, iterator support
@@ -99,7 +109,10 @@ namespace eastl
 		// 21.4.2.3, capacity
 		EA_CONSTEXPR size_type size() const EASTL_NOEXCEPT { return mnCount; }
 		EA_CONSTEXPR size_type length() const EASTL_NOEXCEPT { return mnCount; }
-		EA_CONSTEXPR size_type maxSize() const EASTL_NOEXCEPT { return numeric_limits<size_type>::max(); }
+
+		// avoid macro expansion of max(...) from windows headers (potentially included before this file)
+		// by wrapping function name in brackets
+		EA_CONSTEXPR size_type maxSize() const EASTL_NOEXCEPT { return (numeric_limits<size_type>::max)(); }
 		EA_CONSTEXPR bool empty() const EASTL_NOEXCEPT { return mnCount == 0; }
 
 
@@ -135,9 +148,9 @@ namespace eastl
 					EASTL_FAIL_MSG("string_view::copy -- out of range");
 			#endif
 
-			count = eastl::min(count, mnCount - pos);
+			count = eastl::min<size_type>(count, mnCount - pos);
 			auto* pResult = CharStringUninitializedCopy(mpBegin + pos, mpBegin + pos + count, pDestination);
-			*pResult = 0; // write null-terminator
+			// *pResult = 0; // don't write the null-terminator
 			return pResult - pDestination;
 		}
 
@@ -151,13 +164,23 @@ namespace eastl
 					EASTL_FAIL_MSG("string_view::substr -- out of range");
 			#endif
 
-			count = eastl::min(count, mnCount - pos);
+			count = eastl::min<size_type>(count, mnCount - pos);
 			return this_type(mpBegin + pos, count);
 		}
 
-		EA_CONSTEXPR int compare(basicString_view sw) const EASTL_NOEXCEPT
+		static EA_CPP14_CONSTEXPR int compare(const T* pBegin1, const T* pEnd1, const T* pBegin2, const T* pEnd2)
 		{
-			return Compare(mpBegin, sw.data(), eastl::minAlt(size(), sw.size()));
+			const ptrdiff_t n1   = pEnd1 - pBegin1;
+			const ptrdiff_t n2   = pEnd2 - pBegin2;
+			const ptrdiff_t nMin = eastl::minAlt(n1, n2);
+			const int       cmp  = Compare(pBegin1, pBegin2, (size_type)nMin);
+
+			return (cmp != 0 ? cmp : (n1 < n2 ? -1 : (n1 > n2 ? 1 : 0)));
+		}
+
+		EA_CPP14_CONSTEXPR int compare(basicString_view sw) const EASTL_NOEXCEPT
+		{
+			return compare(mpBegin, mpBegin + mnCount, sw.mpBegin, sw.mpBegin + sw.mnCount);
 		}
 
 		EA_CONSTEXPR int compare(size_type pos1, size_type count1, basicString_view sw) const
@@ -267,7 +290,7 @@ namespace eastl
 
 		EA_CONSTEXPR size_type findFirstOf(basicString_view sw, size_type pos = 0) const EASTL_NOEXCEPT
 		{
-			return findFirstOf(sw.mpBegin, pos, mnCount);
+			return findFirstOf(sw.mpBegin, pos, sw.mnCount);
 		}
 
 		EA_CONSTEXPR size_type findFirstOf(T c, size_type pos = 0) const EASTL_NOEXCEPT { return find(c, pos); }
@@ -391,52 +414,106 @@ namespace eastl
 		{
 			return findLastNotOf(s, pos, (size_type)CharStrlen(s));
 		}
+
+		// starts_with
+		EA_CONSTEXPR bool starts_with(basicString_view x) const EASTL_NOEXCEPT
+		{
+			return (size() >= x.size()) && (compare(0, x.size(), x) == 0);
+		}
+
+		EA_CONSTEXPR bool starts_with(T x) const EASTL_NOEXCEPT
+		{
+			return starts_with(basicString_view(&x, 1));
+		}
+
+		EA_CONSTEXPR bool starts_with(const T* s) const
+		{
+			return starts_with(basicString_view(s));
+		}
+
+		// ends_with
+		EA_CONSTEXPR bool ends_with(basicString_view x) const EASTL_NOEXCEPT
+		{
+			return (size() >= x.size()) && (compare(size() - x.size(), npos, x) == 0);
+		}
+
+		EA_CONSTEXPR bool ends_with(T x) const EASTL_NOEXCEPT
+		{
+			return ends_with(basicString_view(&x, 1));
+		}
+
+		EA_CONSTEXPR bool ends_with(const T* s) const
+		{
+			return ends_with(basicString_view(s));
+		}
 	};
 
 
 	// global operators
+
 	template <class CharT>
-	inline EA_CONSTEXPR bool operator==(basicString_view<CharT> lhs, basicString_view<CharT> rhs)
+	inline EA_CONSTEXPR bool operator==(basicString_view<CharT> lhs, basicString_view<CharT> rhs) EASTL_NOEXCEPT
 	{
 		return (lhs.size() == rhs.size()) && (lhs.compare(rhs) == 0);
 	}
 
 	template <class CharT>
-	inline EA_CONSTEXPR bool operator!=(basicString_view<CharT> lhs, basicString_view<CharT> rhs)
+	inline EA_CONSTEXPR bool operator==(decay_t<basicString_view<CharT>> lhs, basicString_view<CharT> rhs) EASTL_NOEXCEPT
+	{
+		return (lhs.size() == rhs.size()) && (lhs.compare(rhs) == 0);
+	}
+
+	template <class CharT>
+	inline EA_CONSTEXPR bool operator==(basicString_view<CharT> lhs, decay_t<basicString_view<CharT>> rhs) EASTL_NOEXCEPT
+	{
+		return (lhs.size() == rhs.size()) && (lhs.compare(rhs) == 0);
+	}
+
+	template <class CharT>
+	inline EA_CONSTEXPR bool operator==(decay_t<basicString_view<CharT>> lhs, decay_t<basicString_view<CharT>> rhs) EASTL_NOEXCEPT
+	{
+		return (lhs.size() == rhs.size()) && (lhs.compare(rhs) == 0);
+	}
+
+
+
+
+	template <class CharT>
+	inline EA_CONSTEXPR bool operator!=(basicString_view<CharT> lhs, basicString_view<CharT> rhs) EASTL_NOEXCEPT
 	{
 		return !(lhs == rhs);
 	}
 
 	template <class CharT>
-	inline EA_CONSTEXPR bool operator<(basicString_view<CharT> lhs, basicString_view<CharT> rhs)
+	inline EA_CONSTEXPR bool operator<(basicString_view<CharT> lhs, basicString_view<CharT> rhs) EASTL_NOEXCEPT
 	{
 		return lhs.compare(rhs) < 0;
 	}
 
 	template <class CharT>
-	inline EA_CONSTEXPR bool operator<=(basicString_view<CharT> lhs, basicString_view<CharT> rhs)
+	inline EA_CONSTEXPR bool operator<=(basicString_view<CharT> lhs, basicString_view<CharT> rhs) EASTL_NOEXCEPT
 	{
 		return !(rhs < lhs);
 	}
 
 	template <class CharT>
-	inline EA_CONSTEXPR bool operator>(basicString_view<CharT> lhs, basicString_view<CharT> rhs)
+	inline EA_CONSTEXPR bool operator>(basicString_view<CharT> lhs, basicString_view<CharT> rhs) EASTL_NOEXCEPT
 	{
 		return rhs < lhs;
 	}
 
 	template <class CharT>
-	inline EA_CONSTEXPR bool operator>=(basicString_view<CharT> lhs, basicString_view<CharT> rhs)
+	inline EA_CONSTEXPR bool operator>=(basicString_view<CharT> lhs, basicString_view<CharT> rhs) EASTL_NOEXCEPT
 	{
 		return !(lhs < rhs);
 	}
 
 	// string_view / wstring_view 
-	typedef basicString_view<char> string_view;
+	typedef basicString_view<char>    string_view;
 	typedef basicString_view<wchar_t> wstring_view;
 
 	// C++17 string types
-	typedef basicString_view<char8_t> u8string_view;  // Actually not a C++17 type, but added for consistency.
+	typedef basicString_view<char8_t>  u8string_view;  // C++20 feature, but always present for consistency.
 	typedef basicString_view<char16_t> u16string_view;
 	typedef basicString_view<char32_t> u32string_view;
 
@@ -446,7 +523,7 @@ namespace eastl
 	/// We provide EASTL hash function objects for use in hash table containers.
 	///
 	/// Example usage:
-	///    #include <eastl/hash_set.h>
+	///    #include <eastl/hashSet.h>
 	///    hashSet<string_view> stringHashSet;
 	///
 	template <typename T> struct hash;
@@ -455,22 +532,39 @@ namespace eastl
 	{
 		size_t operator()(const string_view& x) const
 		{
-			const unsigned char* p = (const unsigned char*)x.data(); // To consider: limit p to at most 256 chars.
-			unsigned int c, result = 2166136261U; // We implement an FNV-like string hash. 
-			while((c = *p++) != 0) // Using '!=' disables compiler warnings.
-				result = (result * 16777619) ^ c;
+			string_view::const_iterator p = x.cbegin();
+			string_view::const_iterator end = x.cend();
+			uint32_t result = 2166136261U; // We implement an FNV-like string hash.
+			while (p != end)
+				result = (result * 16777619) ^ (uint8_t)*p++;
 			return (size_t)result;
 		}
 	};
+
+	#if defined(EA_CHAR8_UNIQUE) && EA_CHAR8_UNIQUE
+		template<> struct hash<u8string_view>
+		{
+			size_t operator()(const u8string_view& x) const
+			{
+				u8string_view::const_iterator p = x.cbegin();
+				u8string_view::const_iterator end = x.cend();
+				uint32_t result = 2166136261U;
+				while (p != end)
+					result = (result * 16777619) ^ (uint8_t)*p++;
+				return (size_t)result;
+			}
+		};
+	#endif
 
 	template<> struct hash<u16string_view>
 	{
 		size_t operator()(const u16string_view& x) const
 		{
-			const char16_t* p = x.data();
-			unsigned int c, result = 2166136261U;
-			while((c = *p++) != 0)
-				result = (result * 16777619) ^ c;
+			u16string_view::const_iterator p = x.cbegin();
+			u16string_view::const_iterator end = x.cend();
+			uint32_t result = 2166136261U;
+			while (p != end)
+				result = (result * 16777619) ^ (uint16_t)*p++;
 			return (size_t)result;
 		}
 	};
@@ -479,10 +573,11 @@ namespace eastl
 	{
 		size_t operator()(const u32string_view& x) const
 		{
-			const char32_t* p = x.data();
-			unsigned int c, result = 2166136261U;
-			while((c = (unsigned int)*p++) != 0)
-				result = (result * 16777619) ^ c;
+			u32string_view::const_iterator p = x.cbegin();
+			u32string_view::const_iterator end = x.cend();
+			uint32_t result = 2166136261U;
+			while (p != end)
+				result = (result * 16777619) ^ (uint32_t)*p++;
 			return (size_t)result;
 		}
 	};
@@ -492,10 +587,11 @@ namespace eastl
 		{
 			size_t operator()(const wstring_view& x) const
 			{
-				const wchar_t* p = x.data();
-				unsigned int c, result = 2166136261U;
-				while((c = (unsigned int)*p++) != 0)
-					result = (result * 16777619) ^ c;
+				wstring_view::const_iterator p = x.cbegin();
+				wstring_view::const_iterator end = x.cend();
+				uint32_t result = 2166136261U;
+				while (p != end)
+					result = (result * 16777619) ^ (uint32_t)*p++;
 				return (size_t)result;
 			}
 		};
@@ -518,6 +614,12 @@ namespace eastl
 			    EA_CONSTEXPR inline u16string_view operator "" _sv(const char16_t* str, size_t len) EASTL_NOEXCEPT { return {str, len}; }
 			    EA_CONSTEXPR inline u32string_view operator "" _sv(const char32_t* str, size_t len) EASTL_NOEXCEPT { return {str, len}; }
 			    EA_CONSTEXPR inline wstring_view operator "" _sv(const wchar_t* str, size_t len) EASTL_NOEXCEPT { return {str, len}; }
+
+				// C++20 char8_t support.
+				#if EA_CHAR8_UNIQUE
+					EA_CONSTEXPR inline u8string_view operator "" sv(const char8_t* str, size_t len) EASTL_NOEXCEPT { return {str, len}; }
+					EA_CONSTEXPR inline u8string_view operator "" _sv(const char8_t* str, size_t len) EASTL_NOEXCEPT { return {str, len}; }
+				#endif
 		    }
 	    }
 		EA_RESTORE_VC_WARNING() // warning: 4455

@@ -16,23 +16,23 @@ namespace eastl
 {
 
 
-template<typename T, typename Predicate = less<string>, typename Allocator = EASTLAllocatorType>
+template<typename T, typename Predicate = str_less<const char*>, typename Allocator = EASTLAllocatorType>
 class string_map : public eastl::map<const char*, T, Predicate, Allocator>
 {
 public:
 	typedef eastl::map<const char*, T, Predicate, Allocator> base;
-	typedef string_map<T, Predicate, Allocator> this_type;
-	typedef typename base::base_type::allocator_type allocator_type;
-	typedef typename base::base_type::insert_return_type insert_return_type;
-	typedef typename base::base_type::iterator iterator;
-	typedef typename base::base_type::reverse_iterator reverse_iterator;
-	typedef typename base::base_type::const_iterator const_iterator;
-	typedef typename base::base_type::size_type size_type;
-	typedef typename base::base_type::key_type key_type;
-	typedef typename base::base_type::value_type value_type;
-	typedef typename base::mapped_type mapped_type;
+	typedef string_map<T, Predicate, Allocator>              this_type;
+	typedef typename base::base_type::allocator_type         allocator_type;
+	typedef typename base::base_type::insert_return_type     insert_return_type;
+	typedef typename base::base_type::iterator               iterator;
+	typedef typename base::base_type::reverse_iterator       reverse_iterator;
+	typedef typename base::base_type::const_iterator         const_iterator;
+	typedef typename base::base_type::size_type              size_type;
+	typedef typename base::base_type::key_type               key_type;
+	typedef typename base::base_type::value_type             value_type;
+	typedef typename base::mapped_type                       mapped_type;
 
-						string_map(const allocator_type& allocator = allocator_type()) : base(allocator) {}
+		                string_map(const allocator_type& allocator = allocator_type()) : base(allocator) {}
 						string_map(const string_map& src, const allocator_type& allocator = allocator_type());
 						~string_map();
 	void				clear();
@@ -49,11 +49,11 @@ private:
 	char*				strduplicate(const char* str);
 
 	// Not implemented right now
-	//insert_return_type	insert(const value_type& value);
-	//iterator			insert(iterator position, const value_type& value);
-    //reverse_iterator	erase(reverse_iterator position);
-    //reverse_iterator	erase(reverse_iterator first, reverse_iterator last);
-    //void				erase(const key_type* first, const key_type* last);
+	// insert_return_type	insert(const value_type& value);
+	// iterator			    insert(iterator position, const value_type& value);
+    // reverse_iterator	    erase(reverse_iterator position);
+    // reverse_iterator	    erase(reverse_iterator first, reverse_iterator last);
+    // void				    erase(const key_type* first, const key_type* last);
 };
 
 
@@ -142,11 +142,13 @@ template<typename T, typename Predicate, typename Allocator>
 typename string_map<T, Predicate, Allocator>::mapped_type&
 string_map<T, Predicate, Allocator>::operator[](const char* key)
 {
+	using base_value_type = typename base::base_type::value_type;
+
 	EASTL_ASSERT(key);
 	iterator i = base::base_type::find(key);
 	if (i != base::base_type::end())
 		return i->second;
-	return base::base_type::insert(strduplicate(key)).first->second;
+	return base::base_type::insert(base_value_type(pair_first_construct, strduplicate(key))).first->second;
 }
 
 template<typename T, typename Predicate, typename Allocator>

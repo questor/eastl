@@ -20,11 +20,17 @@
 //
 //    uninitializedCopy
 //    uninitializedCopy_n
+//    uninitialized_default_construct
+//    uninitialized_default_construct_n
 //    uninitializedMove
 //    uninitializedMove_if_noexcept    - Extention to standard functionality.
 //    uninitializedMove_n
 //    uninitializedFill
 //    uninitializedFillN
+//    uninitialized_value_construct
+//    uninitialized_value_construct_n
+//    uninitialized_default_fill        - Extention to standard functionality.
+//    uninitialized_default_fillN      - Extention to standard functionality.
 //    uninitialized_relocate            - Extention to standard functionality.
 //    uninitializedCopyPtr            - Extention to standard functionality.
 //    uninitializedMove_ptr            - Extention to standard functionality.
@@ -36,8 +42,11 @@
 //    uninitializedCopyCopy           - Extention to standard functionality.
 //
 // In-place destructor helpers:
-//    destruct(T*)
-//    destruct(first, last)
+//    destruct(T*)                      - Non-standard extension.
+//    destruct(first, last)             - Non-standard extension.
+//    destroy_at(T*)
+//    destroy(first, last)
+//    destroy_n(first, n)
 //
 // Alignment
 //    align
@@ -59,10 +68,10 @@
 
 
 #include <eastl/internal/config.h>
+#include <eastl/internal/memory_base.h>
 #include <eastl/internal/generic_iterator.h>
 #include <eastl/internal/pair_fwd_decls.h>
 #include <eastl/internal/functional_base.h>
-#include <eastl/internal/allocator_traits_fwd_decls.h>
 #include <eastl/algorithm.h>
 #include <eastl/type_traits.h>
 #include <eastl/allocator.h>
@@ -70,23 +79,17 @@
 #include <eastl/utility.h>
 #include <eastl/numeric_limits.h>
 
-#ifdef _MSC_VER
-	#pragma warning(push, 0)
-#endif
+EA_DISABLE_ALL_VC_WARNINGS()
 #include <stdlib.h>
 #include <new>
-#ifdef _MSC_VER
-	#pragma warning(pop)
-#endif
+EA_RESTORE_ALL_VC_WARNINGS()
 
-#ifdef _MSC_VER
-	#pragma warning(push)
-	#pragma warning(disable: 4530)  // C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
-	#pragma warning(disable: 4146)  // unary minus operator applied to unsigned type, result still unsigned
-	#pragma warning(disable: 4571)  // catch(...) semantics changed since Visual C++ 7.1; structured exceptions (SEH) are no longer caught.
-#endif
 
-EA_DISABLE_SN_WARNING(828); // The EDG SN compiler has a bug in its handling of variadic template arguments and mistakenly reports "parameter "args" was never referenced"
+// 4530 - C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
+// 4146 - unary minus operator applied to unsigned type, result still unsigned
+// 4571 - catch(...) semantics changed since Visual C++ 7.1; structured exceptions (SEH) are no longer caught.
+EA_DISABLE_VC_WARNING(4530 4146 4571);
+
 
 #if defined(EASTL_PRAGMA_ONCE_SUPPORTED)
 	#pragma once // Some compilers (e.g. VC++) benefit significantly from using this. We've measured 3-4% build speed improvements in apps as a result.
@@ -103,18 +106,6 @@ namespace eastl
 	#ifndef EASTL_TEMP_DEFAULT_NAME
 		#define EASTL_TEMP_DEFAULT_NAME EASTL_DEFAULT_NAME_PREFIX " temp" // Unless the user overrides something, this is "EASTL temp".
 	#endif
-
-
-	/// addressof
-	///
-	/// From the C++11 Standard, section 20.6.12.1
-	/// Returns the actual address of the object or function referenced by r, even in the presence of an overloaded operator&.
-	///
-	template<typename T>
-	T* addressof(T& value) EASTL_NOEXCEPT
-	{
-		return reinterpret_cast<T*>(&const_cast<char&>(reinterpret_cast<const volatile char&>(value)));
-	}
 
 
 	/// getTemporaryBuffer
@@ -177,6 +168,10 @@ namespace eastl
 	/// operator * or ->. autoConstruct is convenient but it causes * and -> to be slightly slower
 	/// and may result in construction at an inconvenient time. 
 	///
+	/// The autoDestruct template parameter controls whether the object, if constructed, is automatically
+	/// destructed when ~late_constructed() is called or must be manually destructed via a call to
+	/// destruct().
+	///
 	/// While construction can be automatic or manual, automatic destruction support is always present.
 	/// Thus you aren't required in any case to manually call destruct. However, you may safely manually
 	/// destruct the object at any time before the late_constructed destructor is executed. 
@@ -207,96 +202,52 @@ namespace eastl
 	///         // You may want to call destruct here, but aren't required to do so unless the Widget type requires it.
 	///     }
 	/// 
-	template <typename T, bool autoConstruct = true>
+	template <typename T, bool autoConstruct = true, bool autoDestruct = true>
 	class late_constructed
 	{
 	public:
-		typedef late_constructed<T, autoConstruct>                     this_type;
-		typedef T                                                      value_type;
-		typedef typename eastl::aligned_storage<sizeof(value_type), 
-						 eastl::alignment_of<value_type>::value>::type storage_type;
+		using this_type    = late_constructed<T, autoConstruct, autoDestruct>;
+		using value_type   = T;
+		using storage_type = eastl::aligned_storage_t<sizeof(value_type), eastl::alignment_of_v<value_type>>;
 
-		late_constructed() EASTL_NOEXCEPT  // In the case of the late_constructed instance being at global scope, we rely on the 
-		  : mpValue(NULL) {}            // compiler executing this constructor or placing the instance in auto-zeroed-at-startup memory.
+		late_constructed() EASTL_NOEXCEPT       // In the case of the late_constructed instance being at global scope, we rely on the 
+		  : mStorage(), mpValue(nullptr) {}  // compiler executing this constructor or placing the instance in auto-zeroed-at-startup memory.
 
 		~late_constructed()
 		{
-			if(mpValue)
+			if (autoDestruct && mpValue)
 				(*mpValue).~value_type();
-		} 
+		}
 
-		#if EASTL_MOVE_SEMANTICS_ENABLED && EASTL_VARIADIC_TEMPLATES_ENABLED
-			template <typename... Args>
-			void construct(Args&&... args)
-			{
-				if(!mpValue)
-					mpValue = new(&mStorage) value_type(eastl::forward<Args>(args)...);
-			} 
-		#else
-			void construct()
-			{
-				if(!mpValue)
-					mpValue = new(&mStorage) value_type;
-			}
-
-			#if EASTL_MOVE_SEMANTICS_ENABLED
-				template <typename A1>
-				void construct(A1&& a1)
-				{
-					if(!mpValue)
-						mpValue = new(&mStorage) value_type(eastl::forward<A1>(a1));
-				}
-
-				template <typename A1, typename A2>
-				void construct(A1&& a1, A2&& a2)
-				{
-					if(!mpValue)
-						mpValue = new(&mStorage) value_type(eastl::forward<A1>(a1), eastl::forward<A2>(a2));
-				}
-
-				template <typename A1, typename A2, typename A3>
-				void construct(A1&& a1, A2&& a2, A3&& a3)
-				{
-					if(!mpValue)
-						mpValue = new(&mStorage) value_type(eastl::forward<A1>(a1), eastl::forward<A2>(a2), eastl::forward<A3>(a3));
-				}
-			#endif
-
-			template <typename A1>
-			void construct(const A1& a1)
-			{
-				if(!mpValue)
-					mpValue = new(&mStorage) value_type(a1);
-			}
-
-			template <typename A1, typename A2>
-			void construct(const A1& a1, const A2& a2)
-			{
-				if(!mpValue)
-					mpValue = new(&mStorage) value_type(a1, a2);
-			}
-
-			template <typename A1, typename A2, typename A3>
-			void construct(const A1& a1, const A2& a2, const A3& a3)
-			{
-				if(!mpValue)
-					mpValue = new(&mStorage) value_type(a1, a2, a3);
-			}
-		#endif
+		template <typename... Args>
+		void construct(Args&&... args)
+		{
+			if(!mpValue)
+				mpValue = new (&mStorage) value_type(eastl::forward<Args>(args)...);
+		}
 
 		bool is_constructed() const EASTL_NOEXCEPT
-			{ return mpValue != NULL; }
+			{ return mpValue != nullptr; }
 
 		void destruct()
 		{
 			if(mpValue)
 			{
 				(*mpValue).~value_type();
-				mpValue = NULL;
+				mpValue = nullptr;
 			}
 		}
 
 		value_type& operator*() EASTL_NOEXCEPT
+		{
+			if(!mpValue)
+				construct();
+
+			EA_ANALYSIS_ASSUME(mpValue);
+			return *mpValue;
+		}
+
+		const value_type& operator*() const EASTL_NOEXCEPT
 		{
 			if(!mpValue)
 				construct();
@@ -312,7 +263,21 @@ namespace eastl
 			return mpValue;
 		}
 
+		const value_type* operator->() const EASTL_NOEXCEPT
+		{
+			if(!mpValue)
+				construct();
+			return mpValue;
+		}
+
 		value_type* get() EASTL_NOEXCEPT
+		{
+			if(!mpValue)
+				construct(); 
+			return mpValue;
+		}
+
+		const value_type* get() const EASTL_NOEXCEPT
 		{
 			if(!mpValue)
 				construct(); 
@@ -326,19 +291,28 @@ namespace eastl
 
 
 	// Specialization that doesn't auto-construct on demand.
-	template <typename T>
-	class late_constructed<T, false> : public late_constructed<T, true>
+	template <typename T, bool autoDestruct>
+	class late_constructed<T, false, autoDestruct> : public late_constructed<T, true, autoDestruct>
 	{
 	public:
-		typedef late_constructed<T, true> base_type;
+		typedef late_constructed<T, true, autoDestruct> base_type;
 
 		typename base_type::value_type& operator*() EASTL_NOEXCEPT
+			{ EASTL_ASSERT(base_type::mpValue); return *base_type::mpValue; }
+
+		const typename base_type::value_type& operator*() const EASTL_NOEXCEPT
 			{ EASTL_ASSERT(base_type::mpValue); return *base_type::mpValue; }
 
 		typename base_type::value_type* operator->() EASTL_NOEXCEPT
 			{ EASTL_ASSERT(base_type::mpValue); return base_type::mpValue; }
 
+		const typename base_type::value_type* operator->() const EASTL_NOEXCEPT
+			{ EASTL_ASSERT(base_type::mpValue); return base_type::mpValue; }
+
 		typename base_type::value_type* get() EASTL_NOEXCEPT
+			{ return base_type::mpValue; }
+
+		const typename base_type::value_type* get() const EASTL_NOEXCEPT
 			{ return base_type::mpValue; }
 	};
 
@@ -423,8 +397,10 @@ namespace eastl
 					ForwardIteratorDest origDest(dest);
 					try
 					{
+				#endif
 						for(; first != last; ++first, ++dest)
 							::new((void*)eastl::addressof(*dest)) value_type(*first);
+				#if EASTL_EXCEPTIONS_ENABLED
 					}
 					catch(...)
 					{
@@ -432,9 +408,6 @@ namespace eastl
 							(*origDest).~value_type();
 						throw;
 					}
-				#else
-					for(; first != last; ++first, ++dest)
-						::new((void*)eastl::addressof(*dest)) value_type(*first);
 				#endif
 
 				return dest;
@@ -591,8 +564,10 @@ namespace eastl
 			#if EASTL_EXCEPTIONS_ENABLED
 				try
 				{
+			#endif
 					for(; first != last; ++first, ++currentDest)
-						::new((void*)eastl::addressof(*currentDest)) value_type(*first);
+						::new(static_cast<void*>(eastl::addressof(*currentDest))) value_type(*first);
+			#if EASTL_EXCEPTIONS_ENABLED
 				}
 				catch(...)
 				{
@@ -600,9 +575,6 @@ namespace eastl
 						(*dest).~value_type();
 					throw;
 				}
-			#else
-				for(; first != last; ++first, ++currentDest)
-					::new((void*)eastl::addressof(*currentDest)) value_type(*first);
 			#endif
 
 			return currentDest;
@@ -656,8 +628,10 @@ namespace eastl
 				#if EASTL_EXCEPTIONS_ENABLED
 					try
 					{
+				#endif
 						for(; n > 0; --n, ++first, ++currentDest)
 							::new((void*)(eastl::addressof(*currentDest))) value_type(*first);
+				#if EASTL_EXCEPTIONS_ENABLED
 					}
 					catch(...)
 					{
@@ -665,9 +639,6 @@ namespace eastl
 							(*dest).~value_type();
 						throw;
 					}
-				#else
-					for(; n > 0; --n, ++first, ++currentDest)
-						::new((void*)eastl::addressof(*currentDest)) value_type(*first);
 				#endif
 
 				return currentDest;
@@ -716,67 +687,58 @@ namespace eastl
 	/// This is a specialization of uninitializedMove for iterators that are pointers. We use it because 
 	/// internally it uses generic_iterator to make pointers act like regular eastl::iterator.
 	///
-	#if EASTL_MOVE_SEMANTICS_ENABLED
-		namespace Internal
+	namespace Internal
+	{
+		template <typename InputIterator, typename ForwardIterator>
+		inline ForwardIterator uninitializedMove_impl(InputIterator first, InputIterator last, ForwardIterator dest, true_type)
 		{
-			template <typename InputIterator, typename ForwardIterator>
-			inline ForwardIterator uninitializedMove_impl(InputIterator first, InputIterator last, ForwardIterator dest, true_type)
-			{
-				return eastl::copy(first, last, dest); // The copy() in turn will use memcpy for is_trivially_copy_assignable (e.g. POD) types.
-			}
+			return eastl::copy(first, last, dest); // The copy() in turn will use memcpy for is_trivially_copy_assignable (e.g. POD) types.
+		}
 
-			template <typename InputIterator, typename ForwardIterator>
-			inline ForwardIterator uninitializedMove_impl(InputIterator first, InputIterator last, ForwardIterator dest, false_type)
-			{
-				typedef typename eastl::iterator_traits<ForwardIterator>::value_type value_type;
-				ForwardIterator currentDest(dest);
+		template <typename InputIterator, typename ForwardIterator>
+		inline ForwardIterator uninitializedMove_impl(InputIterator first, InputIterator last, ForwardIterator dest, false_type)
+		{
+			typedef typename eastl::iterator_traits<ForwardIterator>::value_type value_type;
+			ForwardIterator currentDest(dest);
 
-				// We must run a loop over every element and move-construct it at the new location.
-				#if EASTL_EXCEPTIONS_ENABLED
-					try
-					{
-						for(; first != last; ++first, ++currentDest)
-							::new((void*)eastl::addressof(*currentDest)) value_type(eastl::move(*first)); // If value_type has a move constructor then it will be used here.
-					}
-					catch(...)
-					{
-						// We have a problem here: If an exception occurs while doing the loop below then we will
-						// have values that were moved from the source to the dest that may need to be moved back 
-						// in the catch. What does the C++11 Standard say about this? And what happens if there's an 
-						// exception while moving them back? We may want to trace through a conforming C++11 Standard
-						// Library to see what it does and do something similar. Given that rvalue references are 
-						// objects that are going away, we may not need to move the values back, though that has the 
-						// side effect of a certain kind of lost elements problem.
-						for(; dest < currentDest; ++dest)
-							(*dest).~value_type();
-						throw;
-					}
-				#else
+			// We must run a loop over every element and move-construct it at the new location.
+			#if EASTL_EXCEPTIONS_ENABLED
+				try
+				{
+			#endif
 					for(; first != last; ++first, ++currentDest)
 						::new((void*)eastl::addressof(*currentDest)) value_type(eastl::move(*first)); // If value_type has a move constructor then it will be used here.
-				#endif
+			#if EASTL_EXCEPTIONS_ENABLED
+				}
+				catch(...)
+				{
+					// We have a problem here: If an exception occurs while doing the loop below then we will
+					// have values that were moved from the source to the dest that may need to be moved back 
+					// in the catch. What does the C++11 Standard say about this? And what happens if there's an 
+					// exception while moving them back? We may want to trace through a conforming C++11 Standard
+					// Library to see what it does and do something similar. Given that rvalue references are 
+					// objects that are going away, we may not need to move the values back, though that has the 
+					// side effect of a certain kind of lost elements problem.
+					for(; dest < currentDest; ++dest)
+						(*dest).~value_type();
+					throw;
+				}
+			#endif
 
-				return currentDest;
-			}
+			return currentDest;
 		}
+	}
 
-		template <typename First, typename Last, typename Result>
-		inline Result uninitializedMove_ptr(First first, Last last, Result dest)
-		{
-			typedef typename eastl::iterator_traits<generic_iterator<Result, void> >::value_type value_type;
-			const generic_iterator<Result, void> i(Internal::uninitializedMove_impl(eastl::generic_iterator<First, void>(first), // generic_iterator makes a pointer act like an iterator.
-																					 eastl::generic_iterator<Last, void>(last), 
-																					 eastl::generic_iterator<Result, void>(dest), 
-																					 eastl::is_trivially_copy_assignable<value_type>())); // is_trivially_copy_assignable identifies if copy assignment would be as valid as move assignment, which means we have the opportunity to memcpy/memmove optimization.
-			return i.base();
-		}
-	#else
-		template <typename First, typename Last, typename Result>
-		inline Result uninitializedMove_ptr(First first, Last last, Result dest)
-		{
-			return uninitializedCopyPtr(first, last, dest);
-		}
-	#endif
+	template <typename First, typename Last, typename Result>
+	inline Result uninitializedMove_ptr(First first, Last last, Result dest)
+	{
+		typedef typename eastl::iterator_traits<generic_iterator<Result, void> >::value_type value_type;
+		const generic_iterator<Result, void> i(Internal::uninitializedMove_impl(eastl::generic_iterator<First, void>(first), // generic_iterator makes a pointer act like an iterator.
+																				 eastl::generic_iterator<Last, void>(last), 
+																				 eastl::generic_iterator<Result, void>(dest), 
+																				 eastl::is_trivially_copy_assignable<value_type>())); // is_trivially_copy_assignable identifies if copy assignment would be as valid as move assignment, which means we have the opportunity to memcpy/memmove optimization.
+		return i.base();
+	}
 
 
 
@@ -800,11 +762,7 @@ namespace eastl
 	template <typename InputIterator, typename ForwardIterator>
 	inline ForwardIterator uninitializedMove(InputIterator first, InputIterator last, ForwardIterator dest)
 	{
-		#if EASTL_MOVE_SEMANTICS_ENABLED
-			return eastl::uninitializedCopy(eastl::make_move_iterator(first), eastl::make_move_iterator(last), dest);
-		#else
-			return eastl::uninitializedCopy(first, last, dest);
-		#endif
+		return eastl::uninitializedCopy(eastl::make_move_iterator(first), eastl::make_move_iterator(last), dest);
 	}
 
 
@@ -816,11 +774,7 @@ namespace eastl
 	template <typename InputIterator, typename ForwardIterator>
 	inline ForwardIterator uninitializedMove_if_noexcept(InputIterator first, InputIterator last, ForwardIterator dest)
 	{
-		#if EASTL_MOVE_SEMANTICS_ENABLED
-			return eastl::uninitializedCopy(eastl::make_move_if_noexcept_iterator(first), eastl::make_move_if_noexcept_iterator(last), dest);
-		#else
-			return eastl::uninitializedCopy(first, last, dest);
-		#endif
+		return eastl::uninitializedCopy(eastl::make_move_if_noexcept_iterator(first), eastl::make_move_if_noexcept_iterator(last), dest);
 	}
 
 
@@ -850,11 +804,7 @@ namespace eastl
 	template<typename InputIterator, typename Count, typename ForwardIterator>
 	inline ForwardIterator uninitializedMove_n(InputIterator first, Count n, ForwardIterator dest)
 	{
-		#if EASTL_MOVE_SEMANTICS_ENABLED
-			return eastl::uninitializedCopy_n(eastl::make_move_iterator(first), n, dest);
-		#else
-			return eastl::uninitializedCopy_n(first, n, dest);
-		#endif
+		return eastl::uninitializedCopy_n(eastl::make_move_iterator(first), n, dest);
 	}
 
 	// Disable warning C4345 - behavior change: an object of POD type constructed with an initializer of the form ()
@@ -877,11 +827,13 @@ namespace eastl
 		typedef typename eastl::iterator_traits<ForwardIterator>::value_type value_type;
 		ForwardIterator currentDest(first);
 
-#if EASTL_EXCEPTIONS_ENABLED
+	#if EASTL_EXCEPTIONS_ENABLED
 		try
 		{
+	#endif
 			for (; currentDest != last; ++currentDest)
-				::new (static_cast<void*>(&*currentDest)) value_type();
+				::new (eastl::addressof(*currentDest)) value_type();
+	#if EASTL_EXCEPTIONS_ENABLED
 		}
 		catch (...)
 		{
@@ -889,10 +841,7 @@ namespace eastl
 				(*first).~value_type();
 			throw;
 		}
-#else
-		for (; currentDest != last; ++currentDest)
-			::new (static_cast<void*>(&*currentDest)) value_type();
-#endif
+	#endif
 	}
 
 	/// uninitialized_default_fillN
@@ -905,17 +854,70 @@ namespace eastl
 	///    template <typename ForwardIterator, typename Count, typename T>
 	///    void uninitialized_default_fillN(ForwardIterator destination, Count n);
 	///
+	namespace Internal
+	{
+		template <typename ForwardIterator, typename Count>
+		inline void uninitialized_default_fillN_impl(ForwardIterator first, Count n, false_type)
+		{
+			typedef typename eastl::iterator_traits<ForwardIterator>::value_type value_type;
+			ForwardIterator currentDest(first);
+
+		#if EASTL_EXCEPTIONS_ENABLED
+			try
+			{
+		#endif
+				for (; n > 0; --n, ++currentDest)
+					::new (eastl::addressof(*currentDest)) value_type();
+		#if EASTL_EXCEPTIONS_ENABLED
+			}
+			catch (...)
+			{
+				for (; first < currentDest; ++first)
+					(*first).~value_type();
+				throw;
+			}
+		#endif
+		}
+
+		template <typename ForwardIterator, typename Count>
+		inline void uninitialized_default_fillN_impl(ForwardIterator first, Count n, true_type)
+		{
+			typedef typename eastl::iterator_traits<ForwardIterator>::value_type value_type;
+			memset(first, 0, sizeof(value_type) * n);
+		}
+	}
+
 	template <typename ForwardIterator, typename Count>
 	inline void uninitialized_default_fillN(ForwardIterator first, Count n)
 	{
 		typedef typename eastl::iterator_traits<ForwardIterator>::value_type value_type;
+		Internal::uninitialized_default_fillN_impl(first, n, is_scalar<value_type>());
+	}
+	EA_RESTORE_VC_WARNING()
+
+	/// uninitialized_default_construct
+	///
+	/// Constructs objects in the uninitialized storage designated by the range [first, last) by default-initialization.
+	///
+	/// Default-initialization:
+	///  If T is a class, the default constructor is called; otherwise, no initialization is done, resulting in
+	///  indeterminate values.
+	/// 
+	/// http://en.cppreference.com/w/cpp/memory/uninitialized_default_construct
+	///
+	template <typename ForwardIterator>
+	inline void uninitialized_default_construct(ForwardIterator first, ForwardIterator last)
+	{
+		typedef typename eastl::iterator_traits<ForwardIterator>::value_type value_type;
 		ForwardIterator currentDest(first);
 
-#if EASTL_EXCEPTIONS_ENABLED
+	#if EASTL_EXCEPTIONS_ENABLED
 		try
 		{
-			for (; n > 0; --n, ++currentDest)
-				::new (static_cast<void*>(&*currentDest)) value_type();
+	#endif
+			for (; currentDest != last; ++currentDest)
+				::new (eastl::addressof(*currentDest)) value_type;
+	#if EASTL_EXCEPTIONS_ENABLED
 		}
 		catch (...)
 		{
@@ -923,12 +925,38 @@ namespace eastl
 				(*first).~value_type();
 			throw;
 		}
-#else
-		for (; n > 0; --n, ++currentDest)
-			::new (eastl::addressof(*currentDest)) value_type();
-#endif
+	#endif
 	}
-	EA_RESTORE_VC_WARNING()
+
+	/// uninitialized_default_construct_n
+	///
+	/// Constructs n objects in the uninitialized storage starting at first by default-initialization.
+	/// 
+	/// http://en.cppreference.com/w/cpp/memory/uninitialized_default_construct_n
+	///
+	template <typename ForwardIterator, typename Count>
+	inline ForwardIterator uninitialized_default_construct_n(ForwardIterator first, Count n)
+	{
+		typedef typename eastl::iterator_traits<ForwardIterator>::value_type value_type;
+		ForwardIterator currentDest(first);
+
+	#if EASTL_EXCEPTIONS_ENABLED
+		try
+		{
+	#endif
+			for (; n > 0; --n, ++currentDest)
+				::new (eastl::addressof(*currentDest)) value_type;
+			return currentDest;
+	#if EASTL_EXCEPTIONS_ENABLED
+		}
+		catch (...)
+		{
+			for (; first < currentDest; ++first)
+				(*first).~value_type();
+			throw;
+		}
+	#endif
+	}
 
 	/// uninitializedFill
 	///
@@ -957,8 +985,10 @@ namespace eastl
 			#if EASTL_EXCEPTIONS_ENABLED
 				try
 				{
+			#endif
 					for(; currentDest != last; ++currentDest)
 						::new((void*)eastl::addressof(*currentDest)) value_type(value);
+			#if EASTL_EXCEPTIONS_ENABLED
 				}
 				catch(...)
 				{
@@ -966,9 +996,6 @@ namespace eastl
 						(*first).~value_type();
 					throw;
 				}
-			#else
-				for(; currentDest != last; ++currentDest)
-					::new((void*)eastl::addressof(*currentDest)) value_type(value);
 			#endif
 		}
 	}
@@ -980,7 +1007,72 @@ namespace eastl
 		Internal::uninitializedFill_impl(first, last, value, eastl::is_trivially_copy_assignable<value_type>());
 	}
 
+	/// uninitialized_value_construct
+	///
+	/// Constructs objects in the uninitialized storage range [first, last) by value-initialization.
+	///
+	/// Value-Initialization:
+	/// If T is a class, the object is default-initialized (after being zero-initialized if T's default 
+	/// constructor is not user-provided/deleted); otherwise, the object is zero-initialized.
+	///
+	/// http://en.cppreference.com/w/cpp/memory/uninitialized_value_construct
+	///
+	template <class ForwardIterator>
+	void uninitialized_value_construct(ForwardIterator first, ForwardIterator last)
+	{
+		typedef typename eastl::iterator_traits<ForwardIterator>::value_type value_type;
+		ForwardIterator currentDest(first);
 
+    #if EASTL_EXCEPTIONS_ENABLED
+		try
+		{
+	#endif
+			for (; currentDest != last; ++currentDest)
+				::new (eastl::addressof(*currentDest)) value_type();
+	#if EASTL_EXCEPTIONS_ENABLED
+		}
+		catch (...)
+		{
+			for (; first < currentDest; ++first)
+				(*first).~value_type();
+			throw;
+		}
+	#endif
+	}
+
+	/// uninitialized_value_construct_n
+	///
+	/// Constructs n objects in the uninitialized storage starting at first by value-initialization.
+	///
+	/// Value-Initialization:
+	/// If T is a class, the object is default-initialized (after being zero-initialized if T's default 
+	/// constructor is not user-provided/deleted); otherwise, the object is zero-initialized.
+	///
+	/// http://en.cppreference.com/w/cpp/memory/uninitialized_value_construct_n
+	///
+	template <class ForwardIterator, class Count>
+	ForwardIterator uninitialized_value_construct_n(ForwardIterator first, Count n)
+	{
+		typedef typename eastl::iterator_traits<ForwardIterator>::value_type value_type;
+		ForwardIterator currentDest(first);
+
+	#if EASTL_EXCEPTIONS_ENABLED
+		try
+		{
+	#endif
+			for (; n > 0; --n, ++currentDest)
+				::new (eastl::addressof(*currentDest)) value_type();
+			return currentDest;
+	#if EASTL_EXCEPTIONS_ENABLED
+		}
+		catch (...)
+		{
+			for (; first < currentDest; ++first)
+				(*first).~value_type();
+			throw;
+		}
+	#endif
+	}
 
 	/// uninitializedFillPtr
 	///
@@ -992,10 +1084,10 @@ namespace eastl
 	inline void uninitializedFillPtr(T* first, T* last, const T& value)
 	{
 		typedef typename eastl::iterator_traits<eastl::generic_iterator<T*, void> >::value_type value_type;
-		Internal::uninitializedFill_impl(eastl::generic_iterator<T*, void>(first), eastl::generic_iterator<T*, void>(last), value, eastl::is_trivially_copy_assignable<value_type>());
+		Internal::uninitializedFill_impl(eastl::generic_iterator<T*, void>(first),
+		                                  eastl::generic_iterator<T*, void>(last), value,
+		                                  eastl::is_trivially_copy_assignable<value_type>());
 	}
-
-
 
 	/// uninitializedFillN
 	///
@@ -1024,8 +1116,10 @@ namespace eastl
 			#if EASTL_EXCEPTIONS_ENABLED
 				try
 				{
+			#endif
 					for(; n > 0; --n, ++currentDest)
 						::new((void*)eastl::addressof(*currentDest)) value_type(value);
+			#if EASTL_EXCEPTIONS_ENABLED
 				}
 				catch(...)
 				{
@@ -1033,9 +1127,6 @@ namespace eastl
 						(*first).~value_type();
 					throw;
 				}
-			#else
-				for(; n > 0; --n, ++currentDest)
-					::new((void*)eastl::addressof(*currentDest)) value_type(value);
 			#endif
 		}
 	}
@@ -1268,6 +1359,57 @@ namespace eastl
 	}
 
 
+	/// destroy_at
+	///
+	/// Calls the destructor of a given object.
+	///
+	/// Note that we don't have a specialized version of this for objects 
+	/// with trivial destructors, such as integers. This is because the 
+	/// compiler can already see in our version here that the destructor
+	/// is a no-op.
+	///
+	/// This is the same as eastl::destruct but we included for C++17 compliance.
+	///
+	/// http://en.cppreference.com/w/cpp/memory/destroy_at
+	/// 
+	template <typename T>
+	inline void destroy_at(T* p)
+	{
+		EA_UNUSED(p);
+		p->~T();
+	}
+
+
+	/// destroy 
+	///
+	/// Calls the destructor on a range of objects.
+	///
+	/// http://en.cppreference.com/w/cpp/memory/destroy
+	///
+	template <typename ForwardIterator>
+	inline void destroy(ForwardIterator first, ForwardIterator last)
+	{
+		for (; first != last; ++first)
+			destroy_at(addressof(*first));
+	}
+
+
+	/// destroy_n
+	///
+	/// Calls the destructor on the n objects in the range.
+	///
+	/// http://en.cppreference.com/w/cpp/memory/destroy_n
+	///
+	template <typename ForwardIterator, typename Size>
+	ForwardIterator destroy_n(ForwardIterator first, Size n)
+	{
+		for (; n > 0; ++first, --n)
+			destroy_at(addressof(*first));
+
+		return first;
+	}
+
+
 	/// align
 	///
 	/// Same as C++11 std::align. http://en.cppreference.com/w/cpp/memory/align
@@ -1444,19 +1586,18 @@ namespace eastl
 		};
 
 		template <typename Pointer, bool = has_element_type<Pointer>::value>
-		struct pointer_element_type;
+		struct pointer_element_type 
+		{
+			using type = Pointer;
+		};
 
 		template <typename Pointer>
 		struct pointer_element_type<Pointer, true>
 			{ typedef typename Pointer::element_type type; };
 
-		#if EASTL_VARIADIC_TEMPLATES_ENABLED // See 20.6.3.1 p3 for why we need to support this. Pointer may be a template with various arguments as opposed to a non-templated class.
-			template <template <typename, typename...> class Pointer, typename T, typename... Args>
-			struct pointer_element_type<Pointer<T, Args...>, false>
-				{ typedef T type; };
-		#else
-			// To consider: solve this via multiple declarations. For our uses this may not matter a lot, as this is an uncommon use-case.
-		#endif
+		template <template <typename, typename...> class Pointer, typename T, typename... Args>
+		struct pointer_element_type<Pointer<T, Args...>, false>
+			{ typedef T type; };
 
 
 		// pointer_difference_type
@@ -1537,24 +1678,8 @@ namespace eastl
 
 } // namespace eastl
 
-#include <eastl/internal/allocator_traits.h>
 
-EA_RESTORE_SN_WARNING()
-
-#ifdef _MSC_VER
-	#pragma warning(pop)
-#endif
+EA_RESTORE_VC_WARNING();
 
 
 #endif // Header include guard
-
-
-
-
-
-
-
-
-
-
-

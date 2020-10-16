@@ -111,7 +111,7 @@ namespace eastl
 		typedef typename base_type::size_type                                     size_type;
 		typedef typename base_type::key_type                                      key_type;
 		typedef T                                                                 mapped_type;
-		typedef typename base_type::value_type                                    value_type;     // Note that this is pair<const key_type, mapped_type>.
+		typedef typename base_type::value_type                                    value_type;     // NOTE: 'value_type = pair<const key_type, mapped_type>'.
 		typedef typename base_type::allocator_type                                allocator_type;
 		typedef typename base_type::node_type                                     node_type;
 		typedef typename base_type::insert_return_type                            insert_return_type;
@@ -154,18 +154,16 @@ namespace eastl
 		}
 
 
-		#if EASTL_MOVE_SEMANTICS_ENABLED
-			hashMap(this_type&& x)
-			  : base_type(eastl::move(x))
-			{
-			}
+		hashMap(this_type&& x)
+		  : base_type(eastl::move(x))
+		{
+		}
 
 
-			hashMap(this_type&& x, const allocator_type& allocator)
-			  : base_type(eastl::move(x), allocator)
-			{
-			}
-		#endif
+		hashMap(this_type&& x, const allocator_type& allocator)
+		  : base_type(eastl::move(x), allocator)
+		{
+		}
 
 
 		/// hashMap
@@ -209,12 +207,10 @@ namespace eastl
 		}
 
 
-		#if EASTL_MOVE_SEMANTICS_ENABLED
-			this_type& operator=(this_type&& x)
-			{
-				return static_cast<this_type&>(base_type::operator=(eastl::move(x)));
-			}
-		#endif
+		this_type& operator=(this_type&& x)
+		{
+			return static_cast<this_type&>(base_type::operator=(eastl::move(x)));
+		}
 
 
 		/// insert
@@ -266,12 +262,10 @@ namespace eastl
 		}
 
 
-		#if EASTL_MOVE_SEMANTICS_ENABLED
-			insert_return_type insert(key_type&& key)
-			{
-				return base_type::DoInsertKey(true_type(), eastl::move(key));
-			}
-		#endif
+		insert_return_type insert(key_type&& key)
+		{
+			return base_type::DoInsertKey(true_type(), eastl::move(key));
+		}
 
 
 		mapped_type& operator[](const key_type& key)
@@ -285,20 +279,34 @@ namespace eastl
 			//return (*base_type::insert(value_type(key, mapped_type())).first).second;
 		}
 
-		#if EASTL_MOVE_SEMANTICS_ENABLED
-			mapped_type& operator[](key_type&& key)
-			{
-				// The Standard states that this function "inserts the value value_type(std::move(key), mapped_type())"
-				return (*base_type::DoInsertKey(true_type(), eastl::move(key)).first).second;
-			}
-		#endif
+		mapped_type& operator[](key_type&& key)
+		{
+			// The Standard states that this function "inserts the value value_type(std::move(key), mapped_type())"
+			return (*base_type::DoInsertKey(true_type(), eastl::move(key)).first).second;
+		}
 
 
 	}; // hashMap
 
-
-
-
+	/// hashMap erase_if
+	///
+	/// https://en.cppreference.com/w/cpp/container/unordered_map/erase_if
+	template <typename Key, typename T, typename Hash, typename Predicate, typename Allocator, bool bCacheHashCode, typename UserPredicate>
+	void erase_if(eastl::hashMap<Key, T, Hash, Predicate, Allocator, bCacheHashCode>& c, UserPredicate predicate)
+	{
+		// Erases all elements that satisfy the predicate from the container.
+		for (auto i = c.begin(), last = c.end(); i != last;)
+		{
+			if (predicate(*i))
+			{
+				i = c.erase(i);
+			}
+			else
+			{
+				++i;
+			}
+		}
+	}
 
 
 	/// hashMultimap
@@ -329,6 +337,10 @@ namespace eastl
 		typedef typename base_type::iterator                                          iterator;
 
 		using base_type::insert;
+
+	private:
+		using base_type::try_emplace;
+		using base_type::insert_or_assign;
 
 	public:
 		/// hashMultimap
@@ -364,18 +376,16 @@ namespace eastl
 		}
 
 
-		#if EASTL_MOVE_SEMANTICS_ENABLED
-			hashMultimap(this_type&& x)
-			  : base_type(eastl::move(x))
-			{
-			}
+		hashMultimap(this_type&& x)
+		  : base_type(eastl::move(x))
+		{
+		}
 
 
-			hashMultimap(this_type&& x, const allocator_type& allocator)
-			  : base_type(eastl::move(x), allocator)
-			{
-			}
-		#endif
+		hashMultimap(this_type&& x, const allocator_type& allocator)
+		  : base_type(eastl::move(x), allocator)
+		{
+		}
 
 
 		/// hashMultimap
@@ -419,12 +429,10 @@ namespace eastl
 		}
 
 
-		#if EASTL_MOVE_SEMANTICS_ENABLED
-			this_type& operator=(this_type&& x)
-			{
-				return static_cast<this_type&>(base_type::operator=(eastl::move(x)));
-			}
-		#endif
+		this_type& operator=(this_type&& x)
+		{
+			return static_cast<this_type&>(base_type::operator=(eastl::move(x)));
+		}
 
 
 		/// insert
@@ -439,15 +447,32 @@ namespace eastl
 		}
 
 
-		#if EASTL_MOVE_SEMANTICS_ENABLED
-			insert_return_type insert(key_type&& key)
-			{
-				return base_type::DoInsertKey(false_type(), eastl::move(key));
-			}
-		#endif
-
+		insert_return_type insert(key_type&& key)
+		{
+			return base_type::DoInsertKey(false_type(), eastl::move(key));
+		}
 
 	}; // hashMultimap
+
+	/// hashMultimap erase_if
+	///
+	/// https://en.cppreference.com/w/cpp/container/unordered_multimap/erase_if
+	template <typename Key, typename T, typename Hash, typename Predicate, typename Allocator, bool bCacheHashCode, typename UserPredicate>
+	void erase_if(eastl::hashMultimap<Key, T, Hash, Predicate, Allocator, bCacheHashCode>& c, UserPredicate predicate)
+	{
+		// Erases all elements that satisfy the predicate from the container.
+		for (auto i = c.begin(), last = c.end(); i != last;)
+		{
+			if (predicate(*i))
+			{
+				i = c.erase(i);
+			}
+			else
+			{
+				++i;
+			}
+		}
+	}
 
 
 

@@ -108,10 +108,8 @@ namespace eastl
 		explicit fixedVector(size_type n);                                      // Currently we don't support overflowAllocator specification for other constructors, for simplicity.
 		fixedVector(size_type n, const value_type& value);
 		fixedVector(const this_type& x);
-		#if EASTL_MOVE_SEMANTICS_ENABLED
-			fixedVector(this_type&& x);
-			fixedVector(this_type&& x, const overflow_allocator_type& overflowAllocator);
-		#endif
+		fixedVector(this_type&& x);
+		fixedVector(this_type&& x, const overflow_allocator_type& overflowAllocator);
 		fixedVector(std::initializer_list<T> ilist, const overflow_allocator_type& overflowAllocator = EASTL_FIXED_VECTOR_DEFAULT_ALLOCATOR);
 
 		template <typename InputIterator>
@@ -119,9 +117,7 @@ namespace eastl
 
 		this_type& operator=(const this_type& x);
 		this_type& operator=(std::initializer_list<T> ilist);
-		#if EASTL_MOVE_SEMANTICS_ENABLED
-			this_type& operator=(this_type&& x);
-		#endif
+		this_type& operator=(this_type&& x);
 
 		void swap(this_type& x);
 
@@ -136,19 +132,12 @@ namespace eastl
 		void*     pushBackUninitialized();
 		void      pushBack(const value_type& value);   // We implement pushBack here because we have a specialization that's 
 		reference pushBack();                          // smaller for the case of overflow being disabled.
-		#if EASTL_MOVE_SEMANTICS_ENABLED
-			void  pushBack(value_type&& value);
-		#endif
+		void      pushBack(value_type&& value);
 
 		// OverflowAllocator
 		const overflow_allocator_type& getOverflowAllocator() const EASTL_NOEXCEPT;
 		overflow_allocator_type&       getOverflowAllocator() EASTL_NOEXCEPT;
 		void                           setOverflowAllocator(const overflow_allocator_type& allocator);
-
-		// Deprecated:
-		#if EASTL_RESET_ENABLED
-			void reset(); // This function name is deprecated; use reset_lose_memory instead.
-		#endif
 
 	protected:
 		void*     DoPushBackUninitialized(true_type);
@@ -157,10 +146,8 @@ namespace eastl
 		void      DoPushBack(true_type, const value_type& value);
 		void      DoPushBack(false_type, const value_type& value);
 
-		#if EASTL_MOVE_SEMANTICS_ENABLED
-			void      DoPushBackMove(true_type, value_type&& value);
-			void      DoPushBackMove(false_type, value_type&& value);
-		#endif
+		void      DoPushBackMove(true_type, value_type&& value);
+		void      DoPushBackMove(false_type, value_type&& value);
 
 		reference DoPushBack(false_type);
 		reference DoPushBack(true_type);
@@ -242,57 +229,55 @@ namespace eastl
 	}
 
 
-	#if EASTL_MOVE_SEMANTICS_ENABLED
-		template <typename T, size_t nodeCount, bool bEnableOverflow, typename OverflowAllocator>
-		inline fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::fixedVector(this_type&& x)
-			: base_type(fixedAllocator_type(mBuffer.buffer))
-		{
-			// Since we are a fixedVector, we can't swap pointers. We can possibly so something like fixedSwap or
-			// we can just do an assignment from x. If we want to do the former then we need to have some complicated
-			// code to deal with overflow or no overflow, and whether the memory is in the fixed-size buffer or in 
-			// the overflow allocator. 90% of the time the memory should be in the fixed buffer, in which case
-			// a simple assignment is no worse than the fancy pathway.
+	template <typename T, size_t nodeCount, bool bEnableOverflow, typename OverflowAllocator>
+	inline fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::fixedVector(this_type&& x)
+		: base_type(fixedAllocator_type(mBuffer.buffer))
+	{
+		// Since we are a fixedVector, we can't swap pointers. We can possibly so something like fixedSwap or
+		// we can just do an assignment from x. If we want to do the former then we need to have some complicated
+		// code to deal with overflow or no overflow, and whether the memory is in the fixed-size buffer or in 
+		// the overflow allocator. 90% of the time the memory should be in the fixed buffer, in which case
+		// a simple assignment is no worse than the fancy pathway.
 
-			// Since we are a fixedList, we can't normally swap pointers unless both this and 
-			// x are using using overflow and the overflow allocators are equal. To do:
-			//if(hasOverflowed() && x.hasOverflowed() && (getOverflowAllocator() == x.getOverflowAllocator()))
-			//{
-			//    We can swap contents and may need to swap the allocators as well.
-			//}
+		// Since we are a fixedList, we can't normally swap pointers unless both this and 
+		// x are using using overflow and the overflow allocators are equal. To do:
+		//if(hasOverflowed() && x.hasOverflowed() && (getOverflowAllocator() == x.getOverflowAllocator()))
+		//{
+		//    We can swap contents and may need to swap the allocators as well.
+		//}
 
-			// The following is currently identical to the fixedVector(const this_type& x) code above. If it stays that
-			// way then we may want to make a shared implementation.
-			getAllocator().copy_overflow_allocator(x.getAllocator());
+		// The following is currently identical to the fixedVector(const this_type& x) code above. If it stays that
+		// way then we may want to make a shared implementation.
+		getAllocator().copy_overflow_allocator(x.getAllocator());
 
-			#if EASTL_NAME_ENABLED
-				getAllocator().setName(x.getAllocator().getName());
-			#endif
+		#if EASTL_NAME_ENABLED
+			getAllocator().setName(x.getAllocator().getName());
+		#endif
 
-			mpBegin = mpEnd = (value_type*)&mBuffer.buffer[0];
-			internalCapacityPtr() = mpBegin + nodeCount;
-			base_type::template DoAssign<move_iterator<iterator>, true>(make_move_iterator(x.begin()), make_move_iterator(x.end()), false_type());
-		}
+		mpBegin = mpEnd = (value_type*)&mBuffer.buffer[0];
+		internalCapacityPtr() = mpBegin + nodeCount;
+		base_type::template DoAssign<move_iterator<iterator>, true>(eastl::make_move_iterator(x.begin()), eastl::make_move_iterator(x.end()), false_type());
+	}
 
 
-		template <typename T, size_t nodeCount, bool bEnableOverflow, typename OverflowAllocator>
-		inline fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::fixedVector(this_type&& x, const overflow_allocator_type& overflowAllocator)
-			: base_type(fixedAllocator_type(mBuffer.buffer, overflowAllocator))
-		{
-			// See the discussion above.
+	template <typename T, size_t nodeCount, bool bEnableOverflow, typename OverflowAllocator>
+	inline fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::fixedVector(this_type&& x, const overflow_allocator_type& overflowAllocator)
+		: base_type(fixedAllocator_type(mBuffer.buffer, overflowAllocator))
+	{
+		// See the discussion above.
 
-			// The following is currently identical to the fixedVector(const this_type& x) code above. If it stays that
-			// way then we may want to make a shared implementation.
-			getAllocator().copy_overflow_allocator(x.getAllocator());
+		// The following is currently identical to the fixedVector(const this_type& x) code above. If it stays that
+		// way then we may want to make a shared implementation.
+		getAllocator().copy_overflow_allocator(x.getAllocator());
 
-			#if EASTL_NAME_ENABLED
-				getAllocator().setName(x.getAllocator().getName());
-			#endif
+		#if EASTL_NAME_ENABLED
+			getAllocator().setName(x.getAllocator().getName());
+		#endif
 
-			mpBegin = mpEnd = (value_type*)&mBuffer.buffer[0];
-			internalCapacityPtr() = mpBegin + nodeCount;
-			base_type::template DoAssign<iterator, true>(x.begin(), x.end(), false_type());
-		}
-	#endif
+		mpBegin = mpEnd = (value_type*)&mBuffer.buffer[0];
+		internalCapacityPtr() = mpBegin + nodeCount;
+		base_type::template DoAssign<iterator, true>(x.begin(), x.end(), false_type());
+	}
 
 
 	template <typename T, size_t nodeCount, bool bEnableOverflow, typename OverflowAllocator>
@@ -354,29 +339,27 @@ namespace eastl
 	}
 
 
-	#if EASTL_MOVE_SEMANTICS_ENABLED
-		template <typename T, size_t nodeCount, bool bEnableOverflow, typename OverflowAllocator>
-		inline typename fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::this_type& 
-		fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::operator=(this_type&& x)
+	template <typename T, size_t nodeCount, bool bEnableOverflow, typename OverflowAllocator>
+	inline typename fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::this_type& 
+	fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::operator=(this_type&& x)
+	{
+		// Since we are a fixedVector, we can't swap pointers. We can possibly do something like fixedSwap or
+		// we can just do an assignment from x. If we want to do the former then we need to have some complicated
+		// code to deal with overflow or no overflow, and whether the memory is in the fixed-size buffer or in 
+		// the overflow allocator. 90% of the time the memory should be in the fixed buffer, in which case
+		// a simple assignment is no worse than the fancy pathway.
+		if (this != &x)
 		{
-			// Since we are a fixedVector, we can't swap pointers. We can possibly do something like fixedSwap or
-			// we can just do an assignment from x. If we want to do the former then we need to have some complicated
-			// code to deal with overflow or no overflow, and whether the memory is in the fixed-size buffer or in 
-			// the overflow allocator. 90% of the time the memory should be in the fixed buffer, in which case
-			// a simple assignment is no worse than the fancy pathway.
-			if (this != &x)
-			{
-				clear();
+			clear();
 
-				#if EASTL_ALLOCATOR_COPY_ENABLED
-					getAllocator() = x.getAllocator(); // The primary effect of this is to copy the overflow allocator.
-				#endif
+			#if EASTL_ALLOCATOR_COPY_ENABLED
+				getAllocator() = x.getAllocator(); // The primary effect of this is to copy the overflow allocator.
+			#endif
 
-				base_type::template DoAssign<move_iterator<iterator>, true>(make_move_iterator(x.begin()), make_move_iterator(x.end()), false_type()); // Shorter route.
-			}
-			return *this;
+			base_type::template DoAssign<move_iterator<iterator>, true>(make_move_iterator(x.begin()), make_move_iterator(x.end()), false_type()); // Shorter route.
 		}
-	#endif
+		return *this;
+	}
 
 
 	template <typename T, size_t nodeCount, bool bEnableOverflow, typename OverflowAllocator>
@@ -437,16 +420,6 @@ namespace eastl
 			internalCapacityPtr() = mpBegin + nodeCount;
 		}
 	}
-
-
-	#if EASTL_RESET_ENABLED
-		// This function name is deprecated; use reset_lose_memory instead.
-		template <typename T, size_t nodeCount, bool bEnableOverflow, typename OverflowAllocator>
-		inline void fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::reset()
-		{
-			reset_lose_memory();
-		}
-	#endif
 
 
 	template <typename T, size_t nodeCount, bool bEnableOverflow, typename OverflowAllocator>
@@ -567,31 +540,29 @@ namespace eastl
 	}
 
 
-	#if EASTL_MOVE_SEMANTICS_ENABLED
-		template <typename T, size_t nodeCount, bool bEnableOverflow, typename OverflowAllocator>
-		inline void fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::pushBack(value_type&& value)
-		{
-			DoPushBackMove(typename type_select<bEnableOverflow, true_type, false_type>::type(), eastl::move(value));
-		}
+	template <typename T, size_t nodeCount, bool bEnableOverflow, typename OverflowAllocator>
+	inline void fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::pushBack(value_type&& value)
+	{
+		DoPushBackMove(typename type_select<bEnableOverflow, true_type, false_type>::type(), eastl::move(value));
+	}
 
 
-		template <typename T, size_t nodeCount, bool bEnableOverflow, typename OverflowAllocator>
-		inline void fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::DoPushBackMove(true_type, value_type&& value)
-		{
-			base_type::pushBack(eastl::move(value)); // This will call vector::pushBack(value_type &&), and possibly swap value with *mpEnd.
-		}
+	template <typename T, size_t nodeCount, bool bEnableOverflow, typename OverflowAllocator>
+	inline void fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::DoPushBackMove(true_type, value_type&& value)
+	{
+		base_type::pushBack(eastl::move(value)); // This will call vector::pushBack(value_type &&), and possibly swap value with *mpEnd.
+	}
 
 
-		// This template specializes for overflow NOT enabled.
-		// In this configuration, there is no need for the heavy weight pushBack() which tests to see if the container should grow (it never will)
-		template <typename T, size_t nodeCount, bool bEnableOverflow, typename OverflowAllocator>
-		inline void fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::DoPushBackMove(false_type, value_type&& value)
-		{
-			EASTL_ASSERT(mpEnd < internalCapacityPtr());
+	// This template specializes for overflow NOT enabled.
+	// In this configuration, there is no need for the heavy weight pushBack() which tests to see if the container should grow (it never will)
+	template <typename T, size_t nodeCount, bool bEnableOverflow, typename OverflowAllocator>
+	inline void fixedVector<T, nodeCount, bEnableOverflow, OverflowAllocator>::DoPushBackMove(false_type, value_type&& value)
+	{
+		EASTL_ASSERT(mpEnd < internalCapacityPtr());
 
-			::new((void*)mpEnd++) value_type(eastl::move(value)); // This will call the value_type(value_type&&) constructor, and possibly swap value with *mpEnd.
-		}
-	#endif
+		::new((void*)mpEnd++) value_type(eastl::move(value)); // This will call the value_type(value_type&&) constructor, and possibly swap value with *mpEnd.
+	}
 
 
 	template <typename T, size_t nodeCount, bool bEnableOverflow, typename OverflowAllocator>

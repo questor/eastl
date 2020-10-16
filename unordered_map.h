@@ -8,7 +8,9 @@
 #include <eastl/internal/config.h>
 #include <eastl/hash_map.h>
 
-EA_ONCE()
+#if defined(EASTL_PRAGMA_ONCE_SUPPORTED)
+	#pragma once // Some compilers (e.g. VC++) benefit significantly from using this. We've measured 3-4% build speed improvements in apps as a result.
+#endif
 
 namespace eastl
 {
@@ -30,6 +32,7 @@ namespace eastl
 				  bool bCacheHashCode = false>
 		using unordered_map = hashMap<Key, T, Hash, Predicate, Allocator, bCacheHashCode>;
     #endif
+
 
     /// unordered_multimap
 	///

@@ -50,16 +50,16 @@ EA_DISABLE_ALL_VC_WARNINGS()
 #endif
 EA_RESTORE_ALL_VC_WARNINGS()
 
+// 4530 - C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
+// 4480 - nonstandard extension used: specifying underlying type for enum
+// 4571 - catch(...) semantics changed since Visual C++ 7.1; structured exceptions (SEH) are no longer caught.
+EA_DISABLE_VC_WARNING(4530 4480 4571);
 
-#ifdef _MSC_VER
-	#pragma warning(push)
-	#pragma warning(disable: 4530)  // C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
-	#pragma warning(disable: 4345)  // Behavior change: an object of POD type constructed with an initializer of the form () will be default-initialized
-	#pragma warning(disable: 4244)  // Argument: conversion from 'int' to 'const eastl::vector<T>::value_type', possible loss of data
-	#pragma warning(disable: 4127)  // Conditional expression is constant
-	#pragma warning(disable: 4480)  // nonstandard extension used: specifying underlying type for enum
-	#pragma warning(disable: 4571)  // catch(...) semantics changed since Visual C++ 7.1; structured exceptions (SEH) are no longer caught.
-#endif
+// 4345 - Behavior change: an object of POD type constructed with an initializer of the form () will be default-initialized
+// 4244 - Argument: conversion from 'int' to 'const eastl::vector<T>::value_type', possible loss of data
+// 4127 - Conditional expression is constant
+EA_DISABLE_VC_WARNING(4345 4244 4127);
+
 
 #if defined(EASTL_PRAGMA_ONCE_SUPPORTED)
 	#pragma once // Some compilers (e.g. VC++) benefit significantly from using this. We've measured 3-4% build speed improvements in apps as a result.
@@ -204,16 +204,14 @@ namespace eastl
 		using base_type::internalAllocator;
 
 	public:
-		vector();
-		explicit vector(const allocator_type& allocator);
+		vector() EASTL_NOEXCEPT_IF(EASTL_NOEXCEPT_EXPR(EASTL_VECTOR_DEFAULT_ALLOCATOR));
+		explicit vector(const allocator_type& allocator) EASTL_NOEXCEPT;
 		explicit vector(size_type n, const allocator_type& allocator = EASTL_VECTOR_DEFAULT_ALLOCATOR);
 		vector(size_type n, const value_type& value, const allocator_type& allocator = EASTL_VECTOR_DEFAULT_ALLOCATOR);
 		vector(const this_type& x);
 		vector(const this_type& x, const allocator_type& allocator);
-		#if EASTL_MOVE_SEMANTICS_ENABLED
-			vector(this_type&& x);
-			vector(this_type&& x, const allocator_type& allocator);
-		#endif
+		vector(this_type&& x) EASTL_NOEXCEPT;
+		vector(this_type&& x, const allocator_type& allocator);
 		vector(std::initializer_list<value_type> ilist, const allocator_type& allocator = EASTL_VECTOR_DEFAULT_ALLOCATOR);
 
 		template <typename InputIterator>
@@ -223,11 +221,9 @@ namespace eastl
 
 		this_type& operator=(const this_type& x);
 		this_type& operator=(std::initializer_list<value_type> ilist);
-		#if EASTL_MOVE_SEMANTICS_ENABLED
-			this_type& operator=(this_type&& x);
-		#endif
+		this_type& operator=(this_type&& x); // TODO(c++17): noexcept(allocator_traits<Allocator>::propagate_on_container_move_assignment::value || allocator_traits<Allocator>::is_always_equal::value)
 
-		void swap(this_type& x);
+		void swap(this_type& x); // TODO(c++17): noexcept(allocator_traits<Allocator>::propagate_on_container_move_assignment::value || allocator_traits<Allocator>::is_always_equal::value)
 
 		void assign(size_type n, const value_type& value);
 
@@ -280,36 +276,27 @@ namespace eastl
 		void      pushBack(const value_type& value);
 		reference pushBack();
 		void*     pushBackUninitialized();
-		#if EASTL_MOVE_SEMANTICS_ENABLED
-			void  pushBack(value_type&& value);
-		#endif
+		void      pushBack(value_type&& value);
 		void      popBack();
 
-		#if EASTL_MOVE_SEMANTICS_ENABLED && EASTL_VARIADIC_TEMPLATES_ENABLED
-			template<class... Args>
-			iterator emplace(const_iterator position, Args&&... args);
+		template<class... Args>
+		iterator emplace(const_iterator position, Args&&... args);
 
-			template<class... Args>
-			void emplace_back(Args&&... args);
-		#else
-			#if EASTL_MOVE_SEMANTICS_ENABLED
-			  iterator emplace(const_iterator position, value_type&& value);
-			  void emplace_back(value_type&& value);
-			#endif
-
-			iterator emplace(const_iterator position, const value_type& value);
-			void emplace_back(const value_type& value);
-		#endif
+		template<class... Args>
+		reference emplace_back(Args&&... args);
 
 		iterator insert(const_iterator position, const value_type& value);
-		void     insert(const_iterator position, size_type n, const value_type& value);
-		#if EASTL_MOVE_SEMANTICS_ENABLED
-			iterator insert(const_iterator position, value_type&& value);
-		#endif
+		iterator insert(const_iterator position, size_type n, const value_type& value);
+		iterator insert(const_iterator position, value_type&& value);
 		iterator insert(const_iterator position, std::initializer_list<value_type> ilist);
 
 		template <typename InputIterator>
-		void insert(const_iterator position, InputIterator first, InputIterator last);
+		iterator insert(const_iterator position, InputIterator first, InputIterator last);
+
+		iterator erase_first(const T& value);
+		iterator erase_first_unsorted(const T& value); // Same as erase, except it doesn't preserve order, but is faster because it simply copies the last item in the vector over the erased position.
+		reverse_iterator erase_last(const T& value);
+		reverse_iterator erase_last_unsorted(const T& value); // Same as erase, except it doesn't preserve order, but is faster because it simply copies the last item in the vector over the erased position.
 
 		iterator erase(const_iterator position);
 		iterator erase(const_iterator first, const_iterator last);
@@ -325,17 +312,15 @@ namespace eastl
 		bool validate() const EASTL_NOEXCEPT;
 		int  validateIterator(const_iterator i) const EASTL_NOEXCEPT;
 
-		#if EASTL_RESET_ENABLED
-			void reset() EASTL_NOEXCEPT; // This function name is deprecated; use reset_lose_memory instead.
-		#endif
-
 	protected:
 		// These functions do the real work of maintaining the vector. You will notice
 		// that many of them have the same name but are specialized on iterator_tag
 		// (iterator categories). This is because in these cases there is an optimized
 		// implementation that can be had for some cases relative to others. Functions
 		// which aren't referenced are neither compiled nor linked into the application.
-		struct should_copy_tag{}; struct should_move_tag : public should_copy_tag{};
+		template <bool bMove> struct should_move_or_copy_tag{};
+		using should_copy_tag = should_move_or_copy_tag<false>;
+		using should_move_tag = should_move_or_copy_tag<true>;
 
 		template <typename ForwardIterator> // Allocates a pointer of array count n and copy-constructs it with [first,last).
 		pointer DoRealloc(size_type n, ForwardIterator first, ForwardIterator last, should_copy_tag);
@@ -386,26 +371,11 @@ namespace eastl
 		void DoInsertValuesEnd(size_type n); // Default constructs n values
 		void DoInsertValuesEnd(size_type n, const value_type& value);
 
-		#if EASTL_MOVE_SEMANTICS_ENABLED && EASTL_VARIADIC_TEMPLATES_ENABLED // If we can do variadic arguments...
-			template<typename... Args>
-			void DoInsertValue(const_iterator position, Args&&... args);
-		#else
-			#if EASTL_MOVE_SEMANTICS_ENABLED
-				void DoInsertValue(const_iterator position, value_type&& value);
-			#endif
-			void DoInsertValue(const_iterator position, const value_type& value);
-		#endif
+		template<typename... Args>
+		void DoInsertValue(const_iterator position, Args&&... args);
 
-
-		#if EASTL_MOVE_SEMANTICS_ENABLED && EASTL_VARIADIC_TEMPLATES_ENABLED
-			template<typename... Args>
-			void DoInsertValueEnd(Args&&... args);
-		#else
-			#if EASTL_MOVE_SEMANTICS_ENABLED
-				void DoInsertValueEnd(value_type&& value);
-			#endif
-				void DoInsertValueEnd(const value_type& value);
-		#endif
+		template<typename... Args>
+		void DoInsertValueEnd(Args&&... args);
 
 		void DoClearCapacity();
 
@@ -530,7 +500,7 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////
 
 	template <typename T, typename Allocator>
-	inline vector<T, Allocator>::vector()
+	inline vector<T, Allocator>::vector() EASTL_NOEXCEPT_IF(EASTL_NOEXCEPT_EXPR(EASTL_VECTOR_DEFAULT_ALLOCATOR))
 		: base_type()
 	{
 		// Empty
@@ -538,7 +508,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline vector<T, Allocator>::vector(const allocator_type& allocator)
+	inline vector<T, Allocator>::vector(const allocator_type& allocator) EASTL_NOEXCEPT
 		: base_type(allocator)
 	{
 		// Empty
@@ -579,28 +549,26 @@ namespace eastl
 	}
 
 
-	#if EASTL_MOVE_SEMANTICS_ENABLED
-		template <typename T, typename Allocator>
-		inline vector<T, Allocator>::vector(this_type&& x)
-			: base_type(eastl::move(x.internalAllocator()))  // vector requires move-construction of allocator in this case.
-		{
+	template <typename T, typename Allocator>
+	inline vector<T, Allocator>::vector(this_type&& x) EASTL_NOEXCEPT
+		: base_type(eastl::move(x.internalAllocator()))  // vector requires move-construction of allocator in this case.
+	{
+		DoSwap(x);
+	}
+
+
+	template <typename T, typename Allocator>
+	inline vector<T, Allocator>::vector(this_type&& x, const allocator_type& allocator)
+		: base_type(allocator)
+	{
+		if (internalAllocator() == x.internalAllocator()) // If allocators are equivalent...
 			DoSwap(x);
-		}
-
-
-		template <typename T, typename Allocator>
-		inline vector<T, Allocator>::vector(this_type&& x, const allocator_type& allocator)
-			: base_type(allocator)
+		else 
 		{
-			if (internalAllocator() == x.internalAllocator()) // If allocators are equivalent...
-				DoSwap(x);
-			else 
-			{
-				this_type temp(eastl::move(*this)); // move construct so we don't require the use of copy-ctors that prevent the use of move-only types.
-				temp.swap(x);
-			}
+			this_type temp(eastl::move(*this)); // move construct so we don't require the use of copy-ctors that prevent the use of move-only types.
+			temp.swap(x);
 		}
-	#endif
+	}
 
 
 	template <typename T, typename Allocator>
@@ -673,19 +641,17 @@ namespace eastl
 	}
 
 
-	#if EASTL_MOVE_SEMANTICS_ENABLED
-		template <typename T, typename Allocator>
-		typename vector<T, Allocator>::this_type&
-		vector<T, Allocator>::operator=(this_type&& x)
+	template <typename T, typename Allocator>
+	typename vector<T, Allocator>::this_type&
+	vector<T, Allocator>::operator=(this_type&& x)
+	{
+		if(this != &x)
 		{
-			if(this != &x)
-			{
-				DoClearCapacity(); // To consider: Are we really required to clear here? x is going away soon and will clear itself in its dtor.
-				swap(x);           // member swap handles the case that x has a different allocator than our allocator by doing a copy.
-			}
-			return *this; 
+			DoClearCapacity(); // To consider: Are we really required to clear here? x is going away soon and will clear itself in its dtor.
+			swap(x);           // member swap handles the case that x has a different allocator than our allocator by doing a copy.
 		}
-	#endif
+		return *this; 
+	}
 
 
 	template <typename T, typename Allocator>
@@ -901,12 +867,8 @@ namespace eastl
 	inline void vector<T, Allocator>::shrink_to_fit()
 	{
 		// This is the simplest way to accomplish this, and it is as efficient as any other.
+		this_type temp = this_type(move_iterator<iterator>(begin()), move_iterator<iterator>(end()), internalAllocator());
 
-		#if EASTL_MOVE_SEMANTICS_ENABLED
-			this_type temp = this_type(move_iterator<iterator>(begin()), move_iterator<iterator>(end()), internalAllocator());
-		#else
-			this_type temp(*this);
-		#endif
 		// Call DoSwap() rather than swap() as we know our allocators match and we don't want to invoke the code path
 		// handling non matching allocators as it imposes additional restrictions on the type of T to be copyable
 		DoSwap(temp);
@@ -932,11 +894,12 @@ namespace eastl
 	inline typename vector<T, Allocator>::reference
 	vector<T, Allocator>::operator[](size_type n)
 	{
-		#if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED    // We allow the user to use a reference to v[0] of an empty container. But this was merely grandfathered in and ideally we shouldn't allow such access to [0].
-			if(EASTL_UNLIKELY((n != 0) && (n >= (static_cast<size_type>(mpEnd - mpBegin)))))
+	    #if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+			if (EASTL_UNLIKELY(n >= (static_cast<size_type>(mpEnd - mpBegin))))
 				EASTL_FAIL_MSG("vector::operator[] -- out of range");
 		#elif EASTL_ASSERT_ENABLED
-			if(EASTL_UNLIKELY(n >= (static_cast<size_type>(mpEnd - mpBegin))))
+			// We allow the user to use a reference to v[0] of an empty container. But this was merely grandfathered in and ideally we shouldn't allow such access to [0].
+			if (EASTL_UNLIKELY((n != 0) && (n >= (static_cast<size_type>(mpEnd - mpBegin)))))
 				EASTL_FAIL_MSG("vector::operator[] -- out of range");
 		#endif
 
@@ -948,11 +911,12 @@ namespace eastl
 	inline typename vector<T, Allocator>::const_reference
 	vector<T, Allocator>::operator[](size_type n) const
 	{
-		#if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED    // We allow the user to use a reference to v[0] of an empty container. But this was merely grandfathered in and ideally we shouldn't allow such access to [0].
-			if(EASTL_UNLIKELY((n != 0) && (n >= (static_cast<size_type>(mpEnd - mpBegin)))))
+		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+			if (EASTL_UNLIKELY(n >= (static_cast<size_type>(mpEnd - mpBegin))))
 				EASTL_FAIL_MSG("vector::operator[] -- out of range");
 		#elif EASTL_ASSERT_ENABLED
-			if(EASTL_UNLIKELY(n >= (static_cast<size_type>(mpEnd - mpBegin))))
+			// We allow the user to use a reference to v[0] of an empty container. But this was merely grandfathered in and ideally we shouldn't allow such access to [0].
+			if (EASTL_UNLIKELY((n != 0) && (n >= (static_cast<size_type>(mpEnd - mpBegin)))))
 				EASTL_FAIL_MSG("vector::operator[] -- out of range");
 		#endif
 
@@ -964,8 +928,8 @@ namespace eastl
 	inline typename vector<T, Allocator>::reference
 	vector<T, Allocator>::at(size_type n)
 	{
-		// The difference between at() and operator[] is it signals 
-		// the requested position is out of range by throwing an 
+		// The difference between at() and operator[] is it signals
+		// the requested position is out of range by throwing an
 		// out_of_range exception.
 
 		#if EASTL_EXCEPTIONS_ENABLED
@@ -1000,11 +964,11 @@ namespace eastl
 	inline typename vector<T, Allocator>::reference
 	vector<T, Allocator>::front()
 	{
-		#if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
-			// We allow the user to reference an empty container.
-		#elif EASTL_ASSERT_ENABLED
-			if(EASTL_UNLIKELY(mpEnd <= mpBegin)) // We don't allow the user to reference an empty container.
+		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+			if (EASTL_UNLIKELY((mpBegin == nullptr) || (mpEnd <= mpBegin))) // We don't allow the user to reference an empty container.
 				EASTL_FAIL_MSG("vector::front -- empty vector");
+		#else
+			// We allow the user to reference an empty container.
 		#endif
 
 		return *mpBegin;
@@ -1015,11 +979,11 @@ namespace eastl
 	inline typename vector<T, Allocator>::const_reference
 	vector<T, Allocator>::front() const
 	{
-		#if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
-			// We allow the user to reference an empty container.
-		#elif EASTL_ASSERT_ENABLED
-			if(EASTL_UNLIKELY(mpEnd <= mpBegin)) // We don't allow the user to reference an empty container.
+		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+			if (EASTL_UNLIKELY((mpBegin == nullptr) || (mpEnd <= mpBegin))) // We don't allow the user to reference an empty container.
 				EASTL_FAIL_MSG("vector::front -- empty vector");
+		#else
+			// We allow the user to reference an empty container.
 		#endif
 
 		return *mpBegin;
@@ -1030,11 +994,11 @@ namespace eastl
 	inline typename vector<T, Allocator>::reference
 	vector<T, Allocator>::back()
 	{
-		#if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
-			// We allow the user to reference an empty container.
-		#elif EASTL_ASSERT_ENABLED
-			if(EASTL_UNLIKELY(mpEnd <= mpBegin)) // We don't allow the user to reference an empty container.
+		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+			if (EASTL_UNLIKELY((mpBegin == nullptr) || (mpEnd <= mpBegin))) // We don't allow the user to reference an empty container.
 				EASTL_FAIL_MSG("vector::back -- empty vector");
+		#else
+			// We allow the user to reference an empty container.
 		#endif
 
 		return *(mpEnd - 1);
@@ -1045,11 +1009,11 @@ namespace eastl
 	inline typename vector<T, Allocator>::const_reference
 	vector<T, Allocator>::back() const
 	{
-		#if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
-			// We allow the user to reference an empty container.
-		#elif EASTL_ASSERT_ENABLED
-			if(EASTL_UNLIKELY(mpEnd <= mpBegin)) // We don't allow the user to reference an empty container.
+		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+			if (EASTL_UNLIKELY((mpBegin == nullptr) || (mpEnd <= mpBegin))) // We don't allow the user to reference an empty container.
 				EASTL_FAIL_MSG("vector::back -- empty vector");
+		#else
+			// We allow the user to reference an empty container.
 		#endif
 
 		return *(mpEnd - 1);
@@ -1066,16 +1030,14 @@ namespace eastl
 	}
 
 
-	#if EASTL_MOVE_SEMANTICS_ENABLED
-		template <typename T, typename Allocator>
-		inline void vector<T, Allocator>::pushBack(value_type&& value)
-		{
-			if (mpEnd < internalCapacityPtr())
-				::new((void*)mpEnd++) value_type(eastl::move(value));
-			else
-				DoInsertValueEnd(eastl::move(value));
-		}
-	#endif
+	template <typename T, typename Allocator>
+	inline void vector<T, Allocator>::pushBack(value_type&& value)
+	{
+		if (mpEnd < internalCapacityPtr())
+			::new((void*)mpEnd++) value_type(eastl::move(value));
+		else
+			DoInsertValueEnd(eastl::move(value));
+	}
 
 
 	template <typename T, typename Allocator>
@@ -1117,83 +1079,39 @@ namespace eastl
 	}
 
 
-	#if EASTL_MOVE_SEMANTICS_ENABLED && EASTL_VARIADIC_TEMPLATES_ENABLED
-		template <typename T, typename Allocator>
-		template<class... Args>
-		inline typename vector<T, Allocator>::iterator 
-		vector<T, Allocator>::emplace(const_iterator position, Args&&... args)
+	template <typename T, typename Allocator>
+	template<class... Args>
+	inline typename vector<T, Allocator>::iterator 
+	vector<T, Allocator>::emplace(const_iterator position, Args&&... args)
+	{
+		const ptrdiff_t n = position - mpBegin; // Save this because we might reallocate.
+
+		if((mpEnd == internalCapacityPtr()) || (position != mpEnd))
+			DoInsertValue(position, eastl::forward<Args>(args)...);
+		else
 		{
-			const ptrdiff_t n = position - mpBegin; // Save this because we might reallocate.
-
-			if((mpEnd == internalCapacityPtr()) || (position != mpEnd))
-				DoInsertValue(position, eastl::forward<Args>(args)...);
-			else
-			{
-				::new((void*)mpEnd) value_type(eastl::forward<Args>(args)...);
-				++mpEnd; // Increment this after the construction above in case the construction throws an exception.
-			}
-
-			return mpBegin + n;
+			::new((void*)mpEnd) value_type(eastl::forward<Args>(args)...);
+			++mpEnd; // Increment this after the construction above in case the construction throws an exception.
 		}
 
-		template <typename T, typename Allocator>
-		template<class... Args>
-		inline void vector<T, Allocator>::emplace_back(Args&&... args)
+		return mpBegin + n;
+	}
+
+	template <typename T, typename Allocator>
+	template<class... Args>
+	inline typename vector<T, Allocator>::reference
+	vector<T, Allocator>::emplace_back(Args&&... args)
+	{
+		if(mpEnd < internalCapacityPtr())
 		{
-			if(mpEnd < internalCapacityPtr())
-			{
-				::new((void*)mpEnd) value_type(eastl::forward<Args>(args)...);  // If value_type has a move constructor, it will use it and this operation may be faster than otherwise.
-				++mpEnd; // Increment this after the construction above in case the construction throws an exception.
-			}
-			else
-				DoInsertValueEnd(eastl::forward<Args>(args)...);
+			::new((void*)mpEnd) value_type(eastl::forward<Args>(args)...);  // If value_type has a move constructor, it will use it and this operation may be faster than otherwise.
+			++mpEnd; // Increment this after the construction above in case the construction throws an exception.
 		}
-	#else
-		#if EASTL_MOVE_SEMANTICS_ENABLED
-			template <typename T, typename Allocator>
-			inline typename vector<T, Allocator>::iterator 
-			vector<T, Allocator>::emplace(const_iterator position, value_type&& value)
-			{
-				const ptrdiff_t n = position - mpBegin; // Save this because we might reallocate.
+		else
+			DoInsertValueEnd(eastl::forward<Args>(args)...);
 
-				if((mpEnd == internalCapacityPtr()) || (position != mpEnd))
-					DoInsertValue(position, eastl::move(value));
-				else
-				{
-					::new((void*)mpEnd) value_type(eastl::move(value));
-					++mpEnd; // Increment this after the construction above in case the construction throws an exception.
-				}
-
-			return mpBegin + n;
-			}
-
-			template <typename T, typename Allocator>
-			inline void vector<T, Allocator>::emplace_back(value_type&& value)
-			{
-				if(mpEnd < internalCapacityPtr())
-				{
-					::new((void*)mpEnd) value_type(eastl::move(value));  // If value_type has a move constructor, it will use it and this operation may be faster than otherwise.
-					++mpEnd; // Increment this after the construction above in case the construction throws an exception.
-				}
-				else
-					DoInsertValueEnd(eastl::move(value));
-			}
-		#endif
-
-		template <typename T, typename Allocator>
-		inline typename vector<T, Allocator>::iterator 
-		vector<T, Allocator>::emplace(const_iterator position, const value_type& value)
-		{
-			return insert(position, value);
-		}
-
-		template <typename T, typename Allocator>
-		inline void vector<T, Allocator>::emplace_back(const value_type& value)
-		{
-			pushBack(value);
-		}
-	#endif
-
+		return back();
+	}
 
 	template <typename T, typename Allocator>
 	inline typename vector<T, Allocator>::iterator
@@ -1219,28 +1137,32 @@ namespace eastl
 	}
 
 
-	#if EASTL_MOVE_SEMANTICS_ENABLED
-		template <typename T, typename Allocator>       
-		inline typename vector<T, Allocator>::iterator
-		vector<T, Allocator>::insert(const_iterator position, value_type&& value)
-		{
-			return emplace(position, eastl::move(value));
-		}
-	#endif
+	template <typename T, typename Allocator>       
+	inline typename vector<T, Allocator>::iterator
+	vector<T, Allocator>::insert(const_iterator position, value_type&& value)
+	{
+		return emplace(position, eastl::move(value));
+	}
 
 
 	template <typename T, typename Allocator>
-	inline void vector<T, Allocator>::insert(const_iterator position, size_type n, const value_type& value)
+	inline typename vector<T, Allocator>::iterator
+	vector<T, Allocator>::insert(const_iterator position, size_type n, const value_type& value)
 	{
+		const ptrdiff_t p = position - mpBegin; // Save this because we might reallocate.
 		DoInsertValues(position, n, value);
+		return mpBegin + p;
 	}
 
 
 	template <typename T, typename Allocator>
 	template <typename InputIterator>
-	inline void vector<T, Allocator>::insert(const_iterator position, InputIterator first, InputIterator last)
+	inline typename vector<T, Allocator>::iterator
+	vector<T, Allocator>::insert(const_iterator position, InputIterator first, InputIterator last)
 	{
+		const ptrdiff_t n = position - mpBegin; // Save this because we might reallocate.
 		DoInsert(position, first, last, is_integral<InputIterator>());
+		return mpBegin + n;
 	}
 
 
@@ -1314,6 +1236,60 @@ namespace eastl
 		return destPosition;
 	}
 
+	template <typename T, typename Allocator>
+	inline typename vector<T, Allocator>::iterator vector<T, Allocator>::erase_first(const T& value)
+	{
+		static_assert(eastl::has_equality_v<T>, "T must be comparable");
+
+		iterator it = eastl::find(begin(), end(), value);
+
+		if (it != end())
+			return erase(it);
+		else
+			return it;
+	}
+
+	template <typename T, typename Allocator>
+	inline typename vector<T, Allocator>::iterator 
+	vector<T, Allocator>::erase_first_unsorted(const T& value)
+	{
+		static_assert(eastl::has_equality_v<T>, "T must be comparable");
+
+		iterator it = eastl::find(begin(), end(), value);
+
+		if (it != end())
+			return erase_unsorted(it);
+		else
+			return it;
+	}
+
+	template <typename T, typename Allocator>
+	inline typename vector<T, Allocator>::reverse_iterator 
+	vector<T, Allocator>::erase_last(const T& value)
+	{
+		static_assert(eastl::has_equality_v<T>, "T must be comparable");
+
+		reverse_iterator it = eastl::find(rbegin(), rend(), value);
+
+		if (it != rend())
+			return erase(it);
+		else
+			return it;
+	}
+
+	template <typename T, typename Allocator>
+	inline typename vector<T, Allocator>::reverse_iterator 
+	vector<T, Allocator>::erase_last_unsorted(const T& value)
+	{
+		static_assert(eastl::has_equality_v<T>, "T must be comparable");
+
+		reverse_iterator it = eastl::find(rbegin(), rend(), value);
+
+		if (it != rend())
+			return erase_unsorted(it);
+		else
+			return it;
+	}
 
 	template <typename T, typename Allocator>
 	inline typename vector<T, Allocator>::reverse_iterator
@@ -1354,16 +1330,6 @@ namespace eastl
 	}
 
 
-	#if EASTL_RESET_ENABLED
-		// This function name is deprecated; use reset_lose_memory instead.
-		template <typename T, typename Allocator>
-		inline void vector<T, Allocator>::reset() EASTL_NOEXCEPT
-		{
-			reset_lose_memory();
-		}
-	#endif
-
-
 	template <typename T, typename Allocator>
 	inline void vector<T, Allocator>::reset_lose_memory() EASTL_NOEXCEPT
 	{
@@ -1384,7 +1350,7 @@ namespace eastl
 	template <typename T, typename Allocator>
 	inline void vector<T, Allocator>::swap(this_type& x)
 	{
-	#if EASTL_VECTOR_LEGACY_SWAP_BEHAVIOUR_REQUIRES_COPY_CTOR
+	#if defined(EASTL_VECTOR_LEGACY_SWAP_BEHAVIOUR_REQUIRES_COPY_CTOR) && EASTL_VECTOR_LEGACY_SWAP_BEHAVIOUR_REQUIRES_COPY_CTOR
 		if(internalAllocator() == x.internalAllocator()) // If allocators are equivalent...
 			DoSwap(x);
 		else // else swap the contents.
@@ -1551,7 +1517,7 @@ namespace eastl
 
 		if(n > size_type(internalCapacityPtr() - mpBegin)) // If n > capacity ...
 		{
-			pointer const pNewData = DoRealloc(n, first, last, bMove ? should_move_tag() : should_copy_tag());
+			pointer const pNewData = DoRealloc(n, first, last, should_move_or_copy_tag<bMove>());
 			eastl::destruct(mpBegin, mpEnd);
 			DoFree(mpBegin, (size_type)(internalCapacityPtr() - mpBegin));
 
@@ -1835,18 +1801,18 @@ namespace eastl
 			const size_type nNewSize = eastl::max(nGrowSize, nPrevSize + n);
 			pointer const pNewData = DoAllocate(nNewSize);
 
-#if EASTL_EXCEPTIONS_ENABLED
-			pointer pNewEnd = pNewData;  // Assign pNewEnd a value here in case the copy throws.
-			try { pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(mpBegin, mpEnd, pNewData); }
-			catch (...)
-			{
-				eastl::destruct(pNewData, pNewEnd);
-				DoFree(pNewData, nNewSize);
-				throw;
-			}
-#else
-			pointer pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(mpBegin, mpEnd, pNewData);
-#endif
+			#if EASTL_EXCEPTIONS_ENABLED
+				pointer pNewEnd = pNewData;  // Assign pNewEnd a value here in case the copy throws.
+				try { pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(mpBegin, mpEnd, pNewData); }
+				catch (...)
+				{
+					eastl::destruct(pNewData, pNewEnd);
+					DoFree(pNewData, nNewSize);
+					throw;
+				}
+			#else
+				pointer pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(mpBegin, mpEnd, pNewData);
+			#endif
 
 			eastl::uninitialized_default_fillN(pNewEnd, n);
 			pNewEnd += n;
@@ -1865,341 +1831,117 @@ namespace eastl
 		}
 	}
 
-	#if EASTL_MOVE_SEMANTICS_ENABLED && EASTL_VARIADIC_TEMPLATES_ENABLED // If we can do variadic arguments...
-		template <typename T, typename Allocator>
-		template<typename... Args>
-		void vector<T, Allocator>::DoInsertValue(const_iterator position, Args&&... args)
-		{
-			// To consider: It's feasible that the args is from a value_type comes from within the current sequence itself and 
-			// so we need to be sure to handle that case. This is different from insert(position, const value_type&) because in 
-			// this case value is potentially being modified.
+	template <typename T, typename Allocator>
+	template<typename... Args>
+	void vector<T, Allocator>::DoInsertValue(const_iterator position, Args&&... args)
+	{
+		// To consider: It's feasible that the args is from a value_type comes from within the current sequence itself and 
+		// so we need to be sure to handle that case. This is different from insert(position, const value_type&) because in 
+		// this case value is potentially being modified.
 
-			#if EASTL_ASSERT_ENABLED
-				if(EASTL_UNLIKELY((position < mpBegin) || (position > mpEnd)))
-					EASTL_FAIL_MSG("vector::insert/emplace -- invalid position");
-			#endif
-
-			// C++11 stipulates that position is const_iterator, but the return value is iterator.
-			iterator destPosition = const_cast<value_type*>(position);
-
-			if(mpEnd != internalCapacityPtr()) // If size < capacity ...
-			{
-				// We need to take into account the possibility that args is a value_type that comes from within the vector itself.
-				// creating a temporary value on the stack here is not an optimal way to solve this because sizeof(value_type) may be
-				// too much for the given platform. An alternative solution may be to specialize this function for the case of the
-				// argument being const value_type& or value_type&&.
-				EASTL_ASSERT(position < mpEnd);                                 // While insert at end() is valid, our design is such that calling code should handle that case before getting here, as our streamlined logic directly doesn't handle this particular case due to resulting negative ranges.
-				#if EASTL_USE_FORWARD_WORKAROUND
-					auto value = value_type(eastl::forward<Args>(args)...);     // Workaround for compiler bug in VS2013 which results in a compiler internal crash while compiling this code.
-				#else
-					value_type  value(eastl::forward<Args>(args)...);           // Need to do this before the move_backward below because maybe args refers to something within the moving range.
-				#endif
-				::new(static_cast<void*>(mpEnd)) value_type(eastl::move(*(mpEnd - 1)));      // mpEnd is uninitialized memory, so we must construct into it instead of move into it like we do with the other elements below.
-				eastl::move_backward(destPosition, mpEnd - 1, mpEnd);           // We need to go backward because of potential overlap issues.
-				eastl::destruct(destPosition);
-				::new(static_cast<void*>(destPosition)) value_type(eastl::move(value));                             // Move the value argument to the given position.
-				++mpEnd;
-			}
-			else // else (size == capacity)
-			{
-				const size_type nPosSize  = size_type(destPosition - mpBegin); // Index of the insertion position.
-				const size_type nPrevSize = size_type(mpEnd - mpBegin);
-				const size_type nNewSize  = GetNewCapacity(nPrevSize);
-				pointer const   pNewData  = DoAllocate(nNewSize);
-
-				#if EASTL_EXCEPTIONS_ENABLED
-					pointer pNewEnd = pNewData;
-					try
-					{   // To do: We are not handling exceptions properly below.  In particular we don't want to 
-						// call eastl::destruct on the entire range if only the first part of the range was costructed.
-						::new((void*)(pNewData + nPosSize)) value_type(eastl::forward<Args>(args)...);              // Because the old data is potentially being moved rather than copied, we need to move.
-						pNewEnd = NULL;                                                                             // Set to NULL so that in catch we can tell the exception occurred during the next call.
-						pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(mpBegin, destPosition, pNewData);       // the value first, because it might possibly be a reference to the old data being moved.
-						pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(destPosition, mpEnd, ++pNewEnd);
-					}
-					catch(...)
-					{
-						if(pNewEnd)
-							eastl::destruct(pNewData, pNewEnd);                                         // Destroy what has been constructed so far.
-						else
-							eastl::destruct(pNewData + nPosSize);                                       // The exception occurred during the first unintialized move, so destroy only the value at nPosSize.
-						DoFree(pNewData, nNewSize);
-						throw;
-					}
-				#else
-					::new((void*)(pNewData + nPosSize)) value_type(eastl::forward<Args>(args)...);                  // Because the old data is potentially being moved rather than copied, we need to move 
-					pointer pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(mpBegin, destPosition, pNewData);   // the value first, because it might possibly be a reference to the old data being moved.
-					pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(destPosition, mpEnd, ++pNewEnd);            // Question: with exceptions disabled, do we asssume all operations are noexcept and thus there's no need for uninitializedMove_ptr_if_noexcept?
-				#endif
-
-				eastl::destruct(mpBegin, mpEnd);
-				DoFree(mpBegin, (size_type)(internalCapacityPtr() - mpBegin));
-
-				mpBegin    = pNewData;
-				mpEnd      = pNewEnd;
-				internalCapacityPtr() = pNewData + nNewSize;
-			}
-		}
-	#else
-		////////////////////////////////////////////////////////////////////////////////////////////////////
-		// Note: The following two sets of two functions are nearly copies of the above two functions.
-		// We (nearly) duplicate code here instead of trying to fold the all nine of these functions into 
-		// three more generic functions because: 1) you can't really make just three functions but rather 
-		// would need to break them apart somewhat, and 2) these duplications are eventually going away 
-		// because they aren't needed with C++11 compilers, though that may not be until the year 2020.
-		////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		#if EASTL_MOVE_SEMANTICS_ENABLED
-			// To consider: Is there any practical means to merge the following DoInsertValue functions? 
-			// They are 90% the same as each other with the only difference being the use of eastl::move(value) usage.
-			// However, it isn't simple to fold that difference because value_type& and value_type&& are treated 
-			// significantly differently and constructing objects with them executes different code.
-
-			template <typename T, typename Allocator>
-			void vector<T, Allocator>::DoInsertValue(const_iterator position, value_type&& value)
-			{
-				// To consider: It's feasible that value comes from within the current sequence itself and so we need to be 
-				// sure to handle that case. This is different from insert(position, const value_type&) because in this case 
-				// value is potentially being modified.
-
-				#if EASTL_ASSERT_ENABLED
-					if(EASTL_UNLIKELY((position < mpBegin) || (position > mpEnd)))
-						EASTL_FAIL_MSG("vector::insert/emplace -- invalid position");
-				#endif
-
-				// C++11 stipulates that position is const_iterator, but the return value is iterator.
-				iterator destPosition = const_cast<value_type*>(position);
-
-				if(mpEnd != internalCapacityPtr()) // If size < capacity (and we can do this without reallocation)...
-				{
-					// We need to take into account the possibility that value may come from within the vector itself.
-					EASTL_ASSERT(position < mpEnd);                                 // While insert at end() is valid, our design is such that calling code should handle that case before getting here, as our streamlined logic directly doesn't handle this particular case due to resulting negative ranges.
-					const T* pValue = &value;
-					if((pValue >= destPosition) && (pValue < mpEnd))                // If value comes from within the range to be moved...
-						++pValue;                                                   // Set pValue to be where it will be after the copy.
-					::new(static_cast<void*>(mpEnd)) value_type(eastl::move(*(mpEnd - 1)));      // mpEnd is uninitialized memory, so we must construct into it instead of move into it like we do with the other elements below.
-					eastl::move_backward(destPosition, mpEnd - 1, mpEnd);           // We need to go backward because of potential overlap issues.
-					eastl::destruct(destPosition);
-					::new(static_cast<void*>(destPosition)) value_type(eastl::move(value));                             // Move the value argument to the given position.
-					++mpEnd;
-				}
-				else // else (size == capacity)
-				{
-					const size_type nPosSize  = size_type(destPosition - mpBegin); // Index of the insertion position.
-					const size_type nPrevSize = size_type(mpEnd - mpBegin);
-					const size_type nNewSize  = GetNewCapacity(nPrevSize);
-					pointer const   pNewData  = DoAllocate(nNewSize);
-
-					#if EASTL_EXCEPTIONS_ENABLED
-						pointer pNewEnd = pNewData;
-						try
-						{
-							::new((void*)(pNewData + nPosSize)) value_type(eastl::move(value));                         // Because the old data is being moved rather than copied, we need to move the value first, 
-							pNewEnd = NULL;                                                                             // Set to NULL so that in catch we can tell the exception occurred during the next call.
-							pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(mpBegin, destPosition, pNewData);       // because it might possibly be a reference to the old data being moved.
-							pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(destPosition, mpEnd, ++pNewEnd);
-						}
-						catch(...)
-						{
-							if(pNewEnd)
-								eastl::destruct(pNewData, pNewEnd);                                         // Destroy what has been constructed so far.
-							else
-								eastl::destruct(pNewData + nPosSize);                                       // The exception occurred during the first unintialized move, so destroy only the value at nPosSize.
-							DoFree(pNewData, nNewSize);
-							throw;
-						}
-					#else
-						::new((void*)(pNewData + nPosSize)) value_type(eastl::move(value));                             // Because the old data is being moved rather than copied, we need to move the value first, 
-						pointer pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(mpBegin, destPosition, pNewData);   // because it might possibly be a reference to the old data being moved.
-						pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(destPosition, mpEnd, ++pNewEnd);
-					#endif
-
-					eastl::destruct(mpBegin, mpEnd);
-					DoFree(mpBegin, (size_type)(internalCapacityPtr() - mpBegin));
-
-					mpBegin    = pNewData;
-					mpEnd      = pNewEnd;
-					internalCapacityPtr() = pNewData + nNewSize;
-				}
-			}
+		#if EASTL_ASSERT_ENABLED
+			if(EASTL_UNLIKELY((position < mpBegin) || (position > mpEnd)))
+				EASTL_FAIL_MSG("vector::insert/emplace -- invalid position");
 		#endif
 
+		// C++11 stipulates that position is const_iterator, but the return value is iterator.
+		iterator destPosition = const_cast<value_type*>(position);
 
-		template <typename T, typename Allocator>
-		void vector<T, Allocator>::DoInsertValue(const_iterator position, const value_type& value)
+		if(mpEnd != internalCapacityPtr()) // If size < capacity ...
 		{
-			#if EASTL_ASSERT_ENABLED
-				if(EASTL_UNLIKELY((position < mpBegin) || (position > mpEnd)))
-					EASTL_FAIL_MSG("vector::insert/emplace -- invalid position");
+			// We need to take into account the possibility that args is a value_type that comes from within the vector itself.
+			// creating a temporary value on the stack here is not an optimal way to solve this because sizeof(value_type) may be
+			// too much for the given platform. An alternative solution may be to specialize this function for the case of the
+			// argument being const value_type& or value_type&&.
+			EASTL_ASSERT(position < mpEnd);                                 // While insert at end() is valid, our design is such that calling code should handle that case before getting here, as our streamlined logic directly doesn't handle this particular case due to resulting negative ranges.
+			#if EASTL_USE_FORWARD_WORKAROUND
+				auto value = value_type(eastl::forward<Args>(args)...);     // Workaround for compiler bug in VS2013 which results in a compiler internal crash while compiling this code.
+			#else
+				value_type  value(eastl::forward<Args>(args)...);           // Need to do this before the move_backward below because maybe args refers to something within the moving range.
 			#endif
-
-			// C++11 stipulates that position is const_iterator, but the return value is iterator.
-			iterator destPosition = const_cast<value_type*>(position);
-
-			if(mpEnd != internalCapacityPtr()) // If size < capacity ...
-			{
-				// We need to take into account the possibility that value may come from within the vector itself.
-				EASTL_ASSERT(position < mpEnd);                                 // While insert at end() is valid, our design is such that calling code should handle that case before getting here, as our streamlined logic directly doesn't handle this particular case due to resulting negative ranges.
-				const T* pValue = &value;
-				if((pValue >= destPosition) && (pValue < mpEnd))        // If value comes from within the range to be moved...
-					++pValue;                                           // Set pValue to be where it will be after the copy.
-				::new((void*)mpEnd) value_type(*(mpEnd - 1));           // mpEnd is uninitialized memory, so we must construct into it instead of move into it like we do with the other elements below.
-				eastl::move_backward(destPosition, mpEnd - 1, mpEnd);   // We need to go backward because of potential overlap issues.
-				*destPosition = *pValue;                                // Copy the value argument to the given position.
-				++mpEnd;
-			}
-			else // else (size == capacity)
-			{
-				const size_type nPosSize  = size_type(destPosition - mpBegin); // Index of the insertion position.
-				const size_type nPrevSize = size_type(mpEnd - mpBegin);
-				const size_type nNewSize  = GetNewCapacity(nPrevSize);
-				pointer const   pNewData  = DoAllocate(nNewSize);
-
-				#if EASTL_EXCEPTIONS_ENABLED
-					pointer pNewEnd = pNewData;
-					try
-					{
-						::new((void*)(pNewData + nPosSize)) value_type(value);                                      // Because the old data is being moved rather than copied, we need to move the value first, 
-						pNewEnd = NULL;                                                                             // Set to NULL so that in catch we can tell the exception occurred during the next call.
-						pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(mpBegin, destPosition, pNewData);       // because it might possibly be a reference to the old data being moved.
-						pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(destPosition, mpEnd, ++pNewEnd);
-					}
-					catch(...)
-					{
-						if(pNewEnd)
-							eastl::destruct(pNewData, pNewEnd);                                         // Destroy what has been constructed so far.
-						else
-							eastl::destruct(pNewData + nPosSize);                                       // The exception occurred during the first unintialized move, so destroy only the value at nPosSize.
-						DoFree(pNewData, nNewSize);
-						throw;
-					}
-				#else
-					::new((void*)(pNewData + nPosSize)) value_type(value);                                          // Because the old data is being moved rather than copied, we need to move the value first, 
-					pointer pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(mpBegin, destPosition, pNewData);   // because it might possibly be a reference to the old data being moved.
-					pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(destPosition, mpEnd, ++pNewEnd);
-				#endif
-
-				eastl::destruct(mpBegin, mpEnd);
-				DoFree(mpBegin, (size_type)(internalCapacityPtr() - mpBegin));
-
-				mpBegin    = pNewData;
-				mpEnd      = pNewEnd;
-				internalCapacityPtr() = pNewData + nNewSize;
-			}
+			::new(static_cast<void*>(mpEnd)) value_type(eastl::move(*(mpEnd - 1)));      // mpEnd is uninitialized memory, so we must construct into it instead of move into it like we do with the other elements below.
+			eastl::move_backward(destPosition, mpEnd - 1, mpEnd);           // We need to go backward because of potential overlap issues.
+			eastl::destruct(destPosition);
+			::new(static_cast<void*>(destPosition)) value_type(eastl::move(value));                             // Move the value argument to the given position.
+			++mpEnd;
 		}
-
-	#endif
-
-
-	#if EASTL_MOVE_SEMANTICS_ENABLED && EASTL_VARIADIC_TEMPLATES_ENABLED
-		template <typename T, typename Allocator>
-		template<typename... Args>
-		void vector<T, Allocator>::DoInsertValueEnd(Args&&... args)
+		else // else (size == capacity)
 		{
+			const size_type nPosSize  = size_type(destPosition - mpBegin); // Index of the insertion position.
 			const size_type nPrevSize = size_type(mpEnd - mpBegin);
 			const size_type nNewSize  = GetNewCapacity(nPrevSize);
 			pointer const   pNewData  = DoAllocate(nNewSize);
 
 			#if EASTL_EXCEPTIONS_ENABLED
-				pointer pNewEnd = pNewData; // Assign pNewEnd a value here in case the copy throws.
+				pointer pNewEnd = pNewData;
 				try
-				{
-					pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(mpBegin, mpEnd, pNewData);
-					::new((void*)pNewEnd) value_type(eastl::forward<Args>(args)...);
-					pNewEnd++;
+				{   // To do: We are not handling exceptions properly below.  In particular we don't want to 
+					// call eastl::destruct on the entire range if only the first part of the range was costructed.
+					::new((void*)(pNewData + nPosSize)) value_type(eastl::forward<Args>(args)...);              // Because the old data is potentially being moved rather than copied, we need to move.
+					pNewEnd = NULL;                                                                             // Set to NULL so that in catch we can tell the exception occurred during the next call.
+					pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(mpBegin, destPosition, pNewData);       // the value first, because it might possibly be a reference to the old data being moved.
+					pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(destPosition, mpEnd, ++pNewEnd);
 				}
 				catch(...)
 				{
-					eastl::destruct(pNewData, pNewEnd);
+					if(pNewEnd)
+						eastl::destruct(pNewData, pNewEnd);                                         // Destroy what has been constructed so far.
+					else
+						eastl::destruct(pNewData + nPosSize);                                       // The exception occurred during the first unintialized move, so destroy only the value at nPosSize.
 					DoFree(pNewData, nNewSize);
 					throw;
 				}
 			#else
-				pointer pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(mpBegin, mpEnd, pNewData);
+				::new((void*)(pNewData + nPosSize)) value_type(eastl::forward<Args>(args)...);                  // Because the old data is potentially being moved rather than copied, we need to move 
+				pointer pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(mpBegin, destPosition, pNewData);   // the value first, because it might possibly be a reference to the old data being moved.
+				pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(destPosition, mpEnd, ++pNewEnd);            // Question: with exceptions disabled, do we asssume all operations are noexcept and thus there's no need for uninitializedMove_ptr_if_noexcept?
+			#endif
+
+			eastl::destruct(mpBegin, mpEnd);
+			DoFree(mpBegin, (size_type)(internalCapacityPtr() - mpBegin));
+
+			mpBegin    = pNewData;
+			mpEnd      = pNewEnd;
+			internalCapacityPtr() = pNewData + nNewSize;
+		}
+	}
+
+
+	template <typename T, typename Allocator>
+	template<typename... Args>
+	void vector<T, Allocator>::DoInsertValueEnd(Args&&... args)
+	{
+		const size_type nPrevSize = size_type(mpEnd - mpBegin);
+		const size_type nNewSize  = GetNewCapacity(nPrevSize);
+		pointer const   pNewData  = DoAllocate(nNewSize);
+
+		#if EASTL_EXCEPTIONS_ENABLED
+			pointer pNewEnd = pNewData; // Assign pNewEnd a value here in case the copy throws.
+			try
+			{
+				pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(mpBegin, mpEnd, pNewData);
 				::new((void*)pNewEnd) value_type(eastl::forward<Args>(args)...);
 				pNewEnd++;
-			#endif
-
-			eastl::destruct(mpBegin, mpEnd);
-			DoFree(mpBegin, (size_type)(internalCapacityPtr() - mpBegin));
-
-			mpBegin    = pNewData;
-			mpEnd      = pNewEnd;
-			internalCapacityPtr() = pNewData + nNewSize;
-		}
-	#else
-		#if EASTL_MOVE_SEMANTICS_ENABLED
-			template <typename T, typename Allocator>
-			void vector<T, Allocator>::DoInsertValueEnd(value_type&& value)
-			{
-				const size_type nPrevSize = size_type(mpEnd - mpBegin);
-				const size_type nNewSize  = GetNewCapacity(nPrevSize);
-				pointer const   pNewData  = DoAllocate(nNewSize);
-
-				#if EASTL_EXCEPTIONS_ENABLED
-					pointer pNewEnd = pNewData; // Assign pNewEnd a value here in case the copy throws.
-					try
-					{
-						pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(mpBegin, mpEnd, pNewData);
-						::new((void*)pNewEnd) value_type(eastl::move(value));
-						pNewEnd++;
-					}
-					catch(...)
-					{
-						eastl::destruct(pNewData, pNewEnd);
-						DoFree(pNewData, nNewSize);
-						throw;
-					}
-				#else
-					pointer pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(mpBegin, mpEnd, pNewData);
-					::new((void*)pNewEnd) value_type(eastl::move(value));
-					pNewEnd++;
-				#endif
-
-				eastl::destruct(mpBegin, mpEnd);
-				DoFree(mpBegin, (size_type)(internalCapacityPtr() - mpBegin));
-
-				mpBegin    = pNewData;
-				mpEnd      = pNewEnd;
-				internalCapacityPtr() = pNewData + nNewSize;
 			}
+			catch(...)
+			{
+				eastl::destruct(pNewData, pNewEnd);
+				DoFree(pNewData, nNewSize);
+				throw;
+			}
+		#else
+			pointer pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(mpBegin, mpEnd, pNewData);
+			::new((void*)pNewEnd) value_type(eastl::forward<Args>(args)...);
+			pNewEnd++;
 		#endif
 
-		template <typename T, typename Allocator>
-		void vector<T, Allocator>::DoInsertValueEnd(const value_type& value)
-		{
-			const size_type nPrevSize = size_type(mpEnd - mpBegin);
-			const size_type nNewSize  = GetNewCapacity(nPrevSize);
-			pointer const   pNewData  = DoAllocate(nNewSize);
+		eastl::destruct(mpBegin, mpEnd);
+		DoFree(mpBegin, (size_type)(internalCapacityPtr() - mpBegin));
 
-			#if EASTL_EXCEPTIONS_ENABLED
-				pointer pNewEnd = pNewData; // Assign pNewEnd a value here in case the copy throws.
-				try
-				{
-					pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(mpBegin, mpEnd, pNewData);
-					::new((void*)pNewEnd) value_type(value);
-					pNewEnd++;
-				}
-				catch(...)
-				{
-					eastl::destruct(pNewData, pNewEnd);
-					DoFree(pNewData, nNewSize);
-					throw;
-				}
-			#else
-				pointer pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(mpBegin, mpEnd, pNewData);
-				::new((void*)pNewEnd) value_type(value);
-				pNewEnd++;
-			#endif
-
-			eastl::destruct(mpBegin, mpEnd);
-			DoFree(mpBegin, (size_type)(internalCapacityPtr() - mpBegin));
-
-			mpBegin    = pNewData;
-			mpEnd      = pNewEnd;
-			internalCapacityPtr() = pNewData + nNewSize;
-		}
-	#endif
+		mpBegin    = pNewData;
+		mpEnd      = pNewEnd;
+		internalCapacityPtr() = pNewData + nNewSize;
+	}
 
 
 	template <typename T, typename Allocator>
@@ -2237,21 +1979,21 @@ namespace eastl
 	template <typename T, typename Allocator>
 	inline bool operator==(const vector<T, Allocator>& a, const vector<T, Allocator>& b)
 	{
-		return ((a.size() == b.size()) && equal(a.begin(), a.end(), b.begin()));
+		return ((a.size() == b.size()) && eastl::equal(a.begin(), a.end(), b.begin()));
 	}
 
 
 	template <typename T, typename Allocator>
 	inline bool operator!=(const vector<T, Allocator>& a, const vector<T, Allocator>& b)
 	{
-		return ((a.size() != b.size()) || !equal(a.begin(), a.end(), b.begin()));
+		return ((a.size() != b.size()) || !eastl::equal(a.begin(), a.end(), b.begin()));
 	}
 
 
 	template <typename T, typename Allocator>
 	inline bool operator<(const vector<T, Allocator>& a, const vector<T, Allocator>& b)
 	{
-		return lexicographicalCompare(a.begin(), a.end(), b.begin(), b.end());
+		return eastl::lexicographicalCompare(a.begin(), a.end(), b.begin(), b.end());
 	}
 
 
@@ -2277,28 +2019,37 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline void swap(vector<T, Allocator>& a, vector<T, Allocator>& b)
+	inline void swap(vector<T, Allocator>& a, vector<T, Allocator>& b) EASTL_NOEXCEPT_IF(EASTL_NOEXCEPT_EXPR(a.swap(b)))
 	{
 		a.swap(b);
 	}
 
 
+
+	///////////////////////////////////////////////////////////////////////
+	// erase / erase_if
+	// 
+	// https://en.cppreference.com/w/cpp/container/vector/erase2
+	///////////////////////////////////////////////////////////////////////
+	template <class T, class Allocator, class U>
+	void erase(vector<T, Allocator>& c, const U& value)
+	{
+		// Erases all elements that compare equal to value from the container. 
+		c.erase(eastl::remove(c.begin(), c.end(), value), c.end());
+	}
+
+	template <class T, class Allocator, class Predicate>
+	void erase_if(vector<T, Allocator>& c, Predicate predicate)
+	{
+		// Erases all elements that satisfy the predicate pred from the container. 
+		c.erase(eastl::removeIf(c.begin(), c.end(), predicate), c.end());
+	}
+
 } // namespace eastl
 
 
-#ifdef _MSC_VER
-	#pragma warning(pop)
-#endif
+EA_RESTORE_VC_WARNING();
+EA_RESTORE_VC_WARNING();
 
 
 #endif // Header include guard
-
-
-
-
-
-
-
-
-
-

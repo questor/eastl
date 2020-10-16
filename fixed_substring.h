@@ -20,29 +20,29 @@ namespace eastl
 
 	/// fixedSubstring
 	///
-	/// Implements a string which is a reference to a segment of characters. 
+	/// Implements a string which is a reference to a segment of characters.
 	/// This class is efficient because it allocates no memory and copies no
-	/// memory during construction and assignment, but rather refers directly 
-	/// to the segment of chracters. A common use of this is to have a 
+	/// memory during construction and assignment, but rather refers directly
+	/// to the segment of chracters. A common use of this is to have a
 	/// fixedSubstring efficiently refer to a substring within another string.
 	///
 	/// You cannot directly resize a fixedSubstring (e.g. via resize, insert,
-	/// append, erase), but you can assign a different substring to it. 
+	/// append, erase), but you can assign a different substring to it.
 	/// You can modify the characters within a substring in place.
-	/// As of this writing, in the name of being lean and simple it is the 
+	/// As of this writing, in the name of being lean and simple it is the
 	/// user's responsibility to not call unsupported resizing functions
 	/// such as those listed above. A detailed listing of the functions which
 	/// are not supported is given below in the class declaration.
 	///
-	/// The c_str function doesn't act as one might hope, as it simply 
+	/// The c_str function doesn't act as one might hope, as it simply
 	/// returns the pointer to the beginning of the string segment and the
-	/// 0-terminator may be beyond the end of the segment. If you want to 
-	/// always be able to use c_str as expected, use the fixed string solution 
+	/// 0-terminator may be beyond the end of the segment. If you want to
+	/// always be able to use c_str as expected, use the fixed string solution
 	/// we describe below.
 	///
 	/// Another use of fixedSubstring is to provide C++ string-like functionality
 	/// with a C character array. This allows you to work on a C character array
-	/// as if it were a C++ string as opposed using the C string API. Thus you 
+	/// as if it were a C++ string as opposed using the C string API. Thus you
 	/// can do this:
 	///
 	///    void DoSomethingForUser(char* timeStr, size_t timeStrCapacity)
@@ -67,14 +67,14 @@ namespace eastl
 	/// are going to have a limit as to their maximum size.
 	///
 	/// Notes:
-	///     As of this writing, the string class necessarily reallocates when 
-	///     an insert of self is done into self. As a result, the fixedSubstring 
-	///     class doesn't support inserting self into self. 
+	///     As of this writing, the string class necessarily reallocates when
+	///     an insert of self is done into self. As a result, the fixedSubstring
+	///     class doesn't support inserting self into self.
 	///
 	/// Example usage:
 	///     basicString<char>    str("hello world");
 	///     fixedSubstring<char> sub(str, 2, 5);      // sub == "llo w"
-	/// 
+	///
 	template <typename T>
 	class fixedSubstring : public basicString<T>
 	{
@@ -88,9 +88,19 @@ namespace eastl
 
 		using base_type::npos;
 		using base_type::mPair;
-		using base_type::reset_lose_memory;
+		using base_type::AllocateSelf;
 		using base_type::internalLayout;
-		using base_type::internalAllocator;
+		using base_type::getAllocator;
+
+	private:
+
+		void SetInternalHeapLayout(value_type* pBeginPtr, size_type nSize, size_type nCap)
+		{
+			internalLayout().SetHeapBeginPtr(pBeginPtr);
+			internalLayout().SetHeapSize(nSize);
+			internalLayout().SetHeapCapacity(nCap);
+		}
+
 
 	public:
 		fixedSubstring()
@@ -102,7 +112,7 @@ namespace eastl
 			: base_type()
 		{
 			#if EASTL_NAME_ENABLED
-				internalAllocator().setName(x.getAllocator().getName());
+				getAllocator().setName(x.getAllocator().getName());
 			#endif
 
 			assign(x);
@@ -115,7 +125,7 @@ namespace eastl
 			: base_type()
 		{
 			#if EASTL_NAME_ENABLED
-				internalAllocator().setName(x.getAllocator().getName());
+				getAllocator().setName(x.getAllocator().getName());
 			#endif
 
 			assign(x, position, n);
@@ -143,7 +153,7 @@ namespace eastl
 		{
 			// We need to reset, as otherwise the parent destructor will
 			// attempt to free our memory.
-			reset_lose_memory();
+			AllocateSelf();
 		}
 
 		this_type& operator=(const base_type& x)
@@ -160,46 +170,36 @@ namespace eastl
 
 		this_type& assign(const base_type& x)
 		{
-			// By design, we need to cast away const-ness here. 
-			internalLayout().mpBegin    = const_cast<value_type*>(x.data());
-			internalLayout().mpEnd      = internalLayout().mpBegin + x.size();
-			internalLayout().mpCapacity = internalLayout().mpEnd;
+			// By design, we need to cast away const-ness here.
+			SetInternalHeapLayout(const_cast<value_type*>(x.data()), x.size(), x.size());
 			return *this;
 		}
 
 		this_type& assign(const base_type& x, size_type position, size_type n)
 		{
-			// By design, we need to cast away const-ness here. 
-			internalLayout().mpBegin    = const_cast<value_type*>(x.data()) + position;
-			internalLayout().mpEnd      = internalLayout().mpBegin + n;
-			internalLayout().mpCapacity = internalLayout().mpEnd;
+			// By design, we need to cast away const-ness here.
+			SetInternalHeapLayout(const_cast<value_type*>(x.data()) + position, n, n);
 			return *this;
 		}
 
 		this_type& assign(const value_type* p, size_type n)
 		{
-			// By design, we need to cast away const-ness here. 
-			internalLayout().mpBegin    = const_cast<value_type*>(p);
-			internalLayout().mpEnd      = internalLayout().mpBegin + n;
-			internalLayout().mpCapacity = internalLayout().mpEnd;
+			// By design, we need to cast away const-ness here.
+			SetInternalHeapLayout(const_cast<value_type*>(p), n, n);
 			return *this;
 		}
 
 		this_type& assign(const value_type* p)
 		{
-			// By design, we need to cast away const-ness here. 
-			internalLayout().mpBegin    = const_cast<value_type*>(p);
-			internalLayout().mpEnd      = internalLayout().mpBegin + CharStrlen(p);
-			internalLayout().mpCapacity = internalLayout().mpEnd;
+			// By design, we need to cast away const-ness here.
+			SetInternalHeapLayout(const_cast<value_type*>(p), (size_type)CharStrlen(p), (size_type)CharStrlen(p));
 			return *this;
 		}
 
 		this_type& assign(const value_type* pBegin, const value_type* pEnd)
 		{
-			// By design, we need to cast away const-ness here. 
-			internalLayout().mpBegin    = const_cast<value_type*>(pBegin);
-			internalLayout().mpEnd      = const_cast<value_type*>(pEnd);
-			internalLayout().mpCapacity = internalLayout().mpEnd;
+			// By design, we need to cast away const-ness here.
+			SetInternalHeapLayout(const_cast<value_type*>(pBegin), (size_type)(pEnd - pBegin), (size_type)(pEnd - pBegin));
 			return *this;
 		}
 
@@ -211,9 +211,9 @@ namespace eastl
 		//     1 Attempt to reallocate
 		//     2 Write a 0 char at the end of the fixedSubstring
 		//
-		// Item #1 will result in a crash, due to the attempt by the underlying 
-		// string class to free the substring memory. Item #2 will result in a 0 
-		// char being written to the character array. Item #2 may or may not be 
+		// Item #1 will result in a crash, due to the attempt by the underlying
+		// string class to free the substring memory. Item #2 will result in a 0
+		// char being written to the character array. Item #2 may or may not be
 		// a problem, depending on how you use fixedSubstring. Thus the following
 		// functions cannot be used safely.
 
@@ -263,15 +263,3 @@ namespace eastl
 
 
 #endif // Header include guard
-
-
-
-
-
-
-
-
-
-
-
-

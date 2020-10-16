@@ -30,18 +30,13 @@
 #include <eastl/allocator.h>
 #include <eastl/type_traits.h>
 
-#ifdef _MSC_VER
-	#pragma warning(push, 0)
-	#include <new>
-	#pragma warning(pop)
-#else
-	#include <new>
-#endif
 
-#if defined(_MSC_VER)
-	#pragma warning(push)
-	#pragma warning(disable: 4275) // non dll-interface class used as base for DLL-interface classkey 'identifier'
-#endif
+EA_DISABLE_ALL_VC_WARNINGS();
+#include <new>
+EA_RESTORE_ALL_VC_WARNINGS();
+
+// 4275 - non dll-interface class used as base for DLL-interface classkey 'identifier'
+EA_DISABLE_VC_WARNING(4275);
 
 
 namespace eastl
@@ -317,7 +312,7 @@ namespace eastl
 				{
 					pLink = mpNext;
 					
-					mpNext = reinterpret_cast<Link*>(reinterpret_cast<char8_t*>(mpNext) + mnNodeSize);
+					mpNext = reinterpret_cast<Link*>(reinterpret_cast<char*>(mpNext) + mnNodeSize);
 
 					#if EASTL_FIXED_SIZE_TRACKING_ENABLED
 						if(++mnCurrentSize > mnPeakSize)
@@ -472,7 +467,7 @@ namespace eastl
 				if(mpNext != mpCapacity)
 				{
 					p      = pLink = mpNext;
-					mpNext = reinterpret_cast<Link*>(reinterpret_cast<char8_t*>(mpNext) + mnNodeSize);
+					mpNext = reinterpret_cast<Link*>(reinterpret_cast<char*>(mpNext) + mnNodeSize);
 				}
 				else
 					p = mOverflowAllocator.allocate(mnNodeSize);
@@ -506,7 +501,7 @@ namespace eastl
 				if (mpNext != mpCapacity)
 				{
 					p = pLink = mpNext;
-					mpNext = reinterpret_cast<Link*>(reinterpret_cast<char8_t*>(mpNext)+mnNodeSize);
+					mpNext = reinterpret_cast<Link*>(reinterpret_cast<char*>(mpNext)+mnNodeSize);
 				}
 				else
 				{
@@ -1357,7 +1352,7 @@ namespace eastl
 		//    mOverflowAllocator.setName(pName);
 		//}
 
-		fixedVector_allocator(void* pNodeBuffer)
+		fixedVector_allocator(void* pNodeBuffer = nullptr)
 			: mpPoolBegin(pNodeBuffer)
 		{
 		}
@@ -1457,6 +1452,10 @@ namespace eastl
 		//fixedVector_allocator(const char* = NULL) // This char* parameter is present so that this class can be like the other version.
 		//{
 		//}
+
+		fixedVector_allocator()
+		{
+		}
 
 		fixedVector_allocator(void* /*pNodeBuffer*/)
 		{
@@ -1586,9 +1585,9 @@ namespace eastl
 	public:
 		static void swap(Container& a, Container& b)
 		{
-			const Container temp(a); // Can't use global swap because that could
-			a = b;                   // itself call this swap function in return.
-			b = temp;
+			Container temp(EASTL_MOVE(a)); // Can't use global swap because that could
+			a = EASTL_MOVE(b);             // itself call this swap function in return.
+			b = EASTL_MOVE(temp);
 		}
 	};
 
@@ -1604,9 +1603,9 @@ namespace eastl
 
 			if(pMemory)
 			{
-				Container* const pTemp = ::new(pMemory) Container(a);
-				a = b;
-				b = *pTemp;
+				Container* pTemp = ::new(pMemory) Container(EASTL_MOVE(a));
+				a = EASTL_MOVE(b);
+				b = EASTL_MOVE(*pTemp);
 
 				pTemp->~Container();
 				allocator.deallocate(pMemory, sizeof(a));
@@ -1626,10 +1625,7 @@ namespace eastl
 } // namespace eastl
 
 
-#if defined(_MSC_VER)
-	#pragma warning(pop)
-#endif
+EA_RESTORE_VC_WARNING();
 
 
 #endif // Header include guard
-

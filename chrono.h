@@ -27,27 +27,30 @@
 
 // TODO:  move to platform specific cpp or header file
 #if  defined EA_PLATFORM_MICROSOFT
-	#pragma warning(push, 0)
-	#ifndef WIN32_LEAN_AND_MEAN
-	#define WIN32_LEAN_AND_MEAN
-	#endif
 	EA_DISABLE_ALL_VC_WARNINGS()
+
+	#ifndef WIN32_LEAN_AND_MEAN
+		#define WIN32_LEAN_AND_MEAN
+	#endif
+
 	#undef NOMINMAX
 	#define NOMINMAX
+
 	#include <Windows.h>
+
 	#ifdef min
 		#undef min
 	#endif
-	#ifdef max 
+	#ifdef max
 		#undef max
 	#endif
+
 	EA_RESTORE_ALL_VC_WARNINGS()
-	#pragma warning(pop)
 #endif
 
 #if defined(EA_PLATFORM_MICROSOFT) && !defined(EA_PLATFORM_MINGW)
-	#include <thr/xtimec.h>
-#elif defined(EA_PLATFORM_PS4)
+	// Nothing to do
+#elif defined(EA_PLATFORM_SONY)
 	#include <Dinkum/threads/xtimec.h>
 	#include <kernel.h>
 #elif defined(EA_PLATFORM_APPLE)
@@ -544,7 +547,7 @@ namespace chrono
 	{
 		#if defined(EA_PLATFORM_MICROSOFT) && !defined(EA_PLATFORM_MINGW)
 			#define EASTL_NS_PER_TICK 1 
-		#elif defined EA_PLATFORM_PS4
+		#elif defined EA_PLATFORM_SONY
 			#define EASTL_NS_PER_TICK _XTIME_NSECS_PER_TICK
 		#elif defined EA_PLATFORM_POSIX
 			#define EASTL_NS_PER_TICK _XTIME_NSECS_PER_TICK
@@ -585,7 +588,7 @@ namespace chrono
 			static auto frequency = queryFrequency(); // cache cpu frequency on first call
 			EA_RESTORE_VC_WARNING()
 			return uint64_t(frequency * queryCounter());
-        #elif defined EA_PLATFORM_PS4
+        #elif defined EA_PLATFORM_SONY
 			return sceKernelGetProcessTimeCounter();
 		#elif defined(EA_PLATFORM_APPLE)
 		   return mach_absolute_time();
@@ -594,7 +597,8 @@ namespace chrono
 				timespec ts;
 				int result = clock_gettime(CLOCK_MONOTONIC, &ts);
 
-				if (result == EINVAL)
+				if(result == EINVAL 
+					)
 					result = clock_gettime(CLOCK_REALTIME, &ts);
 
 				const uint64_t nNanoseconds = (uint64_t)ts.tv_nsec + ((uint64_t)ts.tv_sec * UINT64_C(1000000000));

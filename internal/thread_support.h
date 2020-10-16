@@ -13,14 +13,22 @@
 #endif
 #include <eastl/internal/config.h>
 
-#if defined(EA_HAVE_CPP11_MUTEX) && !defined(EA_PLATFORM_MICROSOFT) && !defined(EA_PLATFORM_UNIX) // We stick with platform-specific mutex support to the extent possible, as it's currently more reliably available.
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+// NOTE(rparolin): We need a fallback mutex implementation because the Microsoft implementation 
+// of std::mutex can not be included in managed-cpp code.
+//
+// fatal error C1189: <mutex> is not supported when compiling with /clr or /clr:pure 
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+#if defined(EA_HAVE_CPP11_MUTEX) && !defined(EA_COMPILER_MANAGED_CPP)
 	#define EASTL_CPP11_MUTEX_ENABLED 1
 #else
 	#define EASTL_CPP11_MUTEX_ENABLED 0
 #endif
 
 #if EASTL_CPP11_MUTEX_ENABLED
+	EA_DISABLE_ALL_VC_WARNINGS()
 	#include <mutex>
+	EA_RESTORE_ALL_VC_WARNINGS()
 #endif
 
 #if defined(EA_PLATFORM_MICROSOFT)
@@ -29,15 +37,12 @@
 	#include <pthread.h>
 #endif
 
+// copy constructor could not be generated because a base class copy constructor is inaccessible or deleted.
+// assignment operator could not be generated because a base class assignment operator is inaccessible or deleted.
+// non dll-interface class used as base for DLL-interface classkey 'identifier'.
+EA_DISABLE_VC_WARNING(4625 4626 4275);
 
-#if defined(_MSC_VER)
-	#pragma warning(push)
-	#pragma warning(disable: 4625) // copy constructor could not be generated because a base class copy constructor is inaccessible or deleted.
-	#pragma warning(disable: 4626) // assignment operator could not be generated because a base class assignment operator is inaccessible or deleted.
-	#pragma warning(disable: 4275) // non dll-interface class used as base for DLL-interface classkey 'identifier'.
-#endif
 
-	
 #if defined(EA_PLATFORM_MICROSOFT)
 	#if defined(EA_PROCESSOR_POWERPC)
 		extern "C" long  __stdcall _InterlockedIncrement(long volatile* Addend);
@@ -212,13 +217,8 @@ namespace eastl
 		protected:
 			mutex* pMutex;
 
-			#if defined(EA_COMPILER_NO_DELETED_FUNCTIONS)
-				auto_mutex(const auto_mutex&) : pMutex(NULL) {}
-				void operator=(const auto_mutex&) {}
-			#else
-				auto_mutex(const auto_mutex&) = delete;
-				void operator=(const auto_mutex&) = delete;
-			#endif
+			auto_mutex(const auto_mutex&) = delete;
+			void operator=(const auto_mutex&) = delete;
 		};
 
 
@@ -228,10 +228,8 @@ namespace eastl
 		public:
 			shared_ptr_auto_mutex(const void* pSharedPtr);
 
-			#if !defined(EA_COMPILER_NO_DELETED_FUNCTIONS)
-				shared_ptr_auto_mutex(const shared_ptr_auto_mutex&) = delete;
-				void operator=(shared_ptr_auto_mutex&&) = delete;
-			#endif
+			shared_ptr_auto_mutex(const shared_ptr_auto_mutex&) = delete;
+			void operator=(shared_ptr_auto_mutex&&) = delete;
 		};
 
 
@@ -240,17 +238,7 @@ namespace eastl
 } // namespace eastl
 
 
-#if defined(_MSC_VER)
-	#pragma warning(pop)
-#endif
+EA_RESTORE_VC_WARNING();
 
 
 #endif // Header include guard
-
-
-
-
-
-
-
-
