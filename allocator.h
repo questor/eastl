@@ -8,7 +8,7 @@
 
 
 #include <eastl/internal/config.h>
-#include <eastl/EABASE/nullptr.h>
+#include <eastl/EABase/nullptr.h>
 #include <stddef.h>
 
 

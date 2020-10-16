@@ -10,23 +10,23 @@
 
 
 // Identify the compiler and declare the EA_COMPILER_xxxx defines
-#include <eastl/EABASE/config/eacompiler.h>
+#include <eastl/EABase/config/eacompiler.h>
 
 // Identify traits which this compiler supports, or does not support
-#include <eastl/EABASE/config/eacompilertraits.h>
+#include <eastl/EABase/config/eacompilertraits.h>
 
 // Identify the platform and declare the EA_xxxx defines
-#include <eastl/EABASE/config/eaplatform.h>
+#include <eastl/EABase/config/eaplatform.h>
 
 #if defined(EASTL_PRAGMA_ONCE_SUPPORTED)
 	#pragma once // Some compilers (e.g. VC++) benefit significantly from using this. We've measured 3-4% build speed improvements in apps as a result.
 #endif
 
 // Always include version.h for backwards compatibility.
-#include <eastl/EABASE/version.h>
+#include <eastl/EABase/version.h>
 
 // Define common SI unit macros
-#include <eastl/EABASE/eaunits.h>
+#include <eastl/EABase/eaunits.h>
 
 
 // ------------------------------------------------------------------------
@@ -1001,7 +1001,7 @@
 // Define int128_t / uint128_t types.
 // NOTE(rparolin):  include file at the end because we want all the signed integral types defined.
 #ifdef __cplusplus
-	#include <eastl/EABASE/int128.h>
+	#include <eastl/EABase/int128.h>
 #endif
 
 #endif // Header include guard

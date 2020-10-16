@@ -12,7 +12,7 @@
 #include <eastl/iterator.h>
 #include <eastl/internal/functional_base.h>
 #include <eastl/internal/move_help.h>
-#include <eastl/EABASE/eahave.h>
+#include <eastl/EABase/eahave.h>
 
 #include <eastl/internal/integer_sequence.h>
 #include <eastl/internal/tuple_fwd_decls.h>

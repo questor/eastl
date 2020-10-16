@@ -21,7 +21,7 @@
 	#pragma once 
 #endif
 
-#include <eastl/EABASE/eabase.h>
+#include <eastl/EABase/eabase.h>
 
 
 //////////////////////////////////////////////////////////////////////////////

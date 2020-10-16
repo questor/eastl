@@ -7,7 +7,7 @@
 #define EASTL_UNIQUE_PTR_H
 
 
-#include <eastl/EABASE/nullptr.h>
+#include <eastl/EABase/nullptr.h>
 #include <eastl/internal/config.h>
 #include <eastl/internal/smart_ptr.h>   // Defines smart_ptr_deleter
 #include <eastl/internal/move_help.h>   // Defines EASTL_MOVE

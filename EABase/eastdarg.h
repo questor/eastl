@@ -9,7 +9,7 @@
 #define INCLUDED_eastdarg_H
 
 
-#include <eastl/EABASE/eabase.h>
+#include <eastl/EABase/eabase.h>
 #include <stdarg.h>
 
 

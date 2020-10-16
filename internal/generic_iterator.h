@@ -14,7 +14,7 @@
 #define EASTL_INTERNAL_GENERIC_ITERATOR_H
 
 
-#include <eastl/EABASE/eabase.h>
+#include <eastl/EABase/eabase.h>
 #if defined(EASTL_PRAGMA_ONCE_SUPPORTED)
 	#pragma once
 #endif

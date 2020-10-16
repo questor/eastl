@@ -102,7 +102,7 @@
 #define INCLUDED_eahave_H
 
 
-#include <eastl/EABASE/eabase.h>
+#include <eastl/EABase/eabase.h>
 
 
 #if defined(EASTL_PRAGMA_ONCE_SUPPORTED)
@@ -730,7 +730,7 @@
 #endif
 
 // <cstddef> std::nullptr_t
-// Note that <eastl/EABASE/nullptr.h> implements a portable nullptr implementation, but this 
+// Note that <eastl/EABase/nullptr.h> implements a portable nullptr implementation, but this 
 // EA_HAVE specifically refers to std::nullptr_t from the standard libraries.
 #if !defined(EA_HAVE_nullptr_t_IMPL) && !defined(EA_NO_HAVE_nullptr_t_IMPL)
 	#if defined(EASTL_COMPILER_CPP11_ENABLED)
@@ -863,7 +863,7 @@
 	
 	Example usage:
 	   #define EABASE_USER_HAVE_HEADER "MyHaveOverrides.h" 
-	   #include <eastl/EABASE/eahave.h>
+	   #include <eastl/EABase/eahave.h>
 ---------------------------------------------------------------------------*/
 
 #ifdef EABASE_USER_HAVE_HEADER

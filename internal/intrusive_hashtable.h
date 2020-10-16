@@ -16,7 +16,7 @@
 #define EASTL_INTERNAL_INTRUSIVE_HASHTABLE_H
 
 
-#include <eastl/EABASE/eabase.h>
+#include <eastl/EABase/eabase.h>
 #if defined(EASTL_PRAGMA_ONCE_SUPPORTED)
 	#pragma once
 #endif

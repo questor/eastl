@@ -176,5 +176,5 @@ grep -RiIl 'make_pair' | xargs sed -i 's/make_pair/makePair/g'
 
 
 grep -RiIl '<EASTL/' | xargs sed -i 's/<EASTL\//<eastl\//g'
-grep -RiIl '<EABase/' | xargs sed -i 's/<EABase\//<eastl\/EABASE\//g'
+grep -RiIl '<EABase/' | xargs sed -i 's/<EABase\//<eastl\/EABase\//g'
 grep -RiIl 'eastl/fixedAllocator.h' | xargs sed -i 's/eastl\/fixedAllocator.h/eastl\/fixed_allocator.h/g'

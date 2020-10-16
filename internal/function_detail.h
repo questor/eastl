@@ -9,9 +9,9 @@
 	#pragma once
 #endif
 
-#include <eastl/EABASE/eabase.h>
-#include <eastl/EABASE/nullptr.h>
-#include <eastl/EABASE/config/eacompilertraits.h>
+#include <eastl/EABase/eabase.h>
+#include <eastl/EABase/nullptr.h>
+#include <eastl/EABase/config/eacompilertraits.h>
 
 #include <eastl/internal/config.h>
 #include <eastl/internal/functional_base.h>

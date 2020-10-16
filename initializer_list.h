@@ -12,7 +12,7 @@
 
 
 #include <eastl/internal/config.h>
-#include <eastl/EABASE/eahave.h>
+#include <eastl/EABase/eahave.h>
 
 #if defined(EASTL_PRAGMA_ONCE_SUPPORTED)
 	#pragma once // Some compilers (e.g. VC++) benefit significantly from using this. We've measured 3-4% build speed improvements in apps as a result.
@@ -29,7 +29,7 @@
 
 #else
 
-	// If you get an error here about initializer_list being already defined, then the EA_HAVE_CPP11_INITIALIZER_LIST define from <eastl/EABASE/eahave.h> needs to be updated.
+	// If you get an error here about initializer_list being already defined, then the EA_HAVE_CPP11_INITIALIZER_LIST define from <eastl/EABase/eahave.h> needs to be updated.
 	namespace std
 	{
 		// See the C++11 Standard, section 18.9.

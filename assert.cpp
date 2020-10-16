@@ -5,7 +5,7 @@
 
 #include <eastl/internal/config.h>
 #include <eastl/string.h>
-#include <eastl/EABASE/eabase.h>
+#include <eastl/EABase/eabase.h>
 
 #if defined(EA_PLATFORM_MICROSOFT)
 	EA_DISABLE_ALL_VC_WARNINGS();

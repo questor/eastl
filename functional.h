@@ -6,7 +6,7 @@
 #define EASTL_FUNCTIONAL_H
 
 
-#include <eastl/EABASE/eabase.h>
+#include <eastl/EABase/eabase.h>
 #include <eastl/internal/config.h>
 #include <eastl/internal/move_help.h>
 #include <eastl/type_traits.h>

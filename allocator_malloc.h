@@ -7,7 +7,7 @@
 #define EASTL_ALLOCATOR_MALLOC_H
 
 
-#include <eastl/EABASE/eahave.h>
+#include <eastl/EABase/eahave.h>
 #include <eastl/allocator.h>
 #include <stddef.h>
 
