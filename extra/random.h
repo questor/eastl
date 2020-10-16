@@ -25,6 +25,44 @@
 
 namespace eastl {
 
+
+//splitmix64
+class SplitMix64 {
+   uint64_t state;              /* The state can be seeded with any (upto) 64 bit integer value. */
+
+    uint64_t next_int() {
+        state += 0x9e3779b97f4a7c15;               /* increment the state variable */
+        uint64_t z = state;                          /* copy the state to a working variable */
+        z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;  /* xor the variable with the variable right bit shifted 30 then multiply by a constant */
+        z = (z ^ (z >> 27)) * 0x94d049bb133111eb;  /* xor the variable with the variable right bit shifted 27 then multiply by a constant */
+        return z ^ (z >> 31);                      /* return the variable xored with itself right bit shifted 31 */
+    }
+
+    double next_float() {
+        return next_int() / (1 << 64);             /* divide by 2^64 to return a value between 0 and 1 */
+    }
+};
+
+
+class XOrShift {
+   uint32_t seed = 7;  // 100% random seed value
+
+   uint32_t random() {
+     seed ^= seed << 13;
+     seed ^= seed >> 17;
+     seed ^= seed << 5;
+     return seed;
+   }
+
+   void seed(uint32_t seedVal) {
+      if(seedVal == 0)
+         seedVal = -1;
+      seed = seedVal;
+   }
+};
+
+
+
 // randMod returns in [0, range-1] taken from http://cbloomrants.blogspot.com/2009/02/02-19-09-two-code-gems.html
 template<class Random> uint32_t randMod(Random &randGen, uint32_t range ) {
     ASSERT( range > 0 ); // infinite loop
