@@ -44,7 +44,7 @@ inline bool floatRelativeEqual(const float x, const float y, const float EPSILON
 //combined
 //equal(float) = fabs(x-y) <= EPSILON * max(1.0f, fabs(x), fabs(y))
 inline bool floatCombinedEqual(const float x, const float y, const float EPSILON=0.000061f) {
-   return fabs(x-y) <= EPSILON*max(1.0, max(fabs(x), fabs(y)));
+   return fabs(x-y) <= EPSILON*(float)max(1.0f, max(fabs(x), fabs(y)));
 }
 
 // from http://www.cygnus-software.com/papers/comparingfloats/comparingfloats.htm
@@ -160,7 +160,7 @@ static const double floatutil_xs_doublemagic = (6755399441055744.0); // 2^52 * 1
 static const double floatutil_xs_doublemagicdelta = (1.5e-8);                         //almost .5f = .5f + 1e^(number of exp bit)
 static const double floatutil_xs_doublemagicroundeps = (0.5f - floatutil_xs_doublemagicdelta);       //almost .5f = .5f - 1e^(number of exp bit)
 
-#include <xmmintrin.h>
+//#include <xmmintrin.h>
 
 // ftoi_round : *banker* rounding!
 /* Note that this is a "banker's round" not a normal arithmetic rounding where 0.5 always goes up or 
@@ -173,6 +173,7 @@ inline int ftoi_round(const double val) {
   return (int) dunion.intType; // just cast to grab the bottom bits
 }
 
+#if 0
 inline int ftoi_trunc(const float f) {
   return _mm_cvtt_ss2si( _mm_set_ss( f ) );
 }
@@ -180,6 +181,7 @@ inline int ftoi_trunc(const float f) {
 inline int ftoi_round_sse(const float f) {
   return _mm_cvt_ss2si( _mm_set_ss( f ) );
 }
+#endif
 
 inline int ftoi_floor(const double val) {
     return ftoi_round(val - floatutil_xs_doublemagicroundeps);

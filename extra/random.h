@@ -54,7 +54,7 @@ class XOrShift {
      return seed;
    }
 
-   void seed(uint32_t seedVal) {
+   void setSeed(uint32_t seedVal) {
       if(seedVal == 0)
          seedVal = -1;
       seed = seedVal;
@@ -65,7 +65,7 @@ class XOrShift {
 
 // randMod returns in [0, range-1] taken from http://cbloomrants.blogspot.com/2009/02/02-19-09-two-code-gems.html
 template<class Random> uint32_t randMod(Random &randGen, uint32_t range ) {
-    ASSERT( range > 0 ); // infinite loop
+    EASTL_ASSERT_MSG( range > 0, "infinite loop generated" ); // infinite loop
 
     uint32_t mask = range | (range>>1) | (range>>2) | (range>>3);
     mask = mask | (mask>>4);
@@ -76,7 +76,7 @@ template<class Random> uint32_t randMod(Random &randGen, uint32_t range ) {
     for(;;) {
         uint32_t rand32 = randGen.rand();    //32bit-random-value
         uint32_t randInMask = rand32 & mask;
-        ASSERT( randInMask < range*2 );
+        EASTL_ASSERT( randInMask < range*2 );
         // > 50% chance of passing the test so iterations should be rare
         if ( randInMask < range )
             return randInMask;
@@ -159,7 +159,7 @@ public:
    /// constructor with specified start-seed
    /// \param seed   value to seed the random number generator; the seed MUST not be 0!
    LCRGF(int seed) {
-      ASSERT(seed != 0);
+      EASTL_ASSERT(seed != 0);
       mCurrentValue = seed;
    }    //seed MUST not be 0!
 
@@ -220,10 +220,10 @@ public:
    LFSR113(unsigned long s1, unsigned long s2, unsigned long s3, unsigned long s4) {
       //the seed MUST satifsy:
       // z1>1, z2>7, z3>15, z4>127
-      ASSERT(z1 > 1);
-      ASSERT(z2 > 7);
-      ASSERT(z3 > 15);
-      ASSERT(z4 > 127);
+      EASTL_ASSERT(z1 > 1);
+      EASTL_ASSERT(z2 > 7);
+      EASTL_ASSERT(z3 > 15);
+      EASTL_ASSERT(z4 > 127);
       z1 = s1; z2 = s2; z3 = s3; z4 = s4;
    }
    /// generate 32bit random number value
