@@ -39,7 +39,8 @@ class SplitMix64 {
     }
 
     double next_float() {
-        return ((double)next_int()) / ((double)(1 << 64));             /* divide by 2^64 to return a value between 0 and 1 */
+        double maxNumber = 1.8446744073709551616e19;
+        return ((double)next_int()) / maxNumber;             /* divide by 2^64 to return a value between 0 and 1 */
     }
 };
 
