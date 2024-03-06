@@ -5,6 +5,14 @@
 EASTL stands for Electronic Arts Standard Template Library. It is a C++ template library of containers, algorithms, and iterators useful for runtime and tool development across multiple platforms. It is a fairly extensive and robust implementation of such a library and has an emphasis on high performance above all other considerations.
 
 
+## MODIFICATIONS DONE IN THIS REPOSITORY:
+- renamed many functions for my own codingstyle (push_back to pushBack, etc)
+- vector-implementation:
+   - Fixed a bug when inserting elements referenced to own array, BUT ONLY WHEN EXCEPTIONS ARE DISABLED! with exceptions the error is NOT fixed
+     (https://github.com/electronicarts/EASTL/issues/524)
+   - growth-factor is NOT 2.0 but 1.618 (https://blog.demofox.org/2016/05/18/who-cares-about-dynamic-array-growth-strategies/)
+
+
 ## Usage
 
 If you are familiar with the C++ STL or have worked with other templated container/algorithm libraries, you probably don't need to read this. If you have no familiarity with C++ templates at all, then you probably will need more than this document to get you up to speed. In this case, you need to understand that templates, when used properly, are powerful vehicles for the ease of creation of optimized C++ code. A description of C++ templates is outside the scope of this documentation, but there is plenty of such documentation on the Internet.
@@ -42,10 +50,13 @@ Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on compiling and testi
 
 ## Credits And Maintainers
 
-EASTL was created by Paul Pedriana and he maintained the project for roughly 10 years.  
+EASTL was created by Paul Pedriana and he maintained the project for roughly 10 years.
 
-Roberto Parolin is the current EASTL owner and primary maintainer within EA and is responsible for the open source repository.
-Max Winkler is the secondary maintainer for EASTL within EA and on the open source repository.
+EASTL was subsequently maintained by Roberto Parolin for more than 8 years.
+He was the driver and proponent for getting EASTL opensourced.
+Rob was a mentor to all members of the team and taught us everything we ever wanted to know about C++ spookyness.
+
+After Rob, maintenance of EASTL passed to Max Winkler for roughly a year, until landing with its current maintainer Liam Mitchell.
 
 Significant EASTL contributions were made by (in alphabetical order):
 

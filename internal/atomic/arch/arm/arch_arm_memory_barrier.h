@@ -11,7 +11,7 @@
 #endif
 
 
-#if defined(EA_COMPILER_MSVC)
+#if defined(EA_COMPILER_MSVC) && !defined(EA_COMPILER_CLANG_CL)
 
 	#if defined(EA_PROCESSOR_ARM32)
 
@@ -34,6 +34,7 @@
 
 	/**
 	 * NOTE:
+	 *
 	 * While it makes no sense for a hardware memory barrier to not imply a compiler barrier.
 	 * MSVC docs do not explicitly state that, so better to be safe than sorry chasing down
 	 * hard to find bugs due to the compiler deciding to reorder things.
@@ -45,7 +46,7 @@
 		EASTL_ATOMIC_COMPILER_BARRIER()
 
 
-#elif defined(EA_COMPILER_GNUC) || defined(EA_COMPILER_CLANG)
+#elif defined(EA_COMPILER_GNUC) || defined(__clang__)
 
 	#define EASTL_ARM_DMB_ISH ish
 

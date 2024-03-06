@@ -43,7 +43,7 @@ builds and sometimes in optimized builds as well.</li>
 <li>The STL doesn't support alignment of contained objects.</li>
 <li>STL containers won't let you insert an entry into a container without supplying an entry to copy from. This can be
 inefficient.</li>
-<li>Useful STL extensions (e.g. slist, hash_map, shared_ptr) found in existing STL implementations such as STLPort are
+<li>Useful STL extensions (e.g. slist, hashMap, shared_ptr) found in existing STL implementations such as STLPort are
 not portable because they don't exist in other versions of STL or aren't consistent between STL versions.<br></li>
 <li>The STL lacks useful extensions that game programmers find useful (e.g. intrusive_list) but which could be best
 optimized in a portable STL environment.</li>
@@ -155,8 +155,8 @@ operator=(</span></small><small><span style="font-family: Courier New;">this_typ
 "font-family: Courier New;">this_type</span></small><small><span style="font-family: Courier New;">&amp; x);<br>
 &nbsp;&nbsp;&nbsp; void reset();<br>
 <br>
-&nbsp;&nbsp;&nbsp; allocator_type&amp; get_allocator();<br>
-&nbsp;&nbsp;&nbsp; void &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;set_allocator(allocator_type&amp; allocator);<br>
+&nbsp;&nbsp;&nbsp; allocator_type&amp; getAllocator();<br>
+&nbsp;&nbsp;&nbsp; void &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;setAllocator(allocator_type&amp; allocator);<br>
 <br>
 &nbsp;&nbsp;&nbsp;&nbsp;iterator&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; begin();<br>
 &nbsp;&nbsp;&nbsp;&nbsp;const_iterator begin() const;<br>
@@ -164,7 +164,7 @@ operator=(</span></small><small><span style="font-family: Courier New;">this_typ
 &nbsp;&nbsp;&nbsp;&nbsp;const_iterator end() const;<br>
 <br>
 &nbsp;&nbsp;&nbsp; bool validate() const;<br></span></small> <small><span style=
-"font-family: Courier New;">&nbsp;&nbsp;&nbsp; int&nbsp; validate_iterator(const_iterator i)
+"font-family: Courier New;">&nbsp;&nbsp;&nbsp; int&nbsp; validateIterator(const_iterator i)
 const;<br></span></small><br>
 <small><span style="font-family: Courier New;">protected:<br>
 &nbsp;&nbsp;&nbsp; allocator_type mAllocator;<br>
@@ -196,7 +196,7 @@ the cotainer/algorithm contract.&nbsp;</li>
 without freeing the memory of the contained objects. This is useful for very quickly tearing down a container built
 into scratch memory. No memory is allocated by reset, and the container has no allocatedmemory after the reset is
 executed.</li>
-<li>The validate and validate_iterator functions provide explicit container and iterator validation. EASTL provides an option to do implicit automatic iterator and container validation, but full validation (which can be potentially extensive) has too much of a performance cost to execute implicitly, even in a debug build. So EASTL provides these explicit functions which can be called by the user at the appropriate time and in optimized builds as well as debug builds. </li>
+<li>The validate and validateIterator functions provide explicit container and iterator validation. EASTL provides an option to do implicit automatic iterator and container validation, but full validation (which can be potentially extensive) has too much of a performance cost to execute implicitly, even in a debug build. So EASTL provides these explicit functions which can be called by the user at the appropriate time and in optimized builds as well as debug builds. </li>
 </ul>
 <h2>Allocator Design</h2>
 <p>The most significant difference between EASTL and standard C++ STL is that standard STL containers are templated on an
@@ -243,7 +243,7 @@ const;</span><br style="font-family: Courier New;">
 allocator&lt;void&gt;::const_pointer hint = 0);</span><br style="font-family: Courier New;">
 <span style="font-family: Courier New;">&nbsp;&nbsp;&nbsp; void &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;deallocate(pointer p,
 size_type n);</span><br style="font-family: Courier New;">
-<span style="font-family: Courier New;">&nbsp;&nbsp;&nbsp; size_type &nbsp; &nbsp; max_size() const
+<span style="font-family: Courier New;">&nbsp;&nbsp;&nbsp; size_type &nbsp; &nbsp; maxSize() const
 throw();</span><br style="font-family: Courier New;">
 <span style="font-family: Courier New;">&nbsp;&nbsp;&nbsp; void &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;construct(pointer p,
 const T&amp; val);</span><br style="font-family: Courier New;">
@@ -276,18 +276,18 @@ public:<br>
 &nbsp;&nbsp;&nbsp; void* allocate(size_t n, size_t alignment, size_t offset, int flags = 0);<br>
 &nbsp;&nbsp;&nbsp; void&nbsp; deallocate(void* p, size_t n);<br>
 <br>
-&nbsp;&nbsp;&nbsp; const char* get_name() const;<br>
-&nbsp;&nbsp;&nbsp; void&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; set_name(const char* pName);<br>
+&nbsp;&nbsp;&nbsp; const char* getName() const;<br>
+&nbsp;&nbsp;&nbsp; void&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; setName(const char* pName);<br>
 };<br>
 <br>
 allocator* GetDefaultAllocator();</span></small></div>
 <h2>Fixed Size Container Design</h2>
 <p>EASTL supplies a set of&nbsp;fixed-size containers that the user can use, though the user can also implement their own
-  versions. So in addition to class list there is class fixed_list. The fixed_list class implements a linked list via a
+  versions. So in addition to class list there is class fixedList. The fixedList class implements a linked list via a
   fixed-size pool of contiguous memory which has no space overhead (unlike with a regular heap), doesn't cause
 fragmentation, and allocates very quickly.</p>
 <p>EASTL implements fixed containers via subclasses of regular containers which set the regular container's allocator to
-  point to themselves. Thus the implementation for fixed_list is very tiny and consists of little more
+  point to themselves. Thus the implementation for fixedList is very tiny and consists of little more
   than&nbsp;constructor and allocator functions. This design has some advantages but has one small disadvantage. The
   primary advantages are primarily that code bloat is reduced and that the implementation is simple and the user can
   easily extend it. The primary disadvantage is that the parent list class ends up with a pointer to itself and thus has
@@ -350,7 +350,7 @@ smart pointers unilaterally use global operator new to allocate memory from the 
   size is but an integer which is quick to update, and that many users expect to have a fast size function. In the final
   analysis, we are developing a library for game development and performance is paramount, so we choose to not cache the
 list size. The user can always implement a size cache himself.</p>
-<h2>basic_string doesn't use copy-on-write</h2>
+<h2>basicString doesn't use copy-on-write</h2>
 <p>The primary benefit of CoW is that it allows for the sharing of string data between two string objects. Thus if you say
   this:</p>
 <p class="code-example">  string a("hello");<br style=
@@ -361,7 +361,7 @@ list size. The user can always implement a size cache himself.</p>
 <p>then <span style="font-family: Courier New;">a</span> will release its reference to "hello" and leave b with the only
   reference to it. Normally this functionality is accomplished via reference counting and with atomic operations or
 mutexes.</p>
-<p> The C++ standard does not say anything about basic_string and CoW. However, for a basic_string implementation to be
+<p> The C++ standard does not say anything about basicString and CoW. However, for a basicString implementation to be
   standards-conforming, a number of issues arise which dictate some things about how one would have to implement a CoW
   string. The discussion of these issues will not be rehashed here, as you can read the references below for better
   detail than can be provided in the&nbsp;space we have here. However, we can say that the C++ standard is sensible

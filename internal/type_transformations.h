@@ -111,54 +111,148 @@ namespace eastl
 	// make_signed
 	//
 	// Used to convert an integral type to its signed equivalent, if not already.
-	// T shall be a (possibly const and/or volatile-qualified) integral type 
+	// T shall be a (possibly const and/or volatile-qualified) integral type
 	// or enumeration but not a bool type.;
 	//
-	// The user can define their own make_signed overrides for their own 
+	// The user can define their own make_signed overrides for their own
 	// types by making a template specialization like done below and adding
 	// it to the user's code.
 	///////////////////////////////////////////////////////////////////////
 
-	// To do: This implementation needs to be updated to support C++11 conformance (recognition of enums) and 
-	// to support volatile-qualified types. It will probably be useful to have it fail for unsupported types.
-	#define EASTL_TYPE_TRAIT_make_signed_CONFORMANCE 0    // make_signed is only partially conforming.
+	#define EASTL_TYPE_TRAIT_make_signed_CONFORMANCE 1
 
-	template <typename T> struct make_signed { typedef T type; };
+	namespace internal
+	{
+		template <typename T, bool = eastl::is_enum_v<T> || eastl::is_integral_v<T>>
+		struct make_signed_helper_0
+		{
+			struct char_helper
+			{
+				typedef signed char type;
+			};
 
+			struct short_helper
+			{
+				typedef signed short type;
+			};
+
+			struct int_helper
+			{
+				typedef signed int type;
+			};
+
+			struct long_helper
+			{
+				typedef signed long type;
+			};
+
+			struct longlong_helper
+			{
+				typedef signed long long type;
+			};
+
+			struct int128_helper
+			{
+				#if EASTL_GCC_STYLE_INT128_SUPPORTED
+					typedef __int128_t type;
+				#endif
+			};
+
+			struct no_type_helper
+			{
+			};
+
+			typedef typename
+			eastl::conditional<sizeof(T) <= sizeof(signed char), char_helper,
+			eastl::conditional_t<sizeof(T) <= sizeof(signed short), short_helper,
+			eastl::conditional_t<sizeof(T) <= sizeof(signed int), int_helper,
+			eastl::conditional_t<sizeof(T) <= sizeof(signed long), long_helper,
+			eastl::conditional_t<sizeof(T) <= sizeof(signed long long), longlong_helper,
+			#if EASTL_GCC_STYLE_INT128_SUPPORTED
+				eastl::conditional_t<sizeof(T) <= sizeof(__int128_t), int128_helper,
+					no_type_helper
+				>
+			#else
+				no_type_helper
+			#endif
+			>
+			>
+			>
+			>
+		    >::type type;
+		};
+
+		template <typename T>
+		struct make_signed_helper_0<T, false>
+		{
+			struct no_type_helper
+			{
+			};
+
+			typedef no_type_helper type;
+		};
+
+		template <typename T>
+		struct make_signed_helper_1
+		{
+			typedef typename T::type type;
+		};
+
+		template <typename T>
+		struct make_signed_helper
+		{
+			typedef typename eastl::internal::make_signed_helper_1<typename eastl::internal::make_signed_helper_0<T>::type>::type type;
+		};
+
+	} // namespace internal
+
+	template <typename T>
+	struct make_signed
+	{
+		typedef typename eastl::internal::make_signed_helper<T>::type type;
+	};
+
+	template <> struct make_signed<bool> {};
+	template <> struct make_signed<signed char>              { typedef signed char            type; };
 	template <> struct make_signed<unsigned char>            { typedef signed char            type; };
-	template <> struct make_signed<const unsigned char>      { typedef const signed char      type; };
+	template <> struct make_signed<signed short>             { typedef signed short           type; };
 	template <> struct make_signed<unsigned short>           { typedef signed short           type; };
-	template <> struct make_signed<const unsigned short>     { typedef const signed short     type; };
+	template <> struct make_signed<signed int>               { typedef signed int             type; };
 	template <> struct make_signed<unsigned int>             { typedef signed int             type; };
-	template <> struct make_signed<const unsigned int>       { typedef const signed int       type; };
+	template <> struct make_signed<signed long>              { typedef signed long            type; };
 	template <> struct make_signed<unsigned long>            { typedef signed long            type; };
-	template <> struct make_signed<const unsigned long>      { typedef const signed long      type; };
+	template <> struct make_signed<signed long long>         { typedef signed long long       type; };
 	template <> struct make_signed<unsigned long long>       { typedef signed long long       type; };
-	template <> struct make_signed<const unsigned long long> { typedef const signed long long type; };
+	#if EASTL_GCC_STYLE_INT128_SUPPORTED
+		template <> struct make_signed<__int128_t>           { typedef __int128_t			  type; };
+		template <> struct make_signed<__uint128_t>          { typedef __int128_t			  type; };
+	#endif
+
 
 	#if (defined(CHAR_MAX) && defined(UCHAR_MAX) && (CHAR_MAX == UCHAR_MAX)) // If char is unsigned, we convert char to signed char. However, if char is signed then make_signed returns char itself and not signed char.
 		template <> struct make_signed<char>                 { typedef signed char            type; };
-		template <> struct make_signed<const char>           { typedef signed char            type; };
 	#endif
 
-	#ifndef EASTL_WCHAR_T_NON_NATIVE // If wchar_t is a native type instead of simply a define to an existing type...
-		#if (defined(__WCHAR_MAX__) && (__WCHAR_MAX__ == 4294967295U)) // If wchar_t is a 32 bit unsigned value...
-			template<>
-			struct make_signed<wchar_t>
-			{ typedef int32_t type; };
-		#elif (defined(__WCHAR_MAX__) && (__WCHAR_MAX__ == 65535))     // If wchar_t is a 16 bit unsigned value...
-			template<>
-			struct make_signed<wchar_t>
-			{ typedef int16_t type; };
-		#elif (defined(__WCHAR_MAX__) && (__WCHAR_MAX__ == 255))       // If wchar_t is an 8 bit unsigned value...
-			template<>
-			struct make_signed<wchar_t>
-			{ typedef int8_t type; };
-		#endif
-	#endif
+	template <typename T>
+	struct make_signed<const T>
+	{
+		typedef eastl::add_const_t<typename eastl::make_signed<T>::type> type;
+	};
+
+	template <typename T>
+	struct make_signed<volatile T>
+	{
+		typedef eastl::add_volatile_t<typename eastl::make_signed<T>::type> type;
+	};
+
+	template <typename T>
+	struct make_signed<const volatile T>
+	{
+		typedef eastl::add_cv_t<typename eastl::make_signed<T>::type> type;
+	};
 
 	#if EASTL_VARIABLE_TEMPLATES_ENABLED
-		template <class T>
+		template <typename T>
 		using make_signed_t = typename make_signed<T>::type;
 	#endif
 
@@ -166,12 +260,12 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////
 	// add_signed
 	//
-	// This is not a C++11 type trait, and is here for backwards compatibility
+	// Deprecated. This is not a C++11 type trait, and is here for backwards compatibility
 	// only. Use the C++11 make_unsigned type trait instead.
 	///////////////////////////////////////////////////////////////////////
 
 	template<class T>
-	struct add_signed : public make_signed<T>
+	struct EASTL_REMOVE_AT_2024_APRIL add_signed : public make_signed<T>
 	{ typedef typename eastl::make_signed<T>::type type; };
 
 
@@ -180,55 +274,155 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////
 	// make_unsigned
 	//
-	// Used to convert an integral type to its signed equivalent, if not already.
-	// T shall be a (possibly const and/or volatile-qualified) integral type 
+	// Used to convert an integral type to its unsigned equivalent, if not already.
+	// T shall be a (possibly const and/or volatile-qualified) integral type
 	// or enumeration but not a bool type.;
 	//
-	// The user can define their own make_signed overrides for their own 
+	// The user can define their own make_unsigned overrides for their own
 	// types by making a template specialization like done below and adding
 	// it to the user's code.
 	///////////////////////////////////////////////////////////////////////
 
-	// To do: This implementation needs to be updated to support C++11 conformance (recognition of enums) and 
-	// to support volatile-qualified types. It will probably be useful to have it fail for unsupported types.
-	#define EASTL_TYPE_TRAIT_make_unsigned_CONFORMANCE 0    // make_unsigned is only partially conforming.
+	#define EASTL_TYPE_TRAIT_make_unsigned_CONFORMANCE 1
 
-	template <typename T> struct make_unsigned { typedef T type; };
+	namespace internal
+	{
 
+		template <typename T, bool = eastl::is_enum<T>::value || eastl::is_integral<T>::value>
+		struct make_unsigned_helper_0
+		{
+			struct char_helper
+			{
+				typedef unsigned char type;
+			};
+
+			struct short_helper
+			{
+				typedef unsigned short type;
+			};
+
+			struct int_helper
+			{
+				typedef unsigned int type;
+			};
+
+			struct long_helper
+			{
+				typedef unsigned long type;
+			};
+
+			struct longlong_helper
+			{
+				typedef unsigned long long type;
+			};
+
+			struct int128_helper
+			{
+				#if EASTL_GCC_STYLE_INT128_SUPPORTED
+					typedef __uint128_t type;
+				#endif
+			};
+
+			struct no_type_helper
+			{
+			};
+
+
+			typedef typename
+			eastl::conditional<sizeof(T) <= sizeof(unsigned char), char_helper,
+			eastl::conditional_t<sizeof(T) <= sizeof(unsigned short), short_helper,
+			eastl::conditional_t<sizeof(T) <= sizeof(unsigned int), int_helper,
+			eastl::conditional_t<sizeof(T) <= sizeof(unsigned long), long_helper,
+			eastl::conditional_t<sizeof(T) <= sizeof(unsigned long long), longlong_helper,
+			#if EASTL_GCC_STYLE_INT128_SUPPORTED
+				eastl::conditional_t<sizeof(T) <= sizeof(__uint128_t), int128_helper,
+					no_type_helper
+				>
+			#else
+				 no_type_helper
+			#endif
+			  >
+			  >
+			  >
+			  >
+			  >::type type;
+		};
+
+
+		template <typename T>
+		struct make_unsigned_helper_0<T, false>
+		{
+			struct no_type_helper
+			{
+			};
+
+			typedef no_type_helper type;
+		};
+
+		template <typename T>
+		struct make_unsigned_helper_1
+		{
+			typedef typename T::type type;
+		};
+
+		template <typename T>
+		struct make_unsigned_helper
+		{
+			typedef typename eastl::internal::make_unsigned_helper_1<typename eastl::internal::make_unsigned_helper_0<T>::type>::type type;
+		};
+
+	} // namespace internal
+
+	template <typename T>
+	struct make_unsigned
+	{
+		typedef typename eastl::internal::make_unsigned_helper<T>::type type;
+	};
+
+	template <> struct make_unsigned<bool> {};
 	template <> struct make_unsigned<signed char>            { typedef unsigned char            type; };
-	template <> struct make_unsigned<const signed char>      { typedef const unsigned char      type; };
+	template <> struct make_unsigned<unsigned char>          { typedef unsigned char            type; };
 	template <> struct make_unsigned<signed short>           { typedef unsigned short           type; };
-	template <> struct make_unsigned<const signed short>     { typedef const unsigned short     type; };
+	template <> struct make_unsigned<unsigned short>         { typedef unsigned short           type; };
 	template <> struct make_unsigned<signed int>             { typedef unsigned int             type; };
-	template <> struct make_unsigned<const signed int>       { typedef const unsigned int       type; };
+	template <> struct make_unsigned<unsigned int>           { typedef unsigned int             type; };
 	template <> struct make_unsigned<signed long>            { typedef unsigned long            type; };
-	template <> struct make_unsigned<const signed long>      { typedef const unsigned long      type; };
+	template <> struct make_unsigned<unsigned long>          { typedef unsigned long            type; };
 	template <> struct make_unsigned<signed long long>       { typedef unsigned long long       type; };
-	template <> struct make_unsigned<const signed long long> { typedef const unsigned long long type; };
+	template <> struct make_unsigned<unsigned long long>     { typedef unsigned long long       type; };
+	#if EASTL_GCC_STYLE_INT128_SUPPORTED
+		template <> struct make_unsigned<__int128_t>         { typedef __uint128_t				type; };
+		template <> struct make_unsigned<__uint128_t>        { typedef __uint128_t				type; };
+	#endif
 
 	#if (CHAR_MIN < 0) // If char is signed, we convert char to unsigned char. However, if char is unsigned then make_unsigned returns char itself and not unsigned char.
 		template <> struct make_unsigned<char>                 { typedef unsigned char          type; };
-		template <> struct make_unsigned<const char>           { typedef unsigned char          type; };
 	#endif
 
-	#ifndef EASTL_WCHAR_T_NON_NATIVE // If wchar_t is a native type instead of simply a define to an existing type...
-		#if (defined(__WCHAR_MAX__) && (__WCHAR_MAX__ != 4294967295U)) // If wchar_t is a 32 bit signed value...
-			template<>
-			struct make_unsigned<wchar_t>
-			{ typedef uint32_t type; };
-		#elif (defined(__WCHAR_MAX__) && (__WCHAR_MAX__ != 65535))     // If wchar_t is a 16 bit signed value...
-			template<>
-			struct make_unsigned<wchar_t>
-			{ typedef uint16_t type; };
-		#elif (defined(__WCHAR_MAX__) && (__WCHAR_MAX__ != 255))       // If wchar_t is an 8 bit signed value...
-			template<>
-			struct make_unsigned<wchar_t>
-			{ typedef uint8_t type; };
-		#endif
+	#if defined(EA_CHAR8_UNIQUE) && EA_CHAR8_UNIQUE
+	template <> struct make_unsigned<char8_t>                 { typedef unsigned char           type; };
 	#endif
+
+	template <typename T>
+	struct make_unsigned<const T>
+	{
+		typedef eastl::add_const_t<typename eastl::make_unsigned<T>::type> type;
+	};
+
+	template <typename T>
+	struct make_unsigned<volatile T>
+	{
+		typedef eastl::add_volatile_t<typename eastl::make_unsigned<T>::type> type;
+	};
+
+	template <typename T>
+	struct make_unsigned<const volatile T>
+	{
+		typedef eastl::add_cv_t<typename eastl::make_unsigned<T>::type> type;
+	};
 
 	#if EASTL_VARIABLE_TEMPLATES_ENABLED
-		template <class T>
+		template <typename T>
 		using make_unsigned_t = typename make_unsigned<T>::type;
 	#endif
 
@@ -237,7 +431,7 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////
 	// add_unsigned
 	//
-	// This is not a C++11 type trait, and is here for backwards compatibility
+	// Deprecated. This is not a C++11 type trait, and is here for backwards compatibility
 	// only. Use the C++11 make_unsigned type trait instead.
 	// 
 	// Adds unsigned-ness to the given type. 
@@ -248,7 +442,7 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////
 
 	template<class T>
-	struct add_unsigned : public make_unsigned<T>
+	struct EASTL_REMOVE_AT_2024_APRIL add_unsigned : public make_unsigned<T>
 	{ typedef typename eastl::make_signed<T>::type type; };
 
 
@@ -283,15 +477,33 @@ namespace eastl
 	// add_pointer
 	//
 	// Add pointer to a type.
-	// Provides the member typedef type which is the type T*. If T is a 
-	// reference type, then type is a pointer to the referred type. 
+	// Provides the member typedef type which is the type T*.
+	// 
+	// If T is a reference type,
+	//		type member is a pointer to the referred type.
+	// If T is an object type, a function type that is not cv- or ref-qualified,
+	// or a (possibly cv-qualified) void type,
+	//		type member is T*.
+	// Otherwise (T is a cv- or ref-qualified function type),
+	//		type member is T (ie. not a pointer).
 	//
+	// cv- and ref-qualified function types are invalid, which is why there is a specific clause for it.
+	// See https://cplusplus.github.io/LWG/issue2101 for more.
+	// 
 	///////////////////////////////////////////////////////////////////////
 
 	#define EASTL_TYPE_TRAIT_add_pointer_CONFORMANCE 1
 
-	template<class T>
-	struct add_pointer { typedef typename eastl::remove_reference<T>::type* type; };
+	namespace internal
+	{
+		template <typename T>
+		auto try_add_pointer(int) -> type_identity<typename eastl::remove_reference<T>::type*>;
+		template <typename T>
+		auto try_add_pointer(...) -> type_identity<T>;
+	}
+ 
+	template <typename T>
+	struct add_pointer : decltype(internal::try_add_pointer<T>(0)) {};
 
 	#if EASTL_VARIABLE_TEMPLATES_ENABLED
 		template <class T>
@@ -347,6 +559,8 @@ namespace eastl
 
 	///////////////////////////////////////////////////////////////////////
 	// aligned_storage
+	// 
+	// Deprecated in C++23.
 	//
 	// The aligned_storage transformation trait provides a type that is 
 	// suitably aligned to store an object whose size is does not exceed length 
@@ -439,6 +653,8 @@ namespace eastl
 
 	///////////////////////////////////////////////////////////////////////
 	// aligned_union
+	// 
+	// Deprecated in C++23.
 	//
 	// The member typedef type shall be a POD type suitable for use as
 	// uninitialized storage for any object whose type is listed in Types; 
@@ -552,32 +768,6 @@ namespace eastl
 
 		return u.destValue;
 	}
-
-
-
-	///////////////////////////////////////////////////////////////////////
-	// void_t 
-	//
-	// Maps a sequence of any types to void.  This utility class is used in
-	// template meta programming to simplify compile time reflection mechanisms
-	// required by the standard library.
-	//
-	// http://en.cppreference.com/w/cpp/types/void_t
-	//
-	// Example:
-	//    template <typename T, typename = void>
-	//    struct is_iterable : false_type {};
-	//
-	//    template <typename T>
-	//    struct is_iterable<T, void_t<decltype(declval<T>().begin()), 
-	//                                 decltype(declval<T>().end())>> : true_type {};
-	//
-	///////////////////////////////////////////////////////////////////////
-	#if EASTL_VARIABLE_TEMPLATES_ENABLED
-		template <class...>
-		using void_t = void;
-	#endif
-
 
 } // namespace eastl
 

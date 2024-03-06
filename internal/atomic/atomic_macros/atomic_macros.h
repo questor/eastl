@@ -10,6 +10,7 @@
 	#pragma once
 #endif
 
+#include <eastl/EABase/eabase.h>
 
 #include "atomic_macros_base.h"
 
@@ -82,6 +83,74 @@
 	#define EASTL_ATOMIC_HAS_128BIT
 
 #endif
+
+
+/////////////////////////////////////////////////////////////////////////////////
+
+
+#if defined(EASTL_ARCH_ATOMIC_FIXED_WIDTH_TYPE_8)
+
+	#define EASTL_ATOMIC_FIXED_WIDTH_TYPE_8 EASTL_ARCH_ATOMIC_FIXED_WIDTH_TYPE_8
+
+#elif defined(EASTL_COMPILER_ATOMIC_FIXED_WIDTH_TYPE_8)
+
+	#define EASTL_ATOMIC_FIXED_WIDTH_TYPE_8 EASTL_COMPILER_ATOMIC_FIXED_WIDTH_TYPE_8
+
+#endif
+
+
+#if defined(EASTL_ARCH_ATOMIC_FIXED_WIDTH_TYPE_16)
+
+	#define EASTL_ATOMIC_FIXED_WIDTH_TYPE_16 EASTL_ARCH_ATOMIC_FIXED_WIDTH_TYPE_16
+
+#elif defined(EASTL_COMPILER_ATOMIC_FIXED_WIDTH_TYPE_16)
+
+	#define EASTL_ATOMIC_FIXED_WIDTH_TYPE_16 EASTL_COMPILER_ATOMIC_FIXED_WIDTH_TYPE_16
+
+#endif
+
+
+#if defined(EASTL_ARCH_ATOMIC_FIXED_WIDTH_TYPE_32)
+
+	#define EASTL_ATOMIC_FIXED_WIDTH_TYPE_32 EASTL_ARCH_ATOMIC_FIXED_WIDTH_TYPE_32
+
+#elif defined(EASTL_COMPILER_ATOMIC_FIXED_WIDTH_TYPE_32)
+
+	#define EASTL_ATOMIC_FIXED_WIDTH_TYPE_32 EASTL_COMPILER_ATOMIC_FIXED_WIDTH_TYPE_32
+
+#endif
+
+
+#if defined(EASTL_ARCH_ATOMIC_FIXED_WIDTH_TYPE_64)
+
+	#define EASTL_ATOMIC_FIXED_WIDTH_TYPE_64 EASTL_ARCH_ATOMIC_FIXED_WIDTH_TYPE_64
+
+#elif defined(EASTL_COMPILER_ATOMIC_FIXED_WIDTH_TYPE_64)
+
+	#define EASTL_ATOMIC_FIXED_WIDTH_TYPE_64 EASTL_COMPILER_ATOMIC_FIXED_WIDTH_TYPE_64
+
+#endif
+
+
+#if defined(EASTL_ARCH_ATOMIC_FIXED_WIDTH_TYPE_128)
+
+	#define EASTL_ATOMIC_FIXED_WIDTH_TYPE_128 EASTL_ARCH_ATOMIC_FIXED_WIDTH_TYPE_128
+
+#elif defined(EASTL_COMPILER_ATOMIC_FIXED_WIDTH_TYPE_128)
+
+	#define EASTL_ATOMIC_FIXED_WIDTH_TYPE_128 EASTL_COMPILER_ATOMIC_FIXED_WIDTH_TYPE_128
+
+#endif
+
+// We write some of our variables in inline assembly, which MSAN
+// doesn't understand.  This macro forces initialization of those
+// variables when MSAN is enabled and doesn't pay the initialization
+// cost when it's not enabled.
+#if EA_MSAN_ENABLED
+	#define EASTL_ATOMIC_DEFAULT_INIT(type, var) type var{}
+#else
+	#define EASTL_ATOMIC_DEFAULT_INIT(type, var) type var
+#endif // EA_MSAN_ENABLED
 
 
 #endif /* EASTL_ATOMIC_INTERNAL_ATOMIC_MACROS_H */

@@ -76,7 +76,7 @@
 </tr>
 <tr>
 <td>14</td>
-<td><a href="#Best.14">Use&nbsp;vector::set_capacity to trim memory usage.</a></td>
+<td><a href="#Best.14">Use&nbsp;vector::setCapacity to trim memory usage.</a></td>
 </tr>
 <tr>
 <td>15</td>
@@ -108,7 +108,7 @@
 </tr>
 <tr>
 <td>22</td>
-<td><a href="#Best.22">Search&nbsp;hash_map&lt;string&gt; via find_as() instead of find().</a></td>
+<td><a href="#Best.22">Search&nbsp;hashMap&lt;string&gt; via find_as() instead of find().</a></td>
 </tr>
 <tr>
 <td>23</td>
@@ -133,11 +133,11 @@
 </tr>
 <tr>
 <td>28</td>
-<td><a href="#Best.28">Consider using fixed_substring instead of copying strings.</a></td>
+<td><a href="#Best.28">Consider using fixedSubstring instead of copying strings.</a></td>
 </tr>
 <tr>
   <td>29</td>
-  <td><a href="#Best.29">Consider using vector::push_back(void).</a></td>
+  <td><a href="#Best.29">Consider using vector::pushBack(void).</a></td>
 </tr>
 </tbody>
 </table>
@@ -151,30 +151,30 @@
 { };<br>
 <br>
 intrusive_list&lt;Widget&gt; widgetList;<br>
-widgetList.push_back(someWidget);</p>
+widgetList.pushBack(someWidget);</p>
 <p></p>
 <p class="faq-question"><a name="Best.2"></a>2
   Consider fixed-size containers.
 </p>
-<p class="faq-answer">Fixed-size containers (such as fixed_list) are variations of regular containers (such as list) in that they allocate from a fixed block of local memory instead of allocating from a generic heap. The result is better usage of memory due to reduced fragmentation, better cache behavior, and faster allocation/deallocation. The presence of fixed-size containers negate the most common complaint that people have about STL: that it fragments the heap or &quot;allocates all over the place.&quot;</p>
+<p class="faq-answer">Fixed-size containers (such as fixedList) are variations of regular containers (such as list) in that they allocate from a fixed block of local memory instead of allocating from a generic heap. The result is better usage of memory due to reduced fragmentation, better cache behavior, and faster allocation/deallocation. The presence of fixed-size containers negate the most common complaint that people have about STL: that it fragments the heap or &quot;allocates all over the place.&quot;</p>
 <p class="faq-answer">EASTL fixed containers include:</p>
 <ul>
-  <li>fixed_list</li>
+  <li>fixedList</li>
   <li>fixed_slist</li>
-  <li>fixed_vector</li>
-  <li>fixed_string</li>
-  <li>fixed_map</li>
-  <li>fixed_multimap</li>
-  <li>fixed_set</li>
-  <li>fixed_multiset</li>
-  <li>fixed_hash_map</li>
-  <li>fixed_hash_multimap</li>
-  <li>fixed_hash_set</li>
-  <li>fixed_hash_multiset</li>
+  <li>fixedVector</li>
+  <li>fixedString</li>
+  <li>fixedMap</li>
+  <li>fixedMultimap</li>
+  <li>fixedSet</li>
+  <li>fixedMultiset</li>
+  <li>fixedHashMap</li>
+  <li>fixedHashMultimap</li>
+  <li>fixedHashSet</li>
+  <li>fixedHashMultiset</li>
 </ul>
-<p class="faq-answer">To create a fixed_set, you can use the following code:</p>
-<p class="code-example">fixed_set&lt;int, 25&gt; intSet; // Create a set capable of holding 25 elements.<br>
-intSet.push_back(37);</p>
+<p class="faq-answer">To create a fixedSet, you can use the following code:</p>
+<p class="code-example">fixedSet&lt;int, 25&gt; intSet; // Create a set capable of holding 25 elements.<br>
+intSet.pushBack(37);</p>
 <p></p>
 <p class="faq-question"><a name="Best.3"></a>3
   Consider custom allocators.
@@ -182,12 +182,12 @@ intSet.push_back(37);</p>
 <p class="faq-answer">While EASTL provides fixed-size containers in order to control container memory usage, EASTL lets you assign a custom allocator to any container. This lets you define your own memory pool. EASTL has a more flexible and powerful mechanism of doing this that standard STL, as EASTL understands object alignment requirements, allows for debug naming, allows for sharing allocators across containers, and allows dynamic allocator assignment.</p>
 <p class="faq-answer">To create a list container that uses your custom allocator and uses block naming, you can use the following code:</p>
 <p class="code-example">list&lt;int&gt; intList(pSomeAllocator, &quot;graphics/intList&quot;);<br>
-intList.push_back(37);</p>
+intList.pushBack(37);</p>
 <p class="faq-question"><a name="Best.4"></a>4
 Consider hash tables instead of maps.</p>
-<p class="faq-answer">Hash containers (such as hash_map) provide the same interface as associative containers (such as map) but have faster lookup and use less memory. The primary disadvantage relative to associative containers is that hash containers are not sorted.</p>
-<p class="faq-answer">To make a hash_map (dictionary) of integers to strings, you can use the following code:</p>
-<p class="code-example">hash_map&lt;int, const char*&gt; stringTable;<br>
+<p class="faq-answer">Hash containers (such as hashMap) provide the same interface as associative containers (such as map) but have faster lookup and use less memory. The primary disadvantage relative to associative containers is that hash containers are not sorted.</p>
+<p class="faq-answer">To make a hashMap (dictionary) of integers to strings, you can use the following code:</p>
+<p class="code-example">hashMap&lt;int, const char*&gt; stringTable;<br>
 stringTable[37] = &quot;hello&quot;;</p>
 <p class="faq-question"><a name="Best.5"></a>5
   Consider a vector_map (a.k.a. sorted vector) for unchanging data.
@@ -205,7 +205,7 @@ intSet.insert(37);</p>
 <p class="faq-answer">An slist is a singly-linked list; it is much like a list except that it can only be traversed in a forward direction and not a backward direction. The benefit is that each node is 4 bytes instead of 8 bytes. This is a small improvement, but if you don't need reverse iteration then it can be an improvement. There's also intrusive_slist as an option.</p>
 <p class="faq-answer">To make an slist, you can use the following code:</p>
 <p class="code-example">slist&lt;int&gt; intSlist;<br>
-intSlist.push_front(37);</p>
+intSlist.pushFront(37);</p>
 <p class="faq-question"><a name="Best.7"></a>7
 Avoid redundant end() and size() in loops.</p>
 <p class="faq-answer">Instead of writing code like this:<br>
@@ -237,14 +237,14 @@ Avoid redundant end() and size() in loops.</p>
         vector_set<br>
         vector_multiset<br>
         bit_vector<br>
-        hash_map<br>
-        hash_multimap<br>
-        hash_set<br>
-        hash_multiset<br>
-        intrusive_hash_map<br>
-        intrusive_hash_multimap<br>
-        intrusive_hash_set<br>
-        intrusive_hash_multiset</td>
+        hashMap<br>
+        hashMultimap<br>
+        hashSet<br>
+        hashMultiset<br>
+        intrusive_hashMap<br>
+        intrusive_hashMultimap<br>
+        intrusive_hashSet<br>
+        intrusive_hashMultiset</td>
       <td style="vertical-align: top;">array<br>
         list<br>
         slist<br>
@@ -254,14 +254,14 @@ Avoid redundant end() and size() in loops.</p>
         multimap<br>
         set<br>
         multiset<br>
-        hash_map<sup>2</sup><br>
-        hash_multimap<sup>2</sup><br>
-        hash_set<sup>2</sup><br>
-        hash_multiset<sup>2</sup><br>
-        intrusive_hash_map<br>
-        intrusive_hash_multimap<br>
-        intrusive_hash_set<br>
-        intrusive_hash_multiset</td>
+        hashMap<sup>2</sup><br>
+        hashMultimap<sup>2</sup><br>
+        hashSet<sup>2</sup><br>
+        hashMultiset<sup>2</sup><br>
+        intrusive_hashMap<br>
+        intrusive_hashMultimap<br>
+        intrusive_hashSet<br>
+        intrusive_hashMultiset</td>
       <td style="vertical-align: top;">string<br>
         vector<br>
         deque<br>
@@ -381,9 +381,9 @@ Here's an example of caching the list size manually:<br>
 <div class="code-example" style="margin-left: 40px;"><small><span style="font-family: Courier New;">list&lt;int&gt; intList;<br>
   size_t &nbsp; &nbsp;n = 0;<br>
   <br>
-  intList.push_back(37);<br>
+  intList.pushBack(37);<br>
   ++n;<br>
-  intList.pop_front();<br>
+  intList.popFront();<br>
   --n;</span></small></div>
 <p class="faq-question">  <a name="Best.11"></a>11
 Use empty() instead of size() when possible.
@@ -579,7 +579,7 @@ Know your container efficiencies.</p>
       <td style="text-align: center;">1</td>
     </tr>
     <tr>
-      <td>hash_set</td>
+      <td>hashSet</td>
       <td style="text-align: center;">1</td>
       <td style="text-align: center;">1</td>
       <td style="text-align: center;">-</td>
@@ -589,7 +589,7 @@ Know your container efficiencies.</p>
       <td style="text-align: center;">-</td>
     </tr>
     <tr>
-      <td>hash_multiset</td>
+      <td>hashMultiset</td>
       <td style="text-align: center;">1</td>
       <td style="text-align: center;">1</td>
       <td style="text-align: center;">-</td>
@@ -599,7 +599,7 @@ Know your container efficiencies.</p>
       <td style="text-align: center;">-</td>
     </tr>
     <tr>
-      <td>hash_map</td>
+      <td>hashMap</td>
       <td style="text-align: center;">1</td>
       <td style="text-align: center;">1</td>
       <td style="text-align: center;">-</td>
@@ -609,7 +609,7 @@ Know your container efficiencies.</p>
       <td style="text-align: center;">-</td>
     </tr>
     <tr>
-      <td>hash_multimap</td>
+      <td>hashMultimap</td>
       <td style="text-align: center;">1</td>
       <td style="text-align: center;">1</td>
       <td style="text-align: center;">-</td>
@@ -619,7 +619,7 @@ Know your container efficiencies.</p>
       <td style="text-align: center;">-</td>
     </tr>
     <tr>
-      <td>intrusive_hash_set</td>
+      <td>intrusive_hashSet</td>
       <td style="text-align: center;">1</td>
       <td style="text-align: center;">1</td>
       <td style="text-align: center;">-</td>
@@ -629,7 +629,7 @@ Know your container efficiencies.</p>
       <td style="text-align: center;">-</td>
     </tr>
     <tr>
-      <td>intrusive_hash_multiset</td>
+      <td>intrusive_hashMultiset</td>
       <td style="text-align: center;">1</td>
       <td style="text-align: center;">1</td>
       <td style="text-align: center;">-</td>
@@ -639,7 +639,7 @@ Know your container efficiencies.</p>
       <td style="text-align: center;">-</td>
     </tr>
     <tr>
-      <td>intrusive_hash_map</td>
+      <td>intrusive_hashMap</td>
       <td style="text-align: center;">1</td>
       <td style="text-align: center;">1</td>
       <td style="text-align: center;">-</td>
@@ -649,7 +649,7 @@ Know your container efficiencies.</p>
       <td style="text-align: center;">-</td>
     </tr>
     <tr>
-      <td>intrusive_hash_multimap</td>
+      <td>intrusive_hashMultimap</td>
       <td style="text-align: center;">1</td>
       <td style="text-align: center;">1</td>
       <td style="text-align: center;">-</td>
@@ -671,7 +671,7 @@ Know your container efficiencies.</p>
   <li>n log(n) means time proportional to log(n) times the size of the container. Also known as O(n log(n))</li>
   <li>n+ means that the time is at least n, and possibly higher.</li>
   <li>Inserting at the end of a vector may cause the vector to be resized; resizing a vector is O(n). However, the amortized time complexity for vector insertions at the end is constant.</li>
-  <li>Sort assumes the usage of the best possible sort for a large container of random data. Some sort algorithms (e.g. quick_sort) require random access iterators and so the sorting of some containers requires a different sort algorithm. We do not include bucket or radix sorts, as they are always O(n).</li>
+  <li>Sort assumes the usage of the best possible sort for a large container of random data. Some sort algorithms (e.g. quickSort) require random access iterators and so the sorting of some containers requires a different sort algorithm. We do not include bucket or radix sorts, as they are always O(n).</li>
   <li><sup>a</sup> vector, deque, string size is O(1) but involves pointer subtraction and thus&nbsp;integer division and so is not as efficient as containers that store the size directly.</li>
 </ul>
 <p class="faq-question"><a name="Best.13"></a>13
@@ -692,21 +692,21 @@ vector&lt;Widget&gt; v; &nbsp; &nbsp; &nbsp; // This empty construction causes t
 &nbsp; &nbsp; T* mpEnd; &nbsp; &nbsp; &nbsp; // End of used element memory.<br>
 &nbsp; &nbsp; T* mpCapacity; &nbsp;// End of storage capacity. Is &gt;= mpEnd<br>
   </small> <small>}</small></span><small>  </small><span class="faq-answer">
-Another approach to being efficient with vector memory usage is to use fixed_vector.</span>
+Another approach to being efficient with vector memory usage is to use fixedVector.</span>
   <p class="faq-question"><a name="Best.14"></a>14
-Use vector::set_capacity to trim memory usage.</p>
+Use vector::setCapacity to trim memory usage.</p>
 <p class="faq-answer">A commonly asked question about vectors and strings is, "How do I reduce the capacity of a vector?" The conventional solution for std STL is to use the somewhat non-obvious trick of using <small><span style=
-"font-family: Courier New;">vector&lt;Widget&gt;(v).swap(v)</span></small>. EASTL provides the same functionality via a member function called set_capacity() which is present in both the vector and string classes.&nbsp;<br>
+"font-family: Courier New;">vector&lt;Widget&gt;(v).swap(v)</span></small>. EASTL provides the same functionality via a member function called setCapacity() which is present in both the vector and string classes.&nbsp;<br>
   <br>
 An example of reducing a vector is the following:</p>
 <span class="code-example"><small>vector&lt;Widget&gt; v;<br>
 ...<br>
-</small> <small>v.set_capacity();</small></span><small>  </small><span class="faq-answer">
+</small> <small>v.setCapacity();</small></span><small>  </small><span class="faq-answer">
 An example of resizing to zero and completely freeing the memory of a vector is the following:<br>
 </span>
 <div class="code-example" style="margin-left: 40px; font-family: Courier New;"><small>vector&lt;Widget&gt; v;<br>
   ...<br>
-  </small> <small>v.set_capacity(0);</small></div>
+  </small> <small>v.setCapacity(0);</small></div>
 <p class="faq-question"><a name="Best.15"></a>15 Use swap() instead of a manually implemented version.</p>
 <p class="faq-answer">The generic swap algorithm provides a basic version for any kind of object. However, each EASTL container provides a specialization of swap which is optimized for that container. For example, the list container implements swap by simply swapping the internal member pointers and not by moving individual elements.</p>
 <p class="faq-question">  <a name="Best.16"></a>16
@@ -720,14 +720,14 @@ Consider storing pointers instead of objects.</p>
 <p class="code-example">typedef shared_ptr&lt;Widget&gt; WPtr;<br>
   list&lt;WPtr&gt; wList;<br>
   <br>
-  wList.push_back(WPtr(new Widget)); // The user may&nbsp;have operator new/delete overrides.<br>
-wList.pop_back();&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // Implicitly deletes the Widget.</p>
+  wList.pushBack(WPtr(new Widget)); // The user may&nbsp;have operator new/delete overrides.<br>
+wList.popBack();&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // Implicitly deletes the Widget.</p>
 <p class="faq-answer">Here is an example of creating and using a shared_ptr that uses a custom allocation and deallocation mechanism:</p>
 <p class="code-example">typedef shared_ptr&lt;Widget, EASTLAllocatorType, WidgetDelete&gt; WPtr; // WidgetDelete is a custom destroyer.<br>
   list&lt;WPtr&gt; wList;<br>
   <br>
-  wList.push_back(WPtr(WidgetCreate(Widget))); // WidgetCreate is a custom allocator.<br>
-wList.pop_back(); &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Implicitly calls WidgetDelete.</p>
+  wList.pushBack(WPtr(WidgetCreate(Widget))); // WidgetCreate is a custom allocator.<br>
+wList.popBack(); &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Implicitly calls WidgetDelete.</p>
 <p class="faq-question"><a name="Best.18"></a>18
   Use iterator pre-increment instead of post-increment.
 </p>
@@ -768,13 +768,13 @@ Vectors can be treated as contiguous memory.</p>
   <br>
   vector&lt;Widget&gt; v;<br>
   <br>
-  quick_sort((uint64_t*)v.data(), (uint64_t*)(v.data() + v.size()));</p>
+  quickSort((uint64_t*)v.data(), (uint64_t*)(v.data() + v.size()));</p>
 <p class="faq-question"><a name="Best.22"></a>22
-Search&nbsp;hash_map&lt;string&gt; via find_as() instead of find(). </p>
+Search&nbsp;hashMap&lt;string&gt; via find_as() instead of find(). </p>
 <p class="faq-answer">EASTL hash tables offer a bonus function called find_as when lets you search a hash table by something other than the container type. This is particularly useful for hash tables of string objects that you want to search for by string literals (e.g. &quot;hello&quot;) or char pointers. If you search for a string via the find function, your string literal will necessarily be converted to a temporary string object, which is inefficient.</p>
 <p class="faq-answer">To use find_as, you can use the following code:</p>
-<p class="code-example">hash_map&lt;string, int&gt; hashMap;<br>
-  hash_map&lt;string, int&gt;::iterator it = hashMap.find_as(&quot;hello&quot;); // Using default hash and compare.</p>
+<p class="code-example">hashMap&lt;string, int&gt; hashMap;<br>
+  hashMap&lt;string, int&gt;::iterator it = hashMap.find_as(&quot;hello&quot;); // Using default hash and compare.</p>
 <p class="faq-question">  <a name="Best.23"></a>23
 Take advantage of type_traits (e.g. <small style=
 "font-family: Courier New;">EASTL_DECLARE_TRIVIAL_RELOCATE</small>).</p>
@@ -849,11 +849,11 @@ Here is an example of using type traits to tell if a value is a floating point v
 <p class="faq-question">  <a name="Best.24"></a>24
 Name containers to track memory usage.
 </p>
-<p class="faq-answer">All EASTL containers which allocate memory have a built-in function called set_name and have a constructor argument that lets you specify the container name. This name is used in memory tracking and allows for the categorization and measurement of memory usage. You merely need to supply a name for your container to use and it does the rest.</p>
+<p class="faq-answer">All EASTL containers which allocate memory have a built-in function called setName and have a constructor argument that lets you specify the container name. This name is used in memory tracking and allows for the categorization and measurement of memory usage. You merely need to supply a name for your container to use and it does the rest.</p>
 <p class="faq-answer">Here is an example of creating a list and naming it &quot;collision list&quot;:</p>
 <p class="faq-answer"><span class="code-example">list&lt;CollisionData&gt; collisionList(allocator(&quot;collision list&quot;));</span>or<br>
   <span class="code-example">list&lt;CollisionData&gt; collisionList;<br>
-collisionList.get_allocator().set_name(&quot;collision list&quot;);</span></p>
+collisionList.getAllocator().setName(&quot;collision list&quot;);</span></p>
 <p class="faq-answer">Note that EASTL containers do not copy the name contents but merely copy the name pointer. This is done for simplicity and efficiency. A user can get around this limitation by creating a persistently present string table. Additionally, the user can get around this by declaring static but non-const strings and modifying them at runtime.</p>
 <p class="faq-question"><a name="Best.25"></a>25
 Learn the algorithms.</p>
@@ -863,45 +863,45 @@ Learn the algorithms.</p>
   <br>
   <span style="font-weight: bold;">Search</span></span></p>
 <ul>
-  <li>find, find_if</li>
-  <li>find_end</li>
-  <li>find_first_of</li>
-  <li>adjacent_find</li>
-  <li>binary_search</li>
-  <li>search,&nbsp;search_n</li>
-  <li>lower_bound</li>
-  <li>upper_bound</li>
-  <li>equal_range</li>
+  <li>find, findIf</li>
+  <li>findEnd</li>
+  <li>findFirstOf</li>
+  <li>adjacentFind</li>
+  <li>binarySearch</li>
+  <li>search,&nbsp;searchN</li>
+  <li>lowerBound</li>
+  <li>upperBound</li>
+  <li>equalRange</li>
 </ul>
 <p class="faq-answer" style="font-weight: bold;">Sort</p>
 <ul>
-  <li>is_sorted</li>
-  <li>quick_sort</li>
-  <li>insertion_sort</li>
-  <li>shell_sort</li>
-  <li>heap_sort</li>
-  <li>merge_sort,&nbsp;merge_sort_buffer</li>
+  <li>isSorted</li>
+  <li>quickSort</li>
+  <li>insertionSort</li>
+  <li>shellSort</li>
+  <li>heapSort</li>
+  <li>mergeSort,&nbsp;mergeSortBuffer</li>
   <li>merge</li>
   <li>inplace_merge</li>
-  <li>partial_sort</li>
-  <li>stable_sort</li>
-  <li>partial_sort_copy</li>
+  <li>partialSort</li>
+  <li>stableSort</li>
+  <li>partialSort_copy</li>
   <li>&lt;other sort functions found in the EASTL bonus directories&gt;</li>
 </ul>
 <p class="faq-answer" style="font-weight: bold;">Modifying</p>
 <ul>
-  <li>fill, fill_n</li>
-  <li>generate,&nbsp;generate_n</li>
+  <li>fill, fillN</li>
+  <li>generate,&nbsp;generateN</li>
   <li>random_shuffle</li>
   <li>swap</li>
-  <li>iter_swap</li>
-  <li>swap_ranges</li>
-  <li>remove,&nbsp;remove_if</li>
-  <li>remove_copy,&nbsp;remove_copy_if</li>
-  <li>replace,&nbsp;replace_if</li>
-  <li>replace_copy,&nbsp;replace_copy_if</li>
+  <li>iterSwap</li>
+  <li>swapRanges</li>
+  <li>remove,&nbsp;removeIf</li>
+  <li>removeCopy,&nbsp;removeCopyIf</li>
+  <li>replace,&nbsp;replaceIf</li>
+  <li>replaceCopy,&nbsp;replaceCopyIf</li>
   <li>reverse</li>
-  <li>reverse_copy</li>
+  <li>reverseCopy</li>
   <li>rotate</li>
   <li>rotate_copy</li>
   <li>partition</li>
@@ -914,33 +914,33 @@ Learn the algorithms.</p>
 </ul>
 <p class="faq-answer" style="font-weight: bold;">Non-Modifying</p>
 <ul>
-  <li>for_each</li>
+  <li>forEach</li>
   <li>copy</li>
-  <li>copy_backward</li>
-  <li>count,&nbsp;count_if</li>
+  <li>copyBackward</li>
+  <li>count,&nbsp;countIf</li>
   <li>equal</li>
   <li>mismatch</li>
   <li>min</li>
   <li>max</li>
-  <li>min_element</li>
-  <li>max_element</li>
-  <li>lexicographical_compare</li>
-  <li>nth_element</li>
+  <li>minElement</li>
+  <li>maxElement</li>
+  <li>lexicographicalCompare</li>
+  <li>nthElement</li>
 </ul>
 <p class="faq-answer" style="font-weight: bold;">Heap</p>
 <ul>
-  <li>is_heap</li>
-  <li>make_heap</li>
-  <li>push_heap</li>
-  <li>pop_heap</li>
-  <li>change_heap</li>
-  <li>sort_heap</li>
-  <li>remove_heap</li>
+  <li>isHeap</li>
+  <li>makeHeap</li>
+  <li>pushHeap</li>
+  <li>popHeap</li>
+  <li>changeHeap</li>
+  <li>sortHeap</li>
+  <li>removeHeap</li>
 </ul>
 <p class="faq-answer" style="font-weight: bold;">Set</p>
 <ul>
   <li>includes</li>
-  <li>set_difference</li>
+  <li>setDifference</li>
   <li>set_symmetric_difference</li>
   <li>set_intersection</li>
   <li>set_union</li>
@@ -957,39 +957,39 @@ Consider using reset_lose_memory() for fast container teardown.</p>
 <p class="faq-answer">EASTL containers have a reset function which unilaterally resets the container to a newly constructed state. The contents of the container are forgotten; no destructors are called and no memory is freed. This is a risky but power function for the purpose of implementing very fast temporary containers. There are numerous cases in high performance programming when you want to create a temporary container out of a scratch buffer area, use the container, and then just &quot;vaporize&quot; it, as it would be waste of time to go through the trouble of clearing the container and destroying and freeing the objects. Such functionality is often used with hash tables or maps and with a stack allocator (a.k.a. linear allocator).</p>
 <p class="faq-answer">Here's an example of usage of the reset function and a PPMalloc-like StackAllocator:</p>
 <p class="code-example">pStackAllocator-&gt;push_bookmark();<br>
-  hash_set&lt;Widget, less&lt;Widget&gt;, StackAllocator&gt; wSet(pStackAllocator);<br>
+  hashSet&lt;Widget, less&lt;Widget&gt;, StackAllocator&gt; wSet(pStackAllocator);<br>
 &lt;use wSet&gt;<br>
   wSet.reset_lose_memory();<br>
   pStackAllocator-&gt;pop_bookmark();</p>
 <p></p>
 <p class="faq-question">  <a name="Best.28"></a>28
-Consider using fixed_substring instead of copying strings.
+Consider using fixedSubstring instead of copying strings.
 </p>
-<p class="faq-answer">EASTL provides a fixed_substring class which uses a reference to a character segment instead of allocating its own string memory. This can be a more efficient way to work with strings under some circumstances.</p>
-<p class="faq-answer">Here's an example of usage of fixed_substring:</p>
-<p class="code-example">basic_string&lt;char&gt;&nbsp;str(&quot;hello world&quot;);<br>
-  fixed_substring&lt;char&gt; sub(str, 6, 5);&nbsp;// sub == &quot;world&quot;</p>
-<p class="faq-answer">fixed_substring can refer to any character array and not just one that derives from a string object.</p>
+<p class="faq-answer">EASTL provides a fixedSubstring class which uses a reference to a character segment instead of allocating its own string memory. This can be a more efficient way to work with strings under some circumstances.</p>
+<p class="faq-answer">Here's an example of usage of fixedSubstring:</p>
+<p class="code-example">basicString&lt;char&gt;&nbsp;str(&quot;hello world&quot;);<br>
+  fixedSubstring&lt;char&gt; sub(str, 6, 5);&nbsp;// sub == &quot;world&quot;</p>
+<p class="faq-answer">fixedSubstring can refer to any character array and not just one that derives from a string object.</p>
 <p class="faq-question"><a name="Best.29" id="Best.29"></a>29
-  Consider using vector::push_back(void).</p>
+  Consider using vector::pushBack(void).</p>
 <p class="faq-answer">EASTL provides an alternative way to insert elements into containers that avoids copy construction and/or the creation of temporaries. Consider the following code:</p>
 <p class="code-example">vector&lt;Widget&gt; widgetArray;<br>
-  widgetArray.push_back(Widget());</p>
-<p class="faq-answer">The standard vector push_back function requires you to supply an object to copy from. This incurs the cost of the creation of a temporary and for some types of classes or situations this cost may be undesirable. It additionally requires that your contained class support copy-construction whereas you may not be able to support copy construction. As an alternative, EASTL provides a push_back(void) function which requires nothing to copy from but instead constructs the object in place in the container. So you can do this:</p>
+  widgetArray.pushBack(Widget());</p>
+<p class="faq-answer">The standard vector pushBack function requires you to supply an object to copy from. This incurs the cost of the creation of a temporary and for some types of classes or situations this cost may be undesirable. It additionally requires that your contained class support copy-construction whereas you may not be able to support copy construction. As an alternative, EASTL provides a pushBack(void) function which requires nothing to copy from but instead constructs the object in place in the container. So you can do this:</p>
 <p class="code-example">vector&lt;Widget&gt; widgetArray;<br>
-  widgetArray.push_back();<br>
+  widgetArray.pushBack();<br>
 widgetArray.back().x = 0; // Example of how to reference the new object. </p>
 <p class="faq-answer">Other containers with such copy-less functions include:</p>
-<p class="code-example">vector::push_back()<br>
-  deque::push_back()<br>
-  deque::push_front()<br>
-  list::push_back()<br>
-  list::push_front()<br>
-  slist::push_front()<br>
+<p class="code-example">vector::pushBack()<br>
+  deque::pushBack()<br>
+  deque::pushFront()<br>
+  list::pushBack()<br>
+  list::pushFront()<br>
+  slist::pushFront()<br>
   map::insert(const key_type&amp; key) <br>
   multimap::insert(const key_type&amp; key) <br>
-  hash_map::insert(const key_type&amp; key) <br>
-  hash_multimap::insert(const key_type&amp; key) </p>
+  hashMap::insert(const key_type&amp; key) <br>
+  hashMultimap::insert(const key_type&amp; key) </p>
 <p class="faq-answer">Note that the map functions above allow you to insert a default value specified by key alone and not a value_type like with the other map insert functions.</p>
 <hr style="width: 100%; height: 2px;">
 <p>End of document<br>

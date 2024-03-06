@@ -88,7 +88,8 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////
 	// is_array_of_known_bounds
 	//
-	// Not part of the C++11 Standard.
+	// Deprecated in C++20. Use is_bounded_array<T>.
+	// 
 	// is_array_of_known_bounds<T>::value is true if T is an array and is 
 	// of known bounds. is_array_of_unknown_bounds<int[3]>::value == true,
 	// while is_array_of_unknown_bounds<int[]>::value = false.
@@ -96,14 +97,15 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////
 
 	template<typename T>
-	struct is_array_of_known_bounds
+	struct EASTL_REMOVE_AT_2024_APRIL is_array_of_known_bounds
 		: public eastl::integral_constant<bool, eastl::extent<T>::value != 0> {};
 
 
 	///////////////////////////////////////////////////////////////////////
 	// is_array_of_unknown_bounds
 	//
-	// Not part of the C++11 Standard.
+	// Deprecated in C++20. Use is_unbounded_array<T>.
+	// 
 	// is_array_of_unknown_bounds<T>::value is true if T is an array but is 
 	// of unknown bounds. is_array_of_unknown_bounds<int[3]>::value == false,
 	// while is_array_of_unknown_bounds<int[]>::value = true.
@@ -111,7 +113,7 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////
 
 	template<typename T>
-	struct is_array_of_unknown_bounds
+	struct EASTL_REMOVE_AT_2024_APRIL is_array_of_unknown_bounds
 		: public eastl::integral_constant<bool, eastl::is_array<T>::value && (eastl::extent<T>::value == 0)> {};
 
 
@@ -128,58 +130,18 @@ namespace eastl
 
 	#define EASTL_TYPE_TRAIT_is_member_function_pointer_CONFORMANCE 1    // is_member_function_pointer is conforming; doesn't make mistakes.
 
-	// To do: Revise this to support C++11 variadic templates when possible.
-	// To do: We can probably also use remove_cv to simply the multitude of types below.
+	namespace internal
+	{
+		template<typename T>
+		struct is_member_function_pointer_helper : false_type {};
 
-	template <typename T> struct is_mem_fun_pointer_value : public false_type{};
+		template<typename T, typename U>
+		struct is_member_function_pointer_helper<T U::*> : is_function<T> {};
+	}
 
-	template <typename R, typename T> struct is_mem_fun_pointer_value<R (T::*)()> : public true_type{};
-	template <typename R, typename T> struct is_mem_fun_pointer_value<R (T::*)() const> : public true_type{};
-	template <typename R, typename T> struct is_mem_fun_pointer_value<R (T::*)() volatile> : public true_type{};
-	template <typename R, typename T> struct is_mem_fun_pointer_value<R (T::*)() const volatile> : public true_type{};
-
-	template <typename R, typename T, typename Arg0> struct is_mem_fun_pointer_value<R (T::*)(Arg0)> : public true_type{};
-	template <typename R, typename T, typename Arg0> struct is_mem_fun_pointer_value<R (T::*)(Arg0) const> : public true_type{};
-	template <typename R, typename T, typename Arg0> struct is_mem_fun_pointer_value<R (T::*)(Arg0) volatile> : public true_type{};
-	template <typename R, typename T, typename Arg0> struct is_mem_fun_pointer_value<R (T::*)(Arg0) const volatile> : public true_type{};
-
-	template <typename R, typename T, typename Arg0, typename Arg1> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1)> : public true_type{};
-	template <typename R, typename T, typename Arg0, typename Arg1> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1) const> : public true_type{};
-	template <typename R, typename T, typename Arg0, typename Arg1> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1) volatile> : public true_type{};
-	template <typename R, typename T, typename Arg0, typename Arg1> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1) const volatile> : public true_type{};
-
-	template <typename R, typename T, typename Arg0, typename Arg1, typename Arg2> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1, Arg2)> : public true_type{};
-	template <typename R, typename T, typename Arg0, typename Arg1, typename Arg2> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1, Arg2) const> : public true_type{};
-	template <typename R, typename T, typename Arg0, typename Arg1, typename Arg2> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1, Arg2) volatile> : public true_type{};
-	template <typename R, typename T, typename Arg0, typename Arg1, typename Arg2> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1, Arg2) const volatile> : public true_type{};
-
-	template <typename R, typename T, typename Arg0, typename Arg1, typename Arg2, typename Arg3> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1, Arg2, Arg3)> : public true_type{};
-	template <typename R, typename T, typename Arg0, typename Arg1, typename Arg2, typename Arg3> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1, Arg2, Arg3) const> : public true_type{};
-	template <typename R, typename T, typename Arg0, typename Arg1, typename Arg2, typename Arg3> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1, Arg2, Arg3) volatile> : public true_type{};
-	template <typename R, typename T, typename Arg0, typename Arg1, typename Arg2, typename Arg3> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1, Arg2, Arg3) const volatile> : public true_type{};
-
-	template <typename R, typename T, typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1, Arg2, Arg3, Arg4)> : public true_type{};
-	template <typename R, typename T, typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1, Arg2, Arg3, Arg4) const> : public true_type{};
-	template <typename R, typename T, typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1, Arg2, Arg3, Arg4) volatile> : public true_type{};
-	template <typename R, typename T, typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1, Arg2, Arg3, Arg4) const volatile> : public true_type{};
-
-	template <typename R, typename T, typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1, Arg2, Arg3, Arg4, Arg5)> : public true_type{};
-	template <typename R, typename T, typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1, Arg2, Arg3, Arg4, Arg5) const> : public true_type{};
-	template <typename R, typename T, typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1, Arg2, Arg3, Arg4, Arg5) volatile> : public true_type{};
-	template <typename R, typename T, typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1, Arg2, Arg3, Arg4, Arg5) const volatile> : public true_type{};
-
-	template <typename R, typename T, typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1, Arg2, Arg3, Arg4, Arg5, Arg6)> : public true_type{};
-	template <typename R, typename T, typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1, Arg2, Arg3, Arg4, Arg5, Arg6) const> : public true_type{};
-	template <typename R, typename T, typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1, Arg2, Arg3, Arg4, Arg5, Arg6) volatile> : public true_type{};
-	template <typename R, typename T, typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1, Arg2, Arg3, Arg4, Arg5, Arg6) const volatile> : public true_type{};
-
-	template <typename R, typename T, typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6, typename Arg7> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1, Arg2, Arg3, Arg4, Arg5, Arg6, Arg7)> : public true_type{};
-	template <typename R, typename T, typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6, typename Arg7> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1, Arg2, Arg3, Arg4, Arg5, Arg6, Arg7) const> : public true_type{};
-	template <typename R, typename T, typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6, typename Arg7> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1, Arg2, Arg3, Arg4, Arg5, Arg6, Arg7) volatile> : public true_type{};
-	template <typename R, typename T, typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6, typename Arg7> struct is_mem_fun_pointer_value<R (T::*)(Arg0, Arg1, Arg2, Arg3, Arg4, Arg5, Arg6, Arg7) const volatile> : public true_type{};
-
-	template <typename T> 
-	struct is_member_function_pointer : public integral_constant<bool, is_mem_fun_pointer_value<T>::value>{};
+	template<typename T>
+	struct is_member_function_pointer
+		: internal::is_member_function_pointer_helper<typename remove_cv<T>::type> {};
 
 	#if EASTL_VARIABLE_TEMPLATES_ENABLED
 		template<typename T>
@@ -198,13 +160,19 @@ namespace eastl
 
 	#define EASTL_TYPE_TRAIT_is_member_pointer_CONFORMANCE 1    // is_member_pointer is conforming; doesn't make mistakes.
 
-	template <typename T> 
-	struct is_member_pointer 
-		: public eastl::integral_constant<bool, eastl::is_member_function_pointer<T>::value>{};
+	namespace internal {
+		template <typename T>
+		struct is_member_pointer_helper
+			: public eastl::false_type {};
 
-	template <typename T, typename U>
-	struct is_member_pointer<U T::*> 
-		: public eastl::true_type{};
+		template <typename T, typename U>
+		struct is_member_pointer_helper<U T::*>
+			: public eastl::true_type {};
+	}
+
+	template<typename T>
+	struct is_member_pointer
+		: public internal::is_member_pointer_helper<typename remove_cv<T>::type>::type {};
 
 	#if EASTL_VARIABLE_TEMPLATES_ENABLED
 		template<typename T>
@@ -252,7 +220,7 @@ namespace eastl
 	template <typename T> struct is_pointer_helper<T* const volatile> : public true_type{};
 
 	template <typename T>
-	struct is_pointer_value : public type_and<is_pointer_helper<T>::value, type_not<is_member_pointer<T>::value>::value> {};
+	struct is_pointer_value : public bool_constant<is_pointer_helper<T>::value && !is_member_pointer<T>::value> {};
 
 	template <typename T> 
 	struct is_pointer : public integral_constant<bool, is_pointer_value<T>::value>{};
@@ -290,7 +258,7 @@ namespace eastl
 	//    is_convertible<D*, A*>::value; // Generates compiler error.
 	///////////////////////////////////////////////////////////////////////
 
-	#if EASTL_COMPILER_INTRINSIC_TYPE_TRAITS_AVAILABLE && (defined(_MSC_VER) || (defined(EA_COMPILER_CLANG) && EA_COMPILER_HAS_FEATURE(is_convertible_to)))
+	#if EASTL_COMPILER_INTRINSIC_TYPE_TRAITS_AVAILABLE && (defined(_MSC_VER) || (defined(__clang__) && EA_COMPILER_HAS_FEATURE(is_convertible_to)))
 		#define EASTL_TYPE_TRAIT_is_convertible_CONFORMANCE 1    // is_convertible is conforming.
 
 		// Problem: VC++ reports that int is convertible to short, yet if you construct a short from an int then VC++ generates a warning:
@@ -371,7 +339,7 @@ namespace eastl
 	// via 'msl::is_union<T>::value'. The user can force something to be 
 	// evaluated as a union via EASTL_DECLARE_UNION.
 	///////////////////////////////////////////////////////////////////////
-	#if EASTL_COMPILER_INTRINSIC_TYPE_TRAITS_AVAILABLE && (defined(_MSC_VER) || defined(EA_COMPILER_GNUC) || (defined(EA_COMPILER_CLANG) && EA_COMPILER_HAS_FEATURE(is_union)))
+	#if EASTL_COMPILER_INTRINSIC_TYPE_TRAITS_AVAILABLE && (defined(_MSC_VER) || defined(EA_COMPILER_GNUC) || (defined(__clang__) && EA_COMPILER_HAS_FEATURE(is_union)))
 		#define EASTL_TYPE_TRAIT_is_union_CONFORMANCE 1    // is_union is conforming.
 
 		template <typename T> 
@@ -382,7 +350,7 @@ namespace eastl
 		template <typename T> struct is_union : public false_type{};
 	#endif
 
-	#define EASTL_DECLARE_UNION(T) namespace eastl{ template <> struct is_union<T> : public true_type{}; template <> struct is_union<const T> : public true_type{}; }
+	#define EASTL_DECLARE_UNION(T) namespace eastl{ template <> struct EASTL_REMOVE_AT_2024_APRIL is_union<T> : public true_type{}; template <> struct is_union<const T> : public true_type{}; }
 
 	#if EASTL_VARIABLE_TEMPLATES_ENABLED
 		template<typename T>
@@ -401,7 +369,7 @@ namespace eastl
 	// distinguish between unions and classes. As a result, is_class
 	// will erroneously evaluate to true for union types.
 	///////////////////////////////////////////////////////////////////////
-	#if EASTL_COMPILER_INTRINSIC_TYPE_TRAITS_AVAILABLE && (defined(_MSC_VER) || defined(EA_COMPILER_GNUC) || (defined(EA_COMPILER_CLANG) && EA_COMPILER_HAS_FEATURE(is_class)))
+	#if EASTL_COMPILER_INTRINSIC_TYPE_TRAITS_AVAILABLE && (defined(_MSC_VER) || defined(EA_COMPILER_GNUC) || (defined(__clang__) && EA_COMPILER_HAS_FEATURE(is_class)))
 		#define EASTL_TYPE_TRAIT_is_class_CONFORMANCE 1    // is_class is conforming.
 
 		template <typename T> 
@@ -442,57 +410,6 @@ namespace eastl
 	#endif
 
 
-	///////////////////////////////////////////////////////////////////////
-	// is_enum
-	//
-	// is_enum<T>::value == true if and only if T is an enumeration type.
-	//
-	///////////////////////////////////////////////////////////////////////
-
-	#if EASTL_COMPILER_INTRINSIC_TYPE_TRAITS_AVAILABLE && (defined(_MSC_VER) || defined(EA_COMPILER_GNUC) || (defined(EA_COMPILER_CLANG) && EA_COMPILER_HAS_FEATURE(is_enum)))
-		#define EASTL_TYPE_TRAIT_is_enum_CONFORMANCE 1     // is_enum is conforming. 
-
-		template <typename T> 
-		struct is_enum : public integral_constant<bool, __is_enum(T)>{};
-	#else
-		#define EASTL_TYPE_TRAIT_is_enum_CONFORMANCE 1    // is_enum is conforming.
-
-		struct int_convertible{ int_convertible(int); };
-
-		template <bool is_arithmetic_or_reference>
-		struct is_enum_helper { template <typename T> struct nest : public is_convertible<T, int_convertible>{}; };
-
-		template <>
-		struct is_enum_helper<true> { template <typename T> struct nest : public false_type {}; };
-
-		template <typename T>
-		struct is_enum_helper2
-		{
-			typedef type_or<is_arithmetic<T>::value, is_reference<T>::value, is_class<T>::value> selector;
-			typedef is_enum_helper<selector::value> helper_t;
-			typedef typename add_reference<T>::type ref_t;
-			typedef typename helper_t::template nest<ref_t> result;
-		};
-
-		template <typename T> 
-		struct is_enum : public integral_constant<bool, is_enum_helper2<T>::result::value>{};
-
-		template <> struct is_enum<void> : public false_type {};
-		template <> struct is_enum<void const> : public false_type {};
-		template <> struct is_enum<void volatile> : public false_type {};
-		template <> struct is_enum<void const volatile> : public false_type {};
-	#endif
-
-	#if EASTL_VARIABLE_TEMPLATES_ENABLED
-		template<typename T>
-		EA_CONSTEXPR bool is_enum_v = is_enum<T>::value;
-	#endif
-
-	#define EASTL_DECLARE_ENUM(T) namespace eastl{ template <> struct is_enum<T> : public true_type{}; template <> struct is_enum<const T> : public true_type{}; }
-
-
-
-
 
 	///////////////////////////////////////////////////////////////////////
 	// is_polymorphic
@@ -503,7 +420,7 @@ namespace eastl
 	//
 	///////////////////////////////////////////////////////////////////////
 
-	#if EASTL_COMPILER_INTRINSIC_TYPE_TRAITS_AVAILABLE && (defined(_MSC_VER) || defined(EA_COMPILER_GNUC) || (defined(EA_COMPILER_CLANG) && EA_COMPILER_HAS_FEATURE(is_polymorphic)))
+	#if EASTL_COMPILER_INTRINSIC_TYPE_TRAITS_AVAILABLE && (defined(_MSC_VER) || defined(EA_COMPILER_GNUC) || (defined(__clang__) && EA_COMPILER_HAS_FEATURE(is_polymorphic)))
 		#define EASTL_TYPE_TRAIT_is_polymorphic_CONFORMANCE 1    // is_polymorphic is conforming. 
 
 		template <typename T> 
@@ -741,7 +658,7 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////
 	// is_final
 	///////////////////////////////////////////////////////////////////////
-	#if EA_COMPILER_HAS_FEATURE(is_final)
+	#if EASTL_IS_FINAL_AVAILABLE == 1
 		template <typename T>
 		struct is_final : public integral_constant<bool, __is_final(T)> {};
 	#else
@@ -773,7 +690,7 @@ namespace eastl
 	//     * no default member initializers
 	//
 	///////////////////////////////////////////////////////////////////////
-	#if EA_COMPILER_HAS_FEATURE(is_aggregate) || defined(_MSC_VER) && (_MSC_VER >= 1916)  // VS2017 15.9+
+	#if EASTL_IS_AGGREGATE_AVAILABLE == 1
 		#define EASTL_TYPE_TRAIT_is_aggregate_CONFORMANCE 1  
 
 		template <typename T>

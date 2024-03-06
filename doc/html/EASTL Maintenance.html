@@ -157,14 +157,14 @@ based on the kind of iterator passed to it:</p>
 <pre class="code-example">template &lt;class BidirectionalIterator&gt;
 inline void reverse_impl(BidirectionalIterator first, BidirectionalIterator last, bidirectional_iterator_tag)<br>{
 &nbsp;&nbsp;&nbsp; for(; (first != last) &amp;&amp; (first != --last); ++first) <span class="code-example-comment">// We are not allowed to use operator &lt;, &lt;=, &gt;, &gt;= with</span>
-&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; iter_swap(first, last);&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <span class="code-example-comment">// a generic (bidirectional or otherwise) iterator.</span>
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; iterSwap(first, last);&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <span class="code-example-comment">// a generic (bidirectional or otherwise) iterator.</span>
 }<br>
 
 template &lt;typename RandomAccessIterator&gt;
 inline void reverse_impl(RandomAccessIterator first, RandomAccessIterator last, random_access_iterator_tag)
 {
 &nbsp;&nbsp;&nbsp; for(; first &lt; --last; ++first) <span class="code-example-comment">// With a random access iterator, we can use operator &lt; to more efficiently implement</span>
-&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; iter_swap(first, last);&nbsp;&nbsp;&nbsp; <span class="code-example-comment">// this algorithm. A generic iterator doesn't necessarily have an operator &lt; defined.</span>
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; iterSwap(first, last);&nbsp;&nbsp;&nbsp; <span class="code-example-comment">// this algorithm. A generic iterator doesn't necessarily have an operator &lt; defined.</span>
 }<br><br>
 template &lt;class BidirectionalIterator&gt;
 inline void reverse(BidirectionalIterator first, BidirectionalIterator last)
@@ -216,7 +216,7 @@ conditions are expected to evaluate as false.</li>
 execute as true.</li>
 <li>Use EASTL_LIKELY/EASTL_UNLIKELY to give branch hints to the compiler when you are confident it will be
 beneficial.</li>
-<li>Use&nbsp;restricted pointers (EABase's EA_RESTRICT or various compiler-specific versions of __restrict).</li>
+<li>Use&nbsp;restricted pointers (EABase's EASTL_RESTRICT or various compiler-specific versions of __restrict).</li>
 <li>Compare unsigned values to &lt; max instead of comparing signed values to &gt;= 0 &amp;&amp; &lt; max.</li>
 <li>Employ power of 2 integer math instead of math with any kind of integer.</li>
 <li>Use template specialization where possible to implement improved functionality.</li>

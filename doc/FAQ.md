@@ -211,7 +211,7 @@ EASTL additions/amendments to std STL
 * vector and string have setCapacity().
 * string has sprintf(), appendSprintf(), trim(), compare_i(), makeLower(), makeUpper().
 * deque allows you to specify the subarray size.
-* list has a pushBack(void) and pushBack(void) function.
+* list has a pushFront(void) and pushBack(void) function.
 * hashMap, hashSet, etc. have find_as().
 
 EASTL coverage of TR1 (tr1 refers to proposed additions for the next C++ standard library, ~2008)
@@ -1254,7 +1254,7 @@ The following functionality lets you spelunk hash container layout.
 The following function draws an ASCII bar graph of the hash table for easy visualization of bucket distribution:
 
 ```cpp
-#include <eastl/hashMap.h>
+#include <eastl/hash_map.h>
 #include <eastl/algorithm.h>
 #include <stdio.h>
 

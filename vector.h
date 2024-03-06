@@ -138,6 +138,8 @@ namespace eastl
 			static const size_type kMaxSize = (size_type)-2;      /// -1 is reserved for 'npos'. It also happens to be slightly beneficial that kMaxSize is a value less than -1, as it helps us deal with potential integer wraparound issues.
 		#endif
 
+		size_type GetNewCapacity(size_type currentCapacity);
+
 	protected:
 		T*                                          mpBegin;
 		T*                                          mpEnd;
@@ -162,7 +164,6 @@ namespace eastl
 	protected:
 		T*        DoAllocate(size_type n);
 		void      DoFree(T* p, size_type n);
-		size_type GetNewCapacity(size_type currentCapacity);
 
 	}; // VectorBase
 
@@ -179,6 +180,15 @@ namespace eastl
 		typedef VectorBase<T, Allocator>                      base_type;
 		typedef vector<T, Allocator>                          this_type;
 
+	protected:
+		using base_type::mpBegin;
+		using base_type::mpEnd;
+		using base_type::mCapacityAllocator;
+		using base_type::DoAllocate;
+		using base_type::DoFree;
+		using base_type::internalCapacityPtr;
+		using base_type::internalAllocator;
+
 	public:
 		typedef T                                             value_type;
 		typedef T*                                            pointer;
@@ -193,15 +203,13 @@ namespace eastl
 		typedef typename base_type::difference_type           difference_type;
 		typedef typename base_type::allocator_type            allocator_type;
 
-		using base_type::mpBegin;
-		using base_type::mpEnd;
-		using base_type::mCapacityAllocator;
 		using base_type::npos;
 		using base_type::GetNewCapacity;
-		using base_type::DoAllocate;
-		using base_type::DoFree;
-		using base_type::internalCapacityPtr;
-		using base_type::internalAllocator;
+
+#if EA_IS_ENABLED(EASTL_DEPRECATIONS_FOR_2024_APRIL)
+		static_assert(!is_const<value_type>::value, "vector<T> value_type must be non-const.");
+		static_assert(!is_volatile<value_type>::value, "vector<T> value_type must be non-volatile.");
+#endif
 
 	public:
 		vector() EASTL_NOEXCEPT_IF(EASTL_NOEXCEPT_EXPR(EASTL_VECTOR_DEFAULT_ALLOCATOR));
@@ -214,6 +222,8 @@ namespace eastl
 		vector(this_type&& x, const allocator_type& allocator);
 		vector(std::initializer_list<value_type> ilist, const allocator_type& allocator = EASTL_VECTOR_DEFAULT_ALLOCATOR);
 
+		// note: this has pre-C++11 semantics:
+		// this constructor is equivalent to the constructor vector(static_cast<size_type>(first), static_cast<value_type>(last), allocator) if InputIterator is an integral type.
 		template <typename InputIterator>
 		vector(InputIterator first, InputIterator last, const allocator_type& allocator = EASTL_VECTOR_DEFAULT_ALLOCATOR);
 
@@ -290,6 +300,9 @@ namespace eastl
 		iterator insert(const_iterator position, value_type&& value);
 		iterator insert(const_iterator position, std::initializer_list<value_type> ilist);
 
+		// note: this has pre-C++11 semantics:
+		// this function is equivalent to insert(const_iterator position, static_cast<size_type>(first), static_cast<value_type>(last)) if InputIterator is an integral type.
+		// ie. same as insert(const_iterator position, size_type n, const value_type& value)
 		template <typename InputIterator>
 		iterator insert(const_iterator position, InputIterator first, InputIterator last);
 
@@ -489,7 +502,7 @@ namespace eastl
 	VectorBase<T, Allocator>::GetNewCapacity(size_type currentCapacity)
 	{
 		// This needs to return a value of at least currentCapacity and at least 1.
-		return (currentCapacity > 0) ? (2 * currentCapacity) : 1;
+		return (currentCapacity > 0) ? (size_type)(1.618f * (float)currentCapacity) : 1;
 	}
 
 
@@ -519,7 +532,7 @@ namespace eastl
 	inline vector<T, Allocator>::vector(size_type n, const allocator_type& allocator)
 		: base_type(n, allocator)
 	{
-		eastl::uninitialized_default_fillN(mpBegin, n);
+		eastl::uninitialized_value_construct_n(mpBegin, n);
 		mpEnd = mpBegin + n;
 	}
 
@@ -1058,8 +1071,9 @@ namespace eastl
 	{
 		if(mpEnd == internalCapacityPtr())
 		{
-			const size_type newSize = (size_type)(mpEnd - mpBegin) + 1;
-			reserve(newSize);
+			const size_type nPrevSize = size_type(mpEnd - mpBegin);
+			const size_type nNewSize  = GetNewCapacity(nPrevSize);
+			DoGrow(nNewSize);
 		}
  
 		return mpEnd++;
@@ -1413,8 +1427,7 @@ namespace eastl
 		internalCapacityPtr() = mpBegin + n;
 		mpEnd      = internalCapacityPtr();
 
-		typedef typename eastl::remove_const<T>::type non_const_value_type; // If T is a const type (e.g. const int) then we need to initialize it as if it were non-const.
-		eastl::uninitializedFillNPtr<value_type, Integer>((non_const_value_type*)mpBegin, n, value);
+		eastl::uninitializedFillNPtr<value_type, Integer>(mpBegin, n, value);
 	}
 
 
@@ -1446,8 +1459,7 @@ namespace eastl
 		internalCapacityPtr() = mpBegin + n;
 		mpEnd      = internalCapacityPtr();
 
-		typedef typename eastl::remove_const<T>::type non_const_value_type; // If T is a const type (e.g. const int) then we need to initialize it as if it were non-const.
-		eastl::uninitializedCopyPtr(first, last, (non_const_value_type*)mpBegin);
+		eastl::uninitializedCopyPtr(first, last, mpBegin);
 	}
 
 
@@ -1718,7 +1730,7 @@ namespace eastl
 	{                                            // and some functions that need to clear our capacity (e.g. operator=) aren't supposed to require default-constructibility. 
 		clear();
 		this_type temp(eastl::move(*this));  // This is the simplest way to accomplish this, 
-		swap(temp);             // and it is as efficient as any other.
+		swap(temp);                          // and it is as efficient as any other.
 	}
 
 
@@ -1814,7 +1826,7 @@ namespace eastl
 				pointer pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(mpBegin, mpEnd, pNewData);
 			#endif
 
-			eastl::uninitialized_default_fillN(pNewEnd, n);
+			eastl::uninitialized_value_construct_n(pNewEnd, n);
 			pNewEnd += n;
 
 			eastl::destruct(mpBegin, mpEnd);
@@ -1826,7 +1838,7 @@ namespace eastl
 		}
 		else
 		{
-			eastl::uninitialized_default_fillN(mpEnd, n);
+			eastl::uninitialized_value_construct_n(mpEnd, n);
 			mpEnd += n;
 		}
 	}
@@ -1876,7 +1888,7 @@ namespace eastl
 				pointer pNewEnd = pNewData;
 				try
 				{   // To do: We are not handling exceptions properly below.  In particular we don't want to 
-					// call eastl::destruct on the entire range if only the first part of the range was costructed.
+					// call eastl::destruct on the entire range if only the first part of the range was constructed.
 					::new((void*)(pNewData + nPosSize)) value_type(eastl::forward<Args>(args)...);              // Because the old data is potentially being moved rather than copied, we need to move.
 					pNewEnd = NULL;                                                                             // Set to NULL so that in catch we can tell the exception occurred during the next call.
 					pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(mpBegin, destPosition, pNewData);       // the value first, because it might possibly be a reference to the old data being moved.
@@ -1887,14 +1899,14 @@ namespace eastl
 					if(pNewEnd)
 						eastl::destruct(pNewData, pNewEnd);                                         // Destroy what has been constructed so far.
 					else
-						eastl::destruct(pNewData + nPosSize);                                       // The exception occurred during the first unintialized move, so destroy only the value at nPosSize.
+						eastl::destruct(pNewData + nPosSize);                                       // The exception occurred during the first uninitialized move, so destroy only the value at nPosSize.
 					DoFree(pNewData, nNewSize);
 					throw;
 				}
 			#else
 				::new((void*)(pNewData + nPosSize)) value_type(eastl::forward<Args>(args)...);                  // Because the old data is potentially being moved rather than copied, we need to move 
 				pointer pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(mpBegin, destPosition, pNewData);   // the value first, because it might possibly be a reference to the old data being moved.
-				pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(destPosition, mpEnd, ++pNewEnd);            // Question: with exceptions disabled, do we asssume all operations are noexcept and thus there's no need for uninitializedMove_ptr_if_noexcept?
+				pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(destPosition, mpEnd, ++pNewEnd);            // Question: with exceptions disabled, do we assume all operations are noexcept and thus there's no need for uninitializedMove_ptr_if_noexcept?
 			#endif
 
 			eastl::destruct(mpBegin, mpEnd);
@@ -1916,6 +1928,7 @@ namespace eastl
 		pointer const   pNewData  = DoAllocate(nNewSize);
 
 		#if EASTL_EXCEPTIONS_ENABLED
+			// THIS IS NOT FIXED, ISSUE #524 still applies if expections are enabled!
 			pointer pNewEnd = pNewData; // Assign pNewEnd a value here in case the copy throws.
 			try
 			{
@@ -1930,8 +1943,9 @@ namespace eastl
 				throw;
 			}
 		#else
-			pointer pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(mpBegin, mpEnd, pNewData);
-			::new((void*)pNewEnd) value_type(eastl::forward<Args>(args)...);
+			//here #524 is fixed!
+			::new((void*)(pNewData+(mpEnd-mpBegin))) value_type(eastl::forward<Args>(args)...);				//first construct the new element in the destination buffer because the source might get moved away by the next line
+			pointer pNewEnd = eastl::uninitializedMove_ptr_if_noexcept(mpBegin, mpEnd, pNewData);			//and here copy the rest of the elements into the new buffer
 			pNewEnd++;
 		#endif
 
@@ -1982,7 +1996,13 @@ namespace eastl
 		return ((a.size() == b.size()) && eastl::equal(a.begin(), a.end(), b.begin()));
 	}
 
-
+#if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
+	template <typename T, typename Allocator>
+	inline synth_three_way_result<T> operator<=>(const vector<T, Allocator>& a, const vector<T, Allocator>& b)
+	{
+		return eastl::lexicographicalCompare_three_way(a.begin(), a.end(), b.begin(), b.end(), synth_three_way{});
+	}
+#else
 	template <typename T, typename Allocator>
 	inline bool operator!=(const vector<T, Allocator>& a, const vector<T, Allocator>& b)
 	{
@@ -2016,7 +2036,7 @@ namespace eastl
 	{
 		return !(a < b);
 	}
-
+#endif
 
 	template <typename T, typename Allocator>
 	inline void swap(vector<T, Allocator>& a, vector<T, Allocator>& b) EASTL_NOEXCEPT_IF(EASTL_NOEXCEPT_EXPR(a.swap(b)))
@@ -2032,17 +2052,39 @@ namespace eastl
 	// https://en.cppreference.com/w/cpp/container/vector/erase2
 	///////////////////////////////////////////////////////////////////////
 	template <class T, class Allocator, class U>
-	void erase(vector<T, Allocator>& c, const U& value)
+	typename vector<T, Allocator>::size_type erase(vector<T, Allocator>& c, const U& value)
 	{
 		// Erases all elements that compare equal to value from the container. 
-		c.erase(eastl::remove(c.begin(), c.end(), value), c.end());
+		auto origEnd = c.end();
+		auto newEnd = eastl::remove(c.begin(), origEnd, value);
+		auto numRemoved = eastl::distance(newEnd, origEnd);
+		c.erase(newEnd, origEnd);
+
+		// Note: This is technically a lossy conversion when size_type
+		// is 32bits and ptrdiff_t is 64bits (could happen on 64bit
+		// systems when EASTL_SIZE_T_32BIT is set). In practice this
+		// is fine because if EASTL_SIZE_T_32BIT is set then the vector
+		// should not have more elements than fit in a uint32_t and so
+		// the distance here should fit in a size_type.
+		return static_cast<typename vector<T, Allocator>::size_type>(numRemoved);
 	}
 
 	template <class T, class Allocator, class Predicate>
-	void erase_if(vector<T, Allocator>& c, Predicate predicate)
+	typename vector<T, Allocator>::size_type erase_if(vector<T, Allocator>& c, Predicate predicate)
 	{
 		// Erases all elements that satisfy the predicate pred from the container. 
-		c.erase(eastl::removeIf(c.begin(), c.end(), predicate), c.end());
+		auto origEnd = c.end();
+		auto newEnd = eastl::removeIf(c.begin(), origEnd, predicate);
+		auto numRemoved = eastl::distance(newEnd, origEnd);
+		c.erase(newEnd, origEnd);
+
+		// Note: This is technically a lossy conversion when size_type
+		// is 32bits and ptrdiff_t is 64bits (could happen on 64bit
+		// systems when EASTL_SIZE_T_32BIT is set). In practice this
+		// is fine because if EASTL_SIZE_T_32BIT is set then the vector
+		// should not have more elements than fit in a uint32_t and so
+		// the distance here should fit in a size_type.
+		return static_cast<typename vector<T, Allocator>::size_type>(numRemoved);
 	}
 
 } // namespace eastl

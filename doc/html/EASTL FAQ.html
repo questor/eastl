@@ -217,7 +217,7 @@ semantics." What gives?</a></td>
 </tr>
 <tr>
 <td>14</td>
-<td><a href="#Prob.14">My stack-based fixed_vector is not respecting the object alignment requirements.</a></td>
+<td><a href="#Prob.14">My stack-based fixedVector is not respecting the object alignment requirements.</a></td>
 </tr>
 <tr>
   <td>15</td>
@@ -272,7 +272,7 @@ do?</a></td>
 <tbody>
 <tr>
 <td style="width: 28px;">1</td>
-<td><a href="#Cont.1">Why do some containers have "fixed" versions (e.g. fixed_list) but others(e.g. deque) don't have
+<td><a href="#Cont.1">Why do some containers have "fixed" versions (e.g. fixedList) but others(e.g. deque) don't have
 fixed versions?</a></td>
 </tr>
 <tr>
@@ -324,12 +324,12 @@ members?</a></td>
 </tr>
 <tr>
 <td>13</td>
-<td><a href="#Cont.13">How do I search a hash_map of strings via a char pointer efficiently? If I use map.find("hello")
+<td><a href="#Cont.13">How do I search a hashMap of strings via a char pointer efficiently? If I use map.find("hello")
 it creates a temporary string, which is inefficient.</a></td>
 </tr>
 <tr>
 <td>14</td>
-<td><a href="#Cont.14">Why are set and hash_set iterators const (i.e. const_iterator)?</a></td>
+<td><a href="#Cont.14">Why are set and hashSet iterators const (i.e. const_iterator)?</a></td>
 </tr>
 <tr>
 <td>15</td>
@@ -337,7 +337,7 @@ it creates a temporary string, which is inefficient.</a></td>
 </tr>
 <tr>
 <td>16</td>
-<td><a href="#Cont.16">Which uses less memory, a map or a hash_map?</a></td>
+<td><a href="#Cont.16">Which uses less memory, a map or a hashMap?</a></td>
 </tr>
 <tr>
 <td>17</td>
@@ -521,7 +521,7 @@ How does EASTL differ from standard C++ STL?</p>
   <li>priority_queue</li>
   <li>memory</li>
   <li>numeric</li>
-  <li>algorithm (all but inplace_merge, prev_permutation, next_permutation, nth_element, includes, unique_copy)</li>
+  <li>algorithm (all but inplace_merge, prev_permutation, next_permutation, nthElement, includes, unique_copy)</li>
   <li>utility</li>
   <li>functional</li>
   <li>iterator</li>
@@ -536,26 +536,26 @@ How does EASTL differ from standard C++ STL?</p>
   <li>exception handling can be disabled.</li>
   <li>all containers expose/declare their node size, so you can make a node allocator for them.</li>
   <li>all containers have reset_lose_memory(), which unilaterally forgets their contents.</li>
-  <li>all containers have validate() and validate_iterator() functions.</li>
+  <li>all containers have validate() and validateIterator() functions.</li>
   <li>all containers understand and respect object alignment requirements.</li>
   <li>all containers guarantee no memory allocation upon being newly created as empty.</li>
   <li>all containers and their iterators can be viewed in a debugger (no other STL does this, believe it or not).</li>
   <li>linear containers guarantee linear memory.</li>
-  <li>vector has push_back(void).</li>
+  <li>vector has pushBack(void).</li>
   <li>vector has a data() function.</li>
   <li>vector&lt;bool&gt; is actually a vector of type bool.</li>
-  <li>vector and string have set_capacity().</li>
-  <li>string has sprintf(), append_sprintf(), trim(), compare_i(), make_lower(), make_upper().</li>
+  <li>vector and string have setCapacity().</li>
+  <li>string has sprintf(), appendSprintf(), trim(), compare_i(), makeLower(), makeUpper().</li>
   <li>deque allows you to specify the subarray size.</li>
-  <li>list has a push_back(void) and push_back(void) function.</li>
-  <li>hash_map, hash_set, etc. have find_as().</li>
+  <li>list has a pushBack(void) and pushBack(void) function.</li>
+  <li>hashMap, hashSet, etc. have find_as().</li>
 </ul>
 <p><span style="font-weight: bold;">EASTL coverage of TR1</span> <font face="Arial" size="2"><span style=
 "font-size: 10pt; font-family: Arial;">(tr1 refers to proposed additions for the next C++ standard library, ~2008)</span></font></p>
 <ul style="margin-top: 0in;" type="disc">
   <li>array</li>
   <li>type_traits (there are about 30 of these)</li>
-  <li>unordered_set (EASTL calls it hash_set)</li>
+  <li>unordered_set (EASTL calls it hashSet)</li>
   <li>unordered_multiset</li>
   <li>unordered_map</li>
   <li>unordered_multimap</li>
@@ -564,19 +564,19 @@ How does EASTL differ from standard C++ STL?</p>
 <p><span style="font-weight: bold;">EASTL additional functionality</span> <font face="Arial" size="1"><span style=
 "font-size: 9pt; font-family: Arial;">(not found elsewhere)</span></font></p>
 <ul style="margin-top: 0in;" type="disc">
-  <li>fixed_list</li>
+  <li>fixedList</li>
   <li>fixed_slist</li>
-  <li>fixed_vector</li>
-  <li>fixed_string</li>
-  <li>fixed_substring</li>
-  <li>fixed_set</li>
-  <li>fixed_multiset</li>
-  <li>fixed_map</li>
-  <li>fixed_multimap</li>
-  <li>fixed_hash_set</li>
-  <li>fixed_hash_multiset</li>
-  <li>fixed_hash_map</li>
-  <li>fixed_hash_multimap</li>
+  <li>fixedVector</li>
+  <li>fixedString</li>
+  <li>fixedSubstring</li>
+  <li>fixedSet</li>
+  <li>fixedMultiset</li>
+  <li>fixedMap</li>
+  <li>fixedMultimap</li>
+  <li>fixedHashSet</li>
+  <li>fixedHashMultiset</li>
+  <li>fixedHashMap</li>
+  <li>fixedHashMultimap</li>
   <li>fixed_function</li>
   <li>vector_set</li>
   <li>vector_multiset</li>
@@ -585,10 +585,10 @@ How does EASTL differ from standard C++ STL?</p>
   <li>intrusive_list</li>
   <li>intrusive_slist</li>
   <li>intrusive_sdlist</li>
-  <li>intrusive_hash_set</li>
-  <li>intrusive_hash_multiset</li>
-  <li>intrusive_hash_map</li>
-  <li>intrusive_hash_multimap</li>
+  <li>intrusive_hashSet</li>
+  <li>intrusive_hashMultiset</li>
+  <li>intrusive_hashMap</li>
+  <li>intrusive_hashMultimap</li>
   <li>slist (STLPort's STL has this)</li>
   <li>heap</li>
   <li>linked_ptr, linked_array</li>
@@ -596,8 +596,8 @@ How does EASTL differ from standard C++ STL?</p>
   <li>ring_buffer</li>
   <li>compressed_pair</li>
   <li>call_traits</li>
-  <li>binary_search_i, change_heap, find_first_not_of, find_last_of, find_last_not_of, identical</li>
-  <li>comb_sort, bubble_sort, selection_sort, shaker_sort, bucket_sort</li>
+  <li>binarySearchI, changeHeap, findFirstNotOf, findLastOf, findLastNotOf, identical</li>
+  <li>combSort, bubbleSort, selectionSort, shakerSort, bucketSort</li>
   <li>equal_to_2, not_equal_to_2, str_equal_to, str_equal_to_i<br>
   </li>
 </ul>
@@ -648,7 +648,7 @@ Why is there EASTL when there is the STL?</p>
   <li>The STL is implemented with very deep function calls. This results is unacceptable performance in non-optimized builds and sometimes in optimized builds as well.</li>
   <li>The STL doesn't support alignment of contained objects.</li>
   <li>STL containers won't let you insert an entry into a container without supplying an entry to copy from. This can be inefficient.</li>
-  <li>Useful STL extensions (e.g. slist, hash_map, shared_ptr) found in existing STL implementations such as STLPort are not portable because they don't exist in other versions of STL or aren't consistent between STL versions.<br>
+  <li>Useful STL extensions (e.g. slist, hashMap, shared_ptr) found in existing STL implementations such as STLPort are not portable because they don't exist in other versions of STL or aren't consistent between STL versions.<br>
   </li>
   <li>The STL lacks useful extensions that game programmers find useful (e.g. intrusive_list) but which could be best optimized in a portable STL environment.</li>
   <li>The STL puts an emphasis on correctness before performance, whereas sometimes you can get significant performance gains by making things less academically pure.</li>
@@ -855,8 +855,8 @@ then <span style="font-family: Courier New;">a</span> will release its reference
 leave b with the only reference to it. Normally this functionality is accomplished via reference 
 counting and with atomic operations or mutexes.</p>
 
-<p class="faq-answer">The C++ standard does not say anything about basic_string and CoW. 
-However, for a basic_string implementation to be standards-conforming, a number of issues arise 
+<p class="faq-answer">The C++ standard does not say anything about basicString and CoW. 
+However, for a basicString implementation to be standards-conforming, a number of issues arise 
 which dictate some things about how one would have to implement a CoW string. The discussion of 
 these issues will not be rehashed here, as you can read the references below for better detail 
 than can be provided in the space we have here. However, we can say that the C++ standard 
@@ -1065,19 +1065,19 @@ How do I control function inlining?</p>
 <p class="faq-answer"><em>Note:</em> pseudo instruction represents, in this particular context, an abstract measurement of function's size. In no way, it represents a count of assembly instructions and as such its exact meaning might change from one release to an another.</p>
 <p class="faq-answer">GCC additionally has the -Winline compiler warning, which emits a warning whenever a function declared as inline was not inlined.</p>
 <p class="faq-answer">Compilation-Level Inlining -- Metrowerks</p>
-<p class="faq-answer">Metrowerks has a number of pragmas (and corresponding compiler settings) to control inlining. These include always_inline, inline_depth, inline_max_size, and inline max_total_size.</p>
+<p class="faq-answer">Metrowerks has a number of pragmas (and corresponding compiler settings) to control inlining. These include always_inline, inline_depth, inline_maxSize, and inline max_total_size.</p>
 <blockquote>
   <p class="faq-answer"><small><span style="font-family: Courier New;">#pragma always_inline on | off | reset</span></small></p>
   <p class="faq-answer">Controls the use of inlined functions. If you enable this pragma, the compiler ignores all inlining limits and attempts to inline all functions where it is legal to do so. This pragma is&nbsp;deprecated. Use the inline_depth pragma instead.<br>
     <br>
     <small><span style="font-family: Courier New;">#pragma inline_depth(n)</span><br>
   <span style="font-family: Courier New;">#pragma inline_depth(smart)</span></small></p>
-  <p class="faq-answer">Controls how many passes are used to expand inline function. Sets the number of passes used to expand inline function calls. The number n is an integer from 0 to 1024 or the smart specifier. It also represents the distance allowed in the call chain from the last function up. For example, if d is the total depth of a call chain, then functions below (d-n) are inlined if they do not exceed the&nbsp;inline_max_size and&nbsp;inline_max_total_size settings which are discussed directly below.<br>
+  <p class="faq-answer">Controls how many passes are used to expand inline function. Sets the number of passes used to expand inline function calls. The number n is an integer from 0 to 1024 or the smart specifier. It also represents the distance allowed in the call chain from the last function up. For example, if d is the total depth of a call chain, then functions below (d-n) are inlined if they do not exceed the&nbsp;inline_maxSize and&nbsp;inline_max_total_size settings which are discussed directly below.<br>
     <br>
-    <small><span style="font-family: Courier New;">#pragma inline_max_size(n);</span><br>
+    <small><span style="font-family: Courier New;">#pragma inline_maxSize(n);</span><br>
   <span style="font-family: Courier New;">#pragma inline_max_total_size(n);</span></small></p>
   <p class="faq-answer">The first pragma sets the maximum function size to be considered for inlining; the second sets the maximum size to which a function is allowed to grow after the functions it calls are inlined. Here, n is the number of statements, operands, and operators in the function, which<br>
-    turns out to be roughly twice the number of instructions generated by the function. However, this number can vary from function to function. For the inline_max_size pragma, the default value of n is 256; for the inline_max_total_size pragma, the default value of n is 10000. The smart specifier is the default mode, with four passes where the passes 2-4 are limited to small inline functions. All inlineable functions are expanded if inline_depth is set to 1-1024.</p>
+    turns out to be roughly twice the number of instructions generated by the function. However, this number can vary from function to function. For the inline_maxSize pragma, the default value of n is 256; for the inline_max_total_size pragma, the default value of n is 10000. The smart specifier is the default mode, with four passes where the passes 2-4 are limited to small inline functions. All inlineable functions are expanded if inline_depth is set to 1-1024.</p>
 </blockquote>
 <p class="faq-answer">Function-Level Inlining -- VC++</p>
 <blockquote>
@@ -1101,7 +1101,7 @@ How do I control function inlining?</p>
   <p class="faq-answer"><small><span style="font-family: Courier New;">&nbsp; &nbsp; void foo() __attribute__((noinline)) { ... }</span><br>
     </small> <small><span style="font-family: Courier New;">&nbsp;&nbsp;&nbsp; &nbsp; &nbsp;</span></small> or<small><br>
     <span style="font-family: Courier New;">&nbsp; &nbsp; inline __attribute__((noinline)) void foo() { ... }</span></small></p>
-  <p class="faq-answer">EABase has some wrappers for this, such as EA_FORCE_INLINE.</p>
+  <p class="faq-answer">EABase has some wrappers for this, such as EASTL_FORCE_INLINE.</p>
 </blockquote>
 <p class="faq-question"><a name="Perf.12"></a>Perf.12
   C++ / EASTL seems to bloat my .obj files much more than C does.
@@ -1269,7 +1269,7 @@ When I get compilation errors, they are very long and complicated looking. What 
 <p class="faq-answer">Top five causes of EASTL compilation errors:</p>
 <ol>
   <li>const-correctness. Perhaps a quarter of container template errors are due to the user not specifying const correctly.</li>
-  <li>Missing hash function. hash_map, hash_set, etc. require that you either specify a hash function or one exists for your class. See functional.h for examples of declarations of hash functions for common data types.</li>
+  <li>Missing hash function. hashMap, hashSet, etc. require that you either specify a hash function or one exists for your class. See functional.h for examples of declarations of hash functions for common data types.</li>
   <li>Missing operators. Various containers and algorithms require that certain operators exist for your contained classes. For example, list requires that you can test contained objects for equivalence (i.e. operator==), while map requires that you can test contained objects for "less-ness" (operator &lt;). If you define a Widget class and don't have a way to compare two Widgets, you will get errors when trying to put them into a map.</li>
   <li>Specifying the wrong data type. For example, it is a common mistake to forget that when you insert into a map, you need to insert a pair of objects and not just your key or value type.</li>
   <li>Incorrect template parameters. When declaring a template instantiation (e.g. map&lt;int, int, less&lt;int&gt; &gt;) you simply need to get the template parameters correct. Also note that when you have "<span style="font-family: Courier New;">&gt;&gt;</span>" next to each other that you need to separate them by one space (e.g. "<span style="font-family: Courier New;">&gt; &gt;</span>").</li>
@@ -1283,7 +1283,7 @@ When I get compilation errors, they are very long and complicated looking. What 
 <p class="faq-question"><a name="Prob.8"></a>Prob.8
 I get the compiler error: "template instantiation depth exceeds maximum of 17.&nbsp;use -ftemplate-depth-NN to increase the maximum".&nbsp;</p>
 <p class="faq-answer">This is a GCC error that occurs when a templated function calls a templated function which calls a templated function, etc. past a depth of 17. You can use the GCC command line argument -ftemplate-depth-40 (or some other high number) to get around this. As note below, the syntax starting with GCC 4.5 has changed slightly. </p>
-<p class="faq-answer">The primary reason you would encounter this with EASTL is type traits that are used by algorithms. The type traits library is a (necessarily) highly templated set of types and functions which adds at most about nine levels of inlining. The copy and copy_backward algorithms have optimized pathways that add about four levels of inlining. If you have just a few more layers on top of that in container or user code then the default limit of 17 can be exceeded. We are investigating ways to reduce the template depth in the type traits library, but only so much can be done, as most compilers don't support type traits natively. Metrowerks is the current exception.</p>
+<p class="faq-answer">The primary reason you would encounter this with EASTL is type traits that are used by algorithms. The type traits library is a (necessarily) highly templated set of types and functions which adds at most about nine levels of inlining. The copy and copyBackward algorithms have optimized pathways that add about four levels of inlining. If you have just a few more layers on top of that in container or user code then the default limit of 17 can be exceeded. We are investigating ways to reduce the template depth in the type traits library, but only so much can be done, as most compilers don't support type traits natively. Metrowerks is the current exception.</p>
 <p class="faq-answer">From the GCC documentation:</p>
 <pre class="code-example">-ftemplate-depth-n
 
@@ -1314,19 +1314,19 @@ being&nbsp;previously defined.</p>
 I'm getting errors related to wchar_t string &nbsp;functions such as wcslen().</p>
 <p class="faq-answer">EASTL requires EABase-related items that the following be so. If not, then EASTL gets confused about what types it can pass to wchar_t related functions.</p>
 <ul>
-  <li>The #define EA_WCHAR_SIZE is equal to sizeof(wchar_t).</li>
+  <li>The #define EASTL_WCHAR_SIZE is equal to sizeof(wchar_t).</li>
   <li>If sizeof(wchar_t) == 2, then char16_t is typedef'd to wchar_t.</li>
   <li>If sizeof(wchar_t) == 4, then char32_t is typedef'd to wchar_t.</li>
 </ul>
-<p class="faq-answer">EABase v2.08 and later automatically does this for most current generation and all next generation platforms. With GCC 2.x, the user may need to predefine EA_WCHAR_SIZE to the appropriate value, due to limitations with the GCC compiler. Note that GCC defaults to sizeof(wchar_t) ==4, but it can be changed to 2 with the -fshort_wchar compiler command line argument. If you are using EASTL without EABase, you will need to make sure the above items are correctly defined.</p>
+<p class="faq-answer">EABase v2.08 and later automatically does this for most current generation and all next generation platforms. With GCC 2.x, the user may need to predefine EASTL_WCHAR_SIZE to the appropriate value, due to limitations with the GCC compiler. Note that GCC defaults to sizeof(wchar_t) ==4, but it can be changed to 2 with the -fshort_wchar compiler command line argument. If you are using EASTL without EABase, you will need to make sure the above items are correctly defined.</p>
 <p class="faq-question">  <a name="Prob.13"></a>Prob.13
   I'm getting compiler warning C4619: there is no warning number Cxxxx
 (e.g. C4217).</p>
 <p class="faq-answer">Compiler warning C4619 is a VC++ warning which is saying that the user is attempting to enable or disable a warning which the compiler doesn't recognize. This warning only occurs if the user has the compiler set to enable warnings that are normally disabled, regardless of the warning level. The problem, however, is that there is no easy way for user code to tell what compiler warnings any given compiler version will recognize. That's why Microsoft normally disables this warning.</p>
 <p class="faq-answer">The only practical solution we have for this is for the user to disable warning 4619 globally or an a case-by-case basis. EA build systems such as nant/framework 2's eaconfig will usually disable 4619. In general, global enabling of 'warnings that are disabled by default' often result in quandrys such as this.</p>
 <p class="faq-question"><a name="Prob.14"></a>Prob.14
-My stack-based fixed_vector is not respecting the object alignment requirements.</p>
-<p class="faq-answer">EASTL fixed_* containers rely on the compiler-supplied alignment directives, such as that implemented by EA_PREFIX_ALIGN. This is normally a good thing because it allows the memory to be local with the container. However, as documented by Microsoft at <a href="http://msdn2.microsoft.com/en-us/library/83ythb65(VS.71).aspx"> http://msdn2.microsoft.com/en-us/library/83ythb65(VS.71).aspx</a>, this doesn't work for stack variables. The two primary means of working around this are: </p>
+My stack-based fixedVector is not respecting the object alignment requirements.</p>
+<p class="faq-answer">EASTL fixed_* containers rely on the compiler-supplied alignment directives, such as that implemented by EASTL_PREFIX_ALIGN. This is normally a good thing because it allows the memory to be local with the container. However, as documented by Microsoft at <a href="http://msdn2.microsoft.com/en-us/library/83ythb65(VS.71).aspx"> http://msdn2.microsoft.com/en-us/library/83ythb65(VS.71).aspx</a>, this doesn't work for stack variables. The two primary means of working around this are: </p>
 <ul>
   <li>Use something like AlignedObject&lt;&gt; from the EAStdC package's EAAllocator.h file. </li>
   <li>Use eastl::vector with a custom allocator and have it provide aligned memory. EASTL automatically recognizes that the objects are aligned and will call the aligned version of your allocator allocate() function. You can get this aligned memory from the stack, if you need it, somewhat like how AlignedObject&lt;&gt; works. </li>
@@ -1377,7 +1377,7 @@ int Vsnprintf16(char16_t* p, size_t n, const char16_t* pFormat, va_list argument
    
 void DoSomething()
 {
-    gIntList.push_back(1); // <span class="style3">Crash</span>. gIntList was never constructed.
+    gIntList.pushBack(1); // <span class="style3">Crash</span>. gIntList was never constructed.
 }</pre>
 <p class="faq-answer">Declaring a pointer solution: </p>
 <pre class="code-example">eastl::list&lt;int&gt;* gIntList = NULL;
@@ -1387,7 +1387,7 @@ void DoSomething()
     if(!gIntList) // Or move this to an init function.
         gIntList = new eastl::list&lt;int&gt;;
 
-    gIntList-&gt;push_back(1); // <span class="style2">Success</span>
+    gIntList-&gt;pushBack(1); // <span class="style2">Success</span>
 }</pre>
 <p class="faq-answer">Manual constructor call solution: </p>
 <pre class="code-example">eastl::list&lt;int&gt; gIntList;
@@ -1399,7 +1399,7 @@ void InitSystem()
 
 void DoSomething()
 {
-    gIntList.push_back(1); // <span class="style2">Success</span>
+    gIntList.pushBack(1); // <span class="style2">Success</span>
 }</pre>
 <p class="faq-question"><a name="Prob.19" id="Prob.19"></a>Prob.19 Why doesn't EASTL support passing NULL string functions? </p>
 <p class="faq-answer"></p>
@@ -1434,7 +1434,7 @@ How do I view containers if the visualizer/tooltip support is not present?</p>
     </tr>
     <tr>
       <td>list<br>
-        fixed_list</td>
+        fixedList</td>
       <td>list is a doubly-linked list. Look at the list mNode variable. You can walk the list forward by looking at mNode.mpNext, etc. and backward by looking at mpPrev, etc.</td>
     </tr>
     <tr>
@@ -1448,7 +1448,7 @@ How do I view containers if the visualizer/tooltip support is not present?</p>
     </tr>
     <tr>
       <td>vector<br>
-        fixed_vector</td>
+        fixedVector</td>
       <td>View the vector mpBegin value in the debugger. If the string is long, use &quot;, N&quot; to limit the view length, as with someVector.mpBegin, 32</td>
     </tr>
     <tr>
@@ -1473,42 +1473,42 @@ How do I view containers if the visualizer/tooltip support is not present?</p>
     <tr>
       <td>set<br>
         multiset<br>
-        fixed_set<br>
-        fixed_multiset<br></td>
+        fixedSet<br>
+        fixedMultiset<br></td>
       <td>The set containers are implemented as a tree of elements. The set mAnchor.mpNodeParent points to the top of the tree; the mAnchor.mpNodeLeft points to the far left node of the tree (set begin()); the mAnchor.mpNodeRight points to the right of the tree (set end()).</td>
     </tr>
     <tr>
       <td>map<br>
         multimap<br>
-        fixed_map<br>
-        fixed_multimap</td>
+        fixedMap<br>
+        fixedMultimap</td>
       <td>The map containers are implemented as a tree of pairs, where pair.first is the map key and pair.second is the map value. The map mAnchor.mpNodeParent points to the top of the tree; the mAnchor.mpNodeLeft points to the far left node of the tree (map begin()); the mAnchor.mpNodeRight points to the right of the tree (map end()).</td>
     </tr>
     <tr>
-      <td>hash_map<br>
-        hash_multimap<br>
-        fixed_hash_map<br>
-        fixed_hash_multimap</td>
+      <td>hashMap<br>
+        hashMultimap<br>
+        fixedHashMap<br>
+        fixedHashMultimap</td>
       <td>hash tables in EASTL are implemented as an array of singly-linked lists. The array is the mpBucketArray member. Each element in the list is a pair, where the first element of the pair is the map key and the second is the map value.</td>
     </tr>
     <tr>
-      <td>intrusive_hash_map<br>
-        intrusive_hash_multimap<br>
-        intrusive_hash_set<br>
-        intrusive_hash_multiset</td>
-      <td>intrusive hash tables in EASTL are implemented very similarly to regular hash tables. See the hash_map and hash_set entries for more info.</td>
+      <td>intrusive_hashMap<br>
+        intrusive_hashMultimap<br>
+        intrusive_hashSet<br>
+        intrusive_hashMultiset</td>
+      <td>intrusive hash tables in EASTL are implemented very similarly to regular hash tables. See the hashMap and hashSet entries for more info.</td>
     </tr>
     <tr>
-      <td>hash_set<br>
-        hash_multiset<br>
-        fixed_hash_set<br>
-        fixed_hash_map<br></td>
+      <td>hashSet<br>
+        hashMultiset<br>
+        fixedHashSet<br>
+        fixedHashMap<br></td>
       <td>hash tables in EASTL are implemented as an array of singly-linked lists. The array is the mpBucketArray member. </td>
     </tr>
     <tr>
-      <td>basic_string<br>
-        fixed_string<br>
-        fixed_substring</td>
+      <td>basicString<br>
+        fixedString<br>
+        fixedSubstring</td>
       <td>View the string mpBegin value in the debugger. If the string is long, use &quot;, N&quot; to limit the view length, as with someString.mpBegin, 32</td>
     </tr>
     <tr>
@@ -1557,7 +1557,7 @@ Top five approaches to dealing with long compilation errors:</p>
 <p class="faq-answer">Top five causes of EASTL compilation errors:</p>
 <ol>
   <li>const-correctness. Perhaps a quarter of container template errors are due to the user not specifying const correctly.</li>
-  <li>Missing hash function. hash_map, hash_set, etc. require that you either specify a hash function or one exists for your class. See functional.h for examples of declarations of hash functions for common data types.</li>
+  <li>Missing hash function. hashMap, hashSet, etc. require that you either specify a hash function or one exists for your class. See functional.h for examples of declarations of hash functions for common data types.</li>
   <li>Missing operators. Various containers and algorithms require that certain operators exist for your contained classes. For example, list requires that you can test contained objects for equivalence (i.e. operator==), while map requires that you can test contained objects for "less-ness" (operator &lt;). If you define a Widget class and don't have a way to compare two Widgets, you will get errors when trying to put them into a map.</li>
   <li>Specifying the wrong data type. For example, it is a common mistake to forget that when you insert into a map, you need to insert a pair of objects and not just your key or value type.</li>
   <li>Incorrect template parameters. When declaring a template instantiation (e.g. map&lt;int, int, less&lt;int&gt; &gt;) you simply need to get the template parameters correct. Also note that when you have "<span style="font-family: Courier New;">&gt;&gt;</span>" next to each other that you need to separate them by one space (e.g. "<span style="font-family: Courier New;">&gt; &gt;</span>").</li>
@@ -1586,7 +1586,7 @@ How do I measure hash table balancing?</p>
 &nbsp;&nbsp;&nbsp; eastl_size_t largestBucketSize = 0;<br>
     <br>
 &nbsp;&nbsp;&nbsp; for(eastl_size_t i = 0; i &lt; bucketCount; i++)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; largestBucketSize = eastl::max_alt(largestBucketSize, h.bucket_size(i));<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; largestBucketSize = eastl::maxAlt(largestBucketSize, h.bucket_size(i));<br>
     <br>
 &nbsp;&nbsp;&nbsp; YourPrintFunction(&quot;\n --------------------------------------------------------------------------------\n&quot;);<br>
      <br>
@@ -1625,14 +1625,14 @@ How do I measure hash table balancing?</p>
 </blockquote>
 <h2>  Containers</h2>
 <p class="faq-question"><a name="Cont.1"></a>Cont.1
-Why do some containers have "fixed" versions (e.g. fixed_list) but others(e.g. deque) don't have fixed versions?</p>
-<p class="faq-answer">Recall that fixed containers are those that are implemented via a single contiguous block of memory and don't use a general purpose heap to allocate memory from. For example, fixed_list is a list container that implements its list by a user-configurable fixed block of memory. Such containers have an upper limit to how many items they can hold, but have the advantage of being more efficient with memory use and memory access coherency.</p>
+Why do some containers have "fixed" versions (e.g. fixedList) but others(e.g. deque) don't have fixed versions?</p>
+<p class="faq-answer">Recall that fixed containers are those that are implemented via a single contiguous block of memory and don't use a general purpose heap to allocate memory from. For example, fixedList is a list container that implements its list by a user-configurable fixed block of memory. Such containers have an upper limit to how many items they can hold, but have the advantage of being more efficient with memory use and memory access coherency.</p>
 <p class="faq-answer">The reason why some containers don't have fixed versions is that such functionality doesn't make sense with these containers. Containers which don't have fixed versions include:</p>
 <pre class="code-example">array, deque, bitset, stack, queue, priority_queue,
-intrusive_list, intrusive_hash_map, intrusive_hash_set,
-intrusive_hash_multimap, intrusive_hash_multimap,
+intrusive_list, intrusive_hashMap, intrusive_hashSet,
+intrusive_hashMultimap, intrusive_hashMultimap,
 vector_map, vector_multimap, vector_set, vector_multiset.</pre>
-<p class="faq-answer">Some of these containers are adapters which wrap other containers and thus there is no need for a fixed version because you can just wrap a fixed container. In the case of intrusive containers, the user is doing the allocation and so there are no memory allocations. In the case of array, the container is a primitive type which doesn't allocate memory. In the case of deque, it's primary purpose for being is to dynamically resize and thus the user would likely be better of using a fixed_vector.</p>
+<p class="faq-answer">Some of these containers are adapters which wrap other containers and thus there is no need for a fixed version because you can just wrap a fixed container. In the case of intrusive containers, the user is doing the allocation and so there are no memory allocations. In the case of array, the container is a primitive type which doesn't allocate memory. In the case of deque, it's primary purpose for being is to dynamically resize and thus the user would likely be better of using a fixedVector.</p>
 <p class="faq-question">  <a name="Cont.2"></a>Cont.2
 Can I mix EASTL with standard C++ STL?</p>
 <p class="faq-answer">This is possible to some degree, though the extent depends on the implementation of C++ STL. One of things that makes interoperability is something called iterator categories. Containers and algorithms recognize iterator types via their category and STL iterator categories are not recognized by EASTL and vice versa.</p>
@@ -1664,7 +1664,7 @@ Can I mix EASTL with standard C++ STL?</p>
 </ul>
 <p class="faq-question">  <a name="Cont.3"></a>Cont.3
 Why are there so many containers?</p>
-<p class="faq-answer">EASTL has a large number of container types (e.g vector, list, set) and often has a number of variations of given types (list, slist, intrusive_list, fixed_list). The reason for this is that each container is tuned and to a specific need and there is no single container that works for all needs. The more the user is concerned about squeezing the most performance out of their system, the more the individual container variations become significant. It's important to note that having additional container types generally does not mean generating additional code or code bloat. Templates result in generated code regardless of what templated class they come from, and so for the most part you get optimal performance by choosing the optimal container for your needs.</p>
+<p class="faq-answer">EASTL has a large number of container types (e.g vector, list, set) and often has a number of variations of given types (list, slist, intrusive_list, fixedList). The reason for this is that each container is tuned and to a specific need and there is no single container that works for all needs. The more the user is concerned about squeezing the most performance out of their system, the more the individual container variations become significant. It's important to note that having additional container types generally does not mean generating additional code or code bloat. Templates result in generated code regardless of what templated class they come from, and so for the most part you get optimal performance by choosing the optimal container for your needs.</p>
 <p class="faq-question">  <a name="Cont.4"></a>Cont.4
 Don't STL and EASTL containers fragment memory?</p>
 <p class="faq-answer">They only fragment memory if you use them in a way that does so. This is no different from any other type of container used in a dynamic way. There are various solutions to this problem, and EASTL provides additional help as well:</p>
@@ -1700,7 +1700,7 @@ What about alternative container and algorithm implementations (e.g. treaps, ski
   <li>intrusive_list, etc. -- Saves memory and improves cache locality.</li>
   <li>vector_map, etc. -- Saves memory and improves cache locality.</li>
   <li>ring_buffer -- Useful for some types of operations and has no alternative.</li>
-  <li>shell_sort -- Useful sorting algorithm.</li>
+  <li>shellSort -- Useful sorting algorithm.</li>
   <li>sparse_matrix -- Useful for some types of operations and has no alternative.</li>
 </ul>
 <p class="faq-answer">Not implemented:
@@ -1724,7 +1724,7 @@ You may notice that when you have a tree-based container (e.g. set, map)&nbsp; i
 How do I assign a custom allocator to an EASTL container?</p>
 <p class="faq-answer">There are two ways of doing this:</p>
 <ol>
-  <li>Use the set_allocator function that is present in each container.</li>
+  <li>Use the setAllocator function that is present in each container.</li>
   <li>Specify a new allocator type via the Allocator template parameter that is present in each container.</li>
 </ol>
 <p class="faq-answer">For item #1, EASTL expects that you provide an instance of an allocator of the type that EASTL recognizes. This is simple but has the disadvantage that all such allocators must be of the same class. The class would need to have C++ virtual functions in order to allow a given instance to act differently from another instance.</p>
@@ -1776,7 +1776,7 @@ public:
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // Implement the deallocation here.
 &nbsp;&nbsp;&nbsp; }
 
-&nbsp;&nbsp;&nbsp; const char* get_name() const
+&nbsp;&nbsp;&nbsp; const char* getName() const
 &nbsp;&nbsp;&nbsp; {
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #if EASTL_NAME_ENABLED
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return mpName;
@@ -1785,7 +1785,7 @@ public:
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #endif
 &nbsp;&nbsp;&nbsp; }
 
-&nbsp;&nbsp;&nbsp; void set_name(const char* pName)
+&nbsp;&nbsp;&nbsp; void setName(const char* pName)
 &nbsp;&nbsp;&nbsp; {
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; #if EASTL_NAME_ENABLED
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; mpName = pName;
@@ -1820,7 +1820,7 @@ list&lt;Widget, custom_allocator&gt; widgetList2(gSomeGlobalAllocator);
 // Declare a Widget list and have it default construct, but assign
 // an underlying implementation after construction.
 list&lt;Widget, custom_allocator&gt; widgetList;
-widgetList.get_allocator().mpIAllocator = new WidgetAllocatorImpl;</pre>
+widgetList.getAllocator().mpIAllocator = new WidgetAllocatorImpl;</pre>
 
 <p class="faq-question"><a name="Cont.9"></a>Cont.9 How do I set the VC++ debugger to display EASTL container data with tooltips?</p>
 <p class="faq-answer">Visual Studio supports this via the AutoExp.dat file, an example of which is <a href="AutoExp.dat">present</a> with this documentation. </p>
@@ -1833,7 +1833,7 @@ How do I use a memory pool with a container?</p>
 <p class="faq-answer">Using custom memory pools is a common technique for decreasing memory fragmentation and increasing memory cache locality. EASTL gives you the flexibility of defining your own memory pool systems for containers. There are two primary ways of doing this:</p>
 <ul>
   <li>Assign a custom allocator to a container. eastl::fixed_pool provides an implementation.</li>
-  <li>Use one of the EASTL fixed containers, such as fixed_list.</li>
+  <li>Use one of the EASTL fixed containers, such as fixedList.</li>
 </ul>
 <p class="faq-answer"><span style="font-weight: bold;">Custom Allocator</span><br>
 In the custom allocator case, you will want to create a memory pool and assign it to the container. For purely node-based containers such as list, slist, map, set, multimap, and multiset, your pool simply needs to be able to allocate list nodes. Each of these containers has a member typedef called node_type which defines the type of node allocated by the container.&nbsp;So if you have a memory pool that has a constructor that takes the size of pool items and the count of pool items, you would do this (assuming that MemoryPool implements the Allocator interface):</p>
@@ -1841,16 +1841,16 @@ In the custom allocator case, you will want to create a memory pool and assign i
 
 MemoryPool myPool(sizeof(WidgetList::node_type), 100); // Make a pool of 100 Widget nodes.
 WidgetList myList(&amp;myPool);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // Create a list that uses the pool.</pre>
-<p class="faq-answer">In the case of containers that are array-based, such as vector and basic_string, memory pools don't work very well as these containers work on a realloc-basis instead of by adding incremental nodes. What we want to do with these containers is assign a sufficient block of memory to them and&nbsp;reserve() the container's capacity to the size of the memory.</p>
+<p class="faq-answer">In the case of containers that are array-based, such as vector and basicString, memory pools don't work very well as these containers work on a realloc-basis instead of by adding incremental nodes. What we want to do with these containers is assign a sufficient block of memory to them and&nbsp;reserve() the container's capacity to the size of the memory.</p>
 <p class="faq-answer">In the case of mixed containers which are partly array-based and partly node-based, such as hash containers and deque, you can use a memory pool for the nodes but will need a single array block to supply for the buckets (hash containers and deque both use a bucket-like system).</p>
 <p class="faq-answer">You might consider using eastl::fixed_pool as such an allocator, as it provides such functionality and allows the user to provide the actual memory used for the pool. Here is some example code:</p>
 <pre class="code-example">char buffer[256];
 
 list&lt;Widget, fixed_pool&gt;&nbsp;myList;
-myList.get_allocator().init(buffer, 256);</pre>
+myList.getAllocator().init(buffer, 256);</pre>
 <p class="faq-answer"><span style="font-weight: bold;">Fixed Container</span><br>
 In the fixed container case, the container does all the work for you. To use a list which implements a private pool of memory, just declare it like so:</p>
-<pre class="code-example">fixed_list&lt;Widget, 100&gt; fixedList; // Declare a fixed_list that can hold 100 Widgets</pre>
+<pre class="code-example">fixedList&lt;Widget, 100&gt; fixedList; // Declare a fixedList that can hold 100 Widgets</pre>
 <p class="faq-question"><a name="Cont.11"></a>Cont.11
 How do I write a comparison (operator&lt;()) for a struct that contains two or more members?&nbsp;</p>
 <p class="faq-answer">See <a href="#Algo.2">Algo.2</a></p>
@@ -1867,9 +1867,9 @@ Why doesn't container X have member function Y?</p>
 <div class="code-example">list&lt;int&gt;::iterator i =&nbsp;find(list.begin(), list.end(), 3);</div>
 <p class="faq-answer">And in order to sort a vector, you would do this:<br>
 </p>
-<div class="code-example">quick_sort(v.begin(), v.end()); &nbsp; // Sort the entire array.
+<div class="code-example">quickSort(v.begin(), v.end()); &nbsp; // Sort the entire array.
   <br>
-quick_sort(&amp;v[3], &amp;v[8]); &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; // Sort the items at the indexes in the range of [3, 8).</div>
+quickSort(&amp;v[3], &amp;v[8]); &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; // Sort the items at the indexes in the range of [3, 8).</div>
 <p class="faq-answer">In the case of functionality that can be had by using other member functions, 
 note that EASTL follows the philosophy that duplicated functionality should not exist in a container, 
 with exceptions being made for cases where mistakes and unsafe practices commonly happen if the given 
@@ -1879,7 +1879,7 @@ another, you would do this:</p>
 <pre class="code-example">string strMid(str, 3, 5); // Make a new string of the characters from the source range of [3, 3+5).</pre>
 <p class="faq-answer">  It might be noted that the EASTL string class is unique among EASTL containers in that it sometimes violates the minimum functionality rule. This is so because the std C++ string class similarly does so and EASTL aims to be compatible.</p>
 <p class="faq-question"><a name="Cont.13"></a>Cont.13
-How do I search a hash_map of strings via a char pointer efficiently? If I use map.find("hello") it creates a temporary string, which is inefficient.</p>
+How do I search a hashMap of strings via a char pointer efficiently? If I use map.find("hello") it creates a temporary string, which is inefficient.</p>
 <p class="faq-answer">The problem is illustrated with this example:</p>
 <pre class="code-example">map&lt;string, Widget&gt; swMap;
   ...
@@ -1888,10 +1888,10 @@ map&lt;string, Widget&gt;::iterator it = swMap.find("blue"); // A temporary stri
 </p>
 <ul>
   <li>Make the map a map of char pointers instead of string objects. Don't forget to write a custom compare or else the default comparison function will compare pointer values instead of string contents.</li>
-  <li>Use the EASTL hash_map::find_as function, which allows you to find an item in a hash container via an alternative key than the one the hash table uses.</li>
+  <li>Use the EASTL hashMap::find_as function, which allows you to find an item in a hash container via an alternative key than the one the hash table uses.</li>
 </ul>
 <p class="faq-question"><a name="Cont.14"></a>Cont.14
-Why are set and hash_set iterators const (i.e. const_iterator)?</p>
+Why are set and hashSet iterators const (i.e. const_iterator)?</p>
 <p class="faq-answer">The situation is illustrated with this example:</p>
 <pre class="code-example">set&lt;int&gt; intSet;
 
@@ -1907,14 +1907,14 @@ call set_max_load_factor with a very high value such as 100000.f.</p>
 <p class="faq-answer">Similarly, you can control the bucket growth factor with the rehash_policy function. 
 By default, when buckets reallocate, they reallocate to about twice their previous count. 
 You can control that value as with the example code here:</p>
-<pre class="code-example">hash_set&lt;int&gt; hashSet;
+<pre class="code-example">hashSet&lt;int&gt; hashSet;
 hashSet.rehash_policy().mfGrowthFactor = 1.5f</pre>
 
 <p class="faq-question">
   <a name="Cont.16"></a>Cont.16
-Which uses less memory, a map or a hash_map?
+Which uses less memory, a map or a hashMap?
 </p>
-<p class="faq-answer">A hash_map will virtually always use less memory. A hash_map will use an average of two pointers per stored element, while a map uses three pointers per stored element.</p>
+<p class="faq-answer">A hashMap will virtually always use less memory. A hashMap will use an average of two pointers per stored element, while a map uses three pointers per stored element.</p>
 <p class="faq-question">  <a name="Cont.17"></a>Cont.17
 How do I write a custom hash function?</p>
 <p class="faq-answer">You can look at the existing hash functions in functional.h, but we provide a couple examples here.</p>
@@ -1924,7 +1924,7 @@ How do I write a custom hash function?</p>
 &nbsp; &nbsp; &nbsp; &nbsp; { return w.id; }
 };
 
-hash_set&lt;Widget, WidgetHash&gt; widgetHashSet;</pre>
+hashSet&lt;Widget, WidgetHash&gt; widgetHashSet;</pre>
 <p class="faq-answer">To write a generic (templated) hash function for a set of similar classes (in this case that have an id member), you would do this:<br>
 </p>
 <pre class="code-example">template &lt;typename T&gt;
@@ -1933,8 +1933,8 @@ struct GeneralHash {
 &nbsp; &nbsp; &nbsp; &nbsp; { return t.id; }
 };
 
-hash_set&lt;Widget,&nbsp;GeneralHash&lt;Widget&gt; &gt; widgetHashSet;
-hash_set&lt;Dogget,&nbsp;GeneralHash&lt;Dogget&gt; &gt; doggetHashSet;</pre>
+hashSet&lt;Widget,&nbsp;GeneralHash&lt;Widget&gt; &gt; widgetHashSet;
+hashSet&lt;Dogget,&nbsp;GeneralHash&lt;Dogget&gt; &gt; doggetHashSet;</pre>
 
 <p class="faq-question">  <a name="Cont.18"></a>Cont.18
 How do I write a custom compare function for a map or set?</p>
@@ -1949,12 +1949,12 @@ set&lt;Widget, WidgetLess&gt; wSet;</div>
 <p class="faq-answer">It's important that your comparison function must be consistent in its behaviour, else the container will either be unsorted or a crash will occur. This concept is called "strict weak ordering."</p>
 <p class="faq-question"><a name="Cont.19"></a>Cont.19
 How do I force my vector or string capacity down to the size of the container?</p>
-<p class="faq-answer">You can simply use the set_capacity() member function which is present in both vector and string. This is a function that is not present in std STL vector and string functions.</p>
+<p class="faq-answer">You can simply use the setCapacity() member function which is present in both vector and string. This is a function that is not present in std STL vector and string functions.</p>
 <pre class="code-example">eastl::vector&lt;Widget&gt; x;
-x.set_capacity(); &nbsp; // Shrink x's capacity to be equal to its size.
+x.setCapacity(); &nbsp; // Shrink x's capacity to be equal to its size.
 
 eastl::vector&lt;Widget&gt; x;
-x.set_capacity(0); &nbsp;// Completely clear x.</pre>
+x.setCapacity(0); &nbsp;// Completely clear x.</pre>
 <p>  To compact your vector or string in a way that would also work with std STL you need to do the following.</p>
 <p> How to shrink a vector's capacity to be equal to its size:</p>
 <pre class="code-example">std::vector&lt;Widget&gt; x;
@@ -1988,11 +1988,11 @@ free the pointers automatically. There are two conventional resolutions to this 
 <p class="faq-answer">It's important that you use a shared smart pointer and not an unshared one such as C++ auto_ptr, as the latter will result in crashes upon linear container resizes. Here we provide an example of how to create a list of smart pointers:</p>
 <pre class="code-example">list&lt; shared_ptr&lt;Widget&gt; &gt; wList;
 
-wList.push_back(shared_ptr&lt;Widget&gt;(new Widget));
-wList.pop_back(); // The Widget will be freed.</pre>
+wList.pushBack(shared_ptr&lt;Widget&gt;(new Widget));
+wList.popBack(); // The Widget will be freed.</pre>
 <p class="faq-question"><a name="Cont.22"></a>Cont.22
 How do I make a union of two containers? difference? intersection?</p>
-<p class="faq-answer">The best way to accomplish this is to sort your container (or use a sorted container such as set) and then apply the set_union, set_difference, or set_intersection algorithms.</p>
+<p class="faq-answer">The best way to accomplish this is to sort your container (or use a sorted container such as set) and then apply the set_union, setDifference, or set_intersection algorithms.</p>
 <p class="faq-question"><a name="Cont.23"></a>Cont.23
 How do I override the default global allocator?&nbsp;</p>
 <p class="faq-answer">There are multiple ways to accomplish this. The allocation mechanism is defined in EASTL/internal/config.h and in allocator.h/cpp. Overriding the default global allocator means overriding these files, overriding what these files refer to, or changing these files outright. Here is a list of things you can do, starting with the simplest:</p>
@@ -2026,7 +2026,7 @@ Example:<span class="style1">
 <pre class="code-example">template &lt;typename String&gt;
 void trim_front(String&amp; s, const typename String::value_type* pValues)
 {
-&nbsp; &nbsp; s.erase(0, s.find_first_not_of(pValues));
+&nbsp; &nbsp; s.erase(0, s.findFirstNotOf(pValues));
 }
 
 Example:
@@ -2035,7 +2035,7 @@ Example:
 <pre class="code-example">template &lt;typename String&gt;
 void trim_front(String&amp; s, const typename String::value_type* pValues)
 {
-&nbsp; &nbsp; s.resize(s.find_last_not_of(pValues) + 1);
+&nbsp; &nbsp; s.resize(s.findLastNotOf(pValues) + 1);
 }
 
 Example:
@@ -2077,14 +2077,14 @@ size_t tokenize(const String&amp; s, const typename String::value_type* pDelimit
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String* resultArray, size_t resultArraySize)
 {
 &nbsp;&nbsp;&nbsp; size_t n = 0;
-&nbsp;&nbsp;&nbsp; typename String::size_type lastPos = s.find_first_not_of(pDelimiters, 0);
-&nbsp;&nbsp;&nbsp; typename String::size_type pos &nbsp; &nbsp; = s.find_first_of(pDelimiters, lastPos);
+&nbsp;&nbsp;&nbsp; typename String::size_type lastPos = s.findFirstNotOf(pDelimiters, 0);
+&nbsp;&nbsp;&nbsp; typename String::size_type pos &nbsp; &nbsp; = s.findFirstOf(pDelimiters, lastPos);
 
 &nbsp;&nbsp;&nbsp; while((n &lt; resultArraySize) &amp;&amp; (pos != String::npos) || (lastPos != String::npos))
 &nbsp;&nbsp;&nbsp; {
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; resultArray[n++].assign(s, lastPos, pos - lastPos);
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; lastPos = s.find_first_not_of(pDelimiters, pos);
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; pos &nbsp; &nbsp; = s.find_first_of(pDelimiters, lastPos);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; lastPos = s.findFirstNotOf(pDelimiters, pos);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; pos &nbsp; &nbsp; = s.findFirstOf(pDelimiters, lastPos);
 &nbsp;&nbsp;&nbsp; }
 
 &nbsp;&nbsp;&nbsp;&nbsp;return n;
@@ -2108,13 +2108,13 @@ How do your forward-declare an EASTL container?</p>
 <p class="faq-answer">Here is are some examples of how to do this:</p>
 <pre class="code-example">namespace eastl
 {
-&nbsp;&nbsp;&nbsp; template &lt;typename T, typename Allocator&gt; class basic_string;
-    typedef basic_string&lt;char, allocator&gt; string8;   <span class="code-example-comment">// Forward declare EASTL's string8 type.</span>
+&nbsp;&nbsp;&nbsp; template &lt;typename T, typename Allocator&gt; class basicString;
+    typedef basicString&lt;char, allocator&gt; string8;   <span class="code-example-comment">// Forward declare EASTL's string8 type.</span>
 
 &nbsp;&nbsp;&nbsp; template &lt;typename T, typename Allocator&gt; class vector;
     typedef vector&lt;char, allocator&gt; CharArray;
 
-&nbsp;&nbsp;&nbsp; template &lt;typename Value, typename Hash, typename Predicate, typename Allocator, bool bCacheHashCode&gt; class hash_set;
+&nbsp;&nbsp;&nbsp; template &lt;typename Value, typename Hash, typename Predicate, typename Allocator, bool bCacheHashCode&gt; class hashSet;
 
 &nbsp;&nbsp;&nbsp; template &lt;typename Key, typename T, typename Compare, typename Allocator&gt; class map;
 }</pre>
@@ -2123,7 +2123,7 @@ How do your forward-declare an EASTL container?</p>
 How do I make two containers share a memory pool?</p>
 <p class="faq-answer">EASTL (and std STL) allocators are specified by value semantics and not reference semantics. Value semantics is more powerful (because a value can also be a reference, but not the other way around), but is not always what people expects if they're used to writing things the other way.</p>
 <p class="faq-answer">Here is some example code:</p>
-<pre class="code-example">struct fixed_pool_reference<br>{<br>public:<br>    fixed_pool_reference()<br>    {<br>        mpFixedPool = NULL;<br>    }<br> <br>    fixed_pool_reference(eastl::fixed_pool&amp; fixedPool)<br>    {<br>        mpFixedPool = &amp;fixedPool;<br>    }<br> <br>    fixed_pool_reference(const fixed_pool_reference&amp; x)<br>    {<br>        mpFixedPool = x.mpFixedPool;<br>    }<br> <br>    fixed_pool_reference&amp; operator=(const fixed_pool_reference&amp; x)<br>    {<br>        mpFixedPool = x.mpFixedPool;<br>        return *this;<br>    }<br> <br>    void* allocate(size_t /*n*/, int /*flags*/ = 0)<br>    {<br>        return mpFixedPool-&gt;allocate();<br>    }<br> <br>    void* allocate(size_t /*n*/, size_t /*alignment*/, size_t /*offset*/, int /*flags*/ = 0)<br>    {<br>        return mpFixedPool-&gt;allocate();<br>    }<br> <br>    void deallocate(void* p, size_t /*n*/)<br>    {<br>        return mpFixedPool-&gt;deallocate(p);<br>    }<br> <br>    const char* get_name() const<br>    {<br>        return &quot;fixed_pool_reference&quot;;<br>    }<br> <br>    void set_name(const char* /*pName*/)<br>    {<br>    }<br> <br>protected:<br>    friend bool operator==(const fixed_pool_reference&amp; a, const fixed_pool_reference&amp; b);<br>    friend bool operator!=(const fixed_pool_reference&amp; a, const fixed_pool_reference&amp; b);<br> <br>    eastl::fixed_pool* mpFixedPool;<br>};
+<pre class="code-example">struct fixed_pool_reference<br>{<br>public:<br>    fixed_pool_reference()<br>    {<br>        mpFixedPool = NULL;<br>    }<br> <br>    fixed_pool_reference(eastl::fixed_pool&amp; fixedPool)<br>    {<br>        mpFixedPool = &amp;fixedPool;<br>    }<br> <br>    fixed_pool_reference(const fixed_pool_reference&amp; x)<br>    {<br>        mpFixedPool = x.mpFixedPool;<br>    }<br> <br>    fixed_pool_reference&amp; operator=(const fixed_pool_reference&amp; x)<br>    {<br>        mpFixedPool = x.mpFixedPool;<br>        return *this;<br>    }<br> <br>    void* allocate(size_t /*n*/, int /*flags*/ = 0)<br>    {<br>        return mpFixedPool-&gt;allocate();<br>    }<br> <br>    void* allocate(size_t /*n*/, size_t /*alignment*/, size_t /*offset*/, int /*flags*/ = 0)<br>    {<br>        return mpFixedPool-&gt;allocate();<br>    }<br> <br>    void deallocate(void* p, size_t /*n*/)<br>    {<br>        return mpFixedPool-&gt;deallocate(p);<br>    }<br> <br>    const char* getName() const<br>    {<br>        return &quot;fixed_pool_reference&quot;;<br>    }<br> <br>    void setName(const char* /*pName*/)<br>    {<br>    }<br> <br>protected:<br>    friend bool operator==(const fixed_pool_reference&amp; a, const fixed_pool_reference&amp; b);<br>    friend bool operator!=(const fixed_pool_reference&amp; a, const fixed_pool_reference&amp; b);<br> <br>    eastl::fixed_pool* mpFixedPool;<br>};
 
 inline bool operator==(const fixed_pool_reference&amp; a, const fixed_pool_reference&amp; b)
 {
@@ -2142,14 +2142,14 @@ eastl::fixed_pool  myPool(buffer, sizeof(buffer), sizeof(Int::node_type), 2);
 IntList myList1(myPool);
 IntList myList2(myPool);
            
-myList1.push_back(37);
-myList2.push_back(39);</pre>
+myList1.pushBack(37);
+myList2.pushBack(39);</pre>
 <p class="faq-question"><a name="Cont.28"></a>Cont.28
 Can I use a std (STL) allocator with EASTL?</p>
 <p class="faq-answer">No. EASTL allocators are similar in interface to std STL allocators, but not 100% compatible. If it was possible to make them compatible with std STL allocators but also match the design of EASTL then compatibility would exist. The primary reasons for lack of compatibility are:</p>
 <ul>
   <li>EASTL allocators have a different allocate function signature.</li>
-  <li>EASTL allocators have as many as four extra required functions: ctor(name), get_name(), set_name(), allocate(size, align, offset).</li>
+  <li>EASTL allocators have as many as four extra required functions: ctor(name), getName(), setName(), allocate(size, align, offset).</li>
   <li>EASTL allocators have an additional allocate function specifically for aligned allocations, as listed directly above.</li>
 </ul>
 <p class="faq-question"><a name="Cont.29" id="Cont.29"></a>What are the requirements of classes stored in containers?</p>
@@ -2235,7 +2235,7 @@ Why don't algorithms take a container as an argument instead of iterators? A con
 <p class="faq-answer">Providing additional algorithms that use containers would introduce redundancy with respect to the existing algorithms that use iterators.</p>
 <p class="faq-question"><a name="Algo.6"></a>Algo.6
 Given a container of pointers, how do I find an element by value (instead of by pointer)?</p>
-<p class="faq-answer">Functions such as&nbsp;find_if help you find a T element in a container of Ts. But if you have a container of pointers such as vector&lt;Widget*&gt;, these functions will enable you to find an element that matches a given Widget* pointer, but they don't let you find an element that matches a given Widget object.</p>
+<p class="faq-answer">Functions such as&nbsp;findIf help you find a T element in a container of Ts. But if you have a container of pointers such as vector&lt;Widget*&gt;, these functions will enable you to find an element that matches a given Widget* pointer, but they don't let you find an element that matches a given Widget object.</p>
 <p class="faq-answer">You can write your own iterating 'for' loop and compare values, or you can use a generic function object to do the work if this is a common task:</p>
 <pre class="code-example">template&lt;typename T&gt;
 struct dereferenced_equal
@@ -2248,7 +2248,7 @@ struct dereferenced_equal
 
 ...
 
-find_if(container.begin(), container.end(),&nbsp;dereferenced_equal&lt;Widget&gt;(someWidget));</pre>
+findIf(container.begin(), container.end(),&nbsp;dereferenced_equal&lt;Widget&gt;(someWidget));</pre>
 
 <p class="faq-question"><a name="Algo.7"></a>Algo.7
 When do stored objects need to support <small><span style="font-family: Courier New;">operator &lt;</span></small> vs. when do they need to support <small><span style="font-family: Courier New;">operator ==</span></small>?</p>
@@ -2261,9 +2261,9 @@ When do stored objects need to support <small><span style="font-family: Courier 
 vector&lt;TestObject*&gt; topArray;
 
 for(eastl_size_t i = 0; i &lt; 32; i++)
-   toArray.push_back(TestObject(rng.RandLimit(20)));
+   toArray.pushBack(TestObject(rng.RandLimit(20)));
 for(eastl_size_t i = 0; i &lt; 32; i++) // This needs to be a second loop because the addresses might change in the first loop due to container resizing.
-   topArray.push_back(&amp;toArray[i]);
+   topArray.pushBack(&amp;toArray[i]);
 </span>
 struct TestObjectPtrCompare
 {
@@ -2271,15 +2271,15 @@ struct TestObjectPtrCompare
         { return a-&gt;mX &lt; a-&gt;mX; }
 };
 
-quick_sort(topArray.begin(), topArray.end(), TestObjectPtrCompare());</pre>
+quickSort(topArray.begin(), topArray.end(), TestObjectPtrCompare());</pre>
 <p class="faq-answer">Array indexes</p>
 <pre class="code-example"><span class="style4">vector&lt;TestObject&gt;   toArray;
 vector&lt;eastl_size_t&gt; toiArray;
 
 for(eastl_size_t i = 0; i < 32; i++)
 {
-    toArray.push_back(TestObject(rng.RandLimit(20)));
-    toiArray.push_back(i);
+    toArray.pushBack(TestObject(rng.RandLimit(20)));
+    toiArray.pushBack(i);
 }</span>
 
 struct TestObjectIndexCompare
@@ -2294,7 +2294,7 @@ struct TestObjectIndexCompare
        { return (*mpArray)[a] &lt; (*mpArray)[b]; }
 };
 
-quick_sort(toiArray.begin(), toiArray.end(), TestObjectIndexCompare(&toArray));
+quickSort(toiArray.begin(), toiArray.end(), TestObjectIndexCompare(&toArray));
 </pre>
 <p class="faq-answer">Array indexes (simpler version using toArray as a global variable) </p>
 <pre class="code-example"><span class="style4">vector&lt;TestObject&gt;   toArray;
@@ -2302,8 +2302,8 @@ vector&lt;eastl_size_t&gt; toiArray;
 
 for(eastl_size_t i = 0; i < 32; i++)
 {
-    toArray.push_back(TestObject(rng.RandLimit(20)));
-    toiArray.push_back(i);
+    toArray.pushBack(TestObject(rng.RandLimit(20)));
+    toiArray.pushBack(i);
 }</span>
 
 struct TestObjectIndexCompare
@@ -2312,7 +2312,7 @@ struct TestObjectIndexCompare
        { return toArray[a] &lt; toArray[b]; }
 };
 
-quick_sort(toiArray.begin(), toiArray.end(), TestObjectIndexCompare(&toArray));</pre>
+quickSort(toiArray.begin(), toiArray.end(), TestObjectIndexCompare(&toArray));</pre>
 <h2>Iterators</h2>
 <p class="faq-question"><a name="Iter.1"></a>Iter.1
 What's the difference between iterator, const iterator, and const_iterator?</p>
@@ -2373,7 +2373,7 @@ while(i != intSet.end())
 }</pre>
 <p class="faq-question"><a name="Iter.4"></a>Iter.4
 What is an insert_iterator?</p>
-<p class="faq-answer">An insert_iterator is a utility class which is like an iterator except that when you assign a value to it, the insert_iterator inserts the value into the container (via insert()) and increments the iterator. Similarly, there are front_insert_iterator and back_insert_iterator, which are similar to insert_iterator except that assigning a value to them causes then to call push_front and push_back, respectively, on the container. These utilities may seem a slightly abstract, but they have uses in generic programming.<br>
+<p class="faq-answer">An insert_iterator is a utility class which is like an iterator except that when you assign a value to it, the insert_iterator inserts the value into the container (via insert()) and increments the iterator. Similarly, there are front_insert_iterator and back_insert_iterator, which are similar to insert_iterator except that assigning a value to them causes then to call pushFront and pushBack, respectively, on the container. These utilities may seem a slightly abstract, but they have uses in generic programming.<br>
 </p>
 <hr style="width: 100%; height: 2px;">
 End of document<br>

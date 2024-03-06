@@ -11,9 +11,6 @@
 #endif
 
 
-#include "atomic_push_compiler_options.h"
-
-
 namespace eastl
 {
 
@@ -22,42 +19,53 @@ namespace internal
 {
 
 
+// 'class' : multiple assignment operators specified
+EA_DISABLE_VC_WARNING(4522);
+
+// misaligned atomic operation may incur significant performance penalty
+// The above warning is emitted in earlier versions of clang incorrectly.
+// All eastl::atomic<T> objects are size aligned.
+// This is static and runtime asserted.
+// Thus we disable this warning.
+EA_DISABLE_CLANG_WARNING(-Watomic-alignment);
+
+
 #define EASTL_ATOMIC_SIZE_ALIGNED_STATIC_ASSERT_CMPXCHG_IMPL(funcName)	\
 	template <typename OrderSuccess, typename OrderFailure>				\
-	bool funcName(T& expected, T desired,								\
-				  OrderSuccess orderSuccess,							\
-				  OrderFailure orderFailure) EASTL_NOEXCEPT				\
+	bool funcName(T& /*expected*/, T /*desired*/,						\
+				  OrderSuccess /*orderSuccess*/,						\
+				  OrderFailure /*orderFailure*/) EASTL_NOEXCEPT			\
 	{																	\
 		EASTL_ATOMIC_STATIC_ASSERT_INVALID_MEMORY_ORDER(T);				\
 		return false;													\
 	}																	\
 																		\
 	template <typename OrderSuccess, typename OrderFailure>				\
-	bool funcName(T& expected, T desired,								\
-				  OrderSuccess orderSuccess,							\
-				  OrderFailure orderFailure) volatile EASTL_NOEXCEPT		\
+	bool funcName(T& /*expected*/, T /*desired*/,						\
+				  OrderSuccess /*orderSuccess*/,						\
+				  OrderFailure /*orderFailure*/) volatile EASTL_NOEXCEPT	\
 	{																	\
 		EASTL_ATOMIC_STATIC_ASSERT_VOLATILE_MEM_FN(T);					\
 		return false;													\
 	}																	\
 																		\
 	template <typename Order>											\
-	bool funcName(T& expected, T desired,								\
-				  Order order) EASTL_NOEXCEPT								\
+	bool funcName(T& /*expected*/, T /*desired*/,						\
+				  Order /*order*/) EASTL_NOEXCEPT							\
 	{																	\
 		EASTL_ATOMIC_STATIC_ASSERT_INVALID_MEMORY_ORDER(T);				\
 		return false;													\
 	}																	\
 																		\
 	template <typename Order>											\
-	bool funcName(T& expected, T desired,								\
-				  Order order) volatile EASTL_NOEXCEPT						\
+	bool funcName(T& /*expected*/, T /*desired*/,						\
+				  Order /*order*/) volatile EASTL_NOEXCEPT					\
 	{																	\
 		EASTL_ATOMIC_STATIC_ASSERT_VOLATILE_MEM_FN(T);					\
 		return false;													\
 	}																	\
 																		\
-	bool funcName(T& expected, T desired) volatile EASTL_NOEXCEPT			\
+	bool funcName(T& /*expected*/, T /*desired*/) volatile EASTL_NOEXCEPT	\
 	{																	\
 		EASTL_ATOMIC_STATIC_ASSERT_VOLATILE_MEM_FN(T);					\
 		return false;													\
@@ -75,16 +83,14 @@ namespace internal
 	{
 	public: /* ctors */
 
-		atomic_size_aligned(T desired) EASTL_NOEXCEPT
+		EA_CONSTEXPR atomic_size_aligned(T desired) EASTL_NOEXCEPT
 			: mAtomic{ desired }
 		{
-			EASTL_ATOMIC_ASSERT_ALIGNED(sizeof(T));
 		}
 
-		atomic_size_aligned() EASTL_NOEXCEPT
-			: mAtomic{} /* Zero-Initialized */
+		EA_CONSTEXPR atomic_size_aligned() EASTL_NOEXCEPT_IF(eastl::is_nothrow_default_constructible_v<T>)
+			: mAtomic{} /* Value-Initialize which will Zero-Initialize Trivial Constructible types */
 		{
-			EASTL_ATOMIC_ASSERT_ALIGNED(sizeof(T));
 		}
 
 		atomic_size_aligned(const atomic_size_aligned&) EASTL_NOEXCEPT = delete;
@@ -92,18 +98,18 @@ namespace internal
 	public: /* store */
 
 		template <typename Order>
-		void store(T desired, Order order) EASTL_NOEXCEPT
+		void store(T /*desired*/, Order /*order*/) EASTL_NOEXCEPT
 		{
 			EASTL_ATOMIC_STATIC_ASSERT_INVALID_MEMORY_ORDER(T);
 		}
 
 		template <typename Order>
-		void store(T desired, Order order) volatile EASTL_NOEXCEPT
+		void store(T /*desired*/, Order /*order*/) volatile EASTL_NOEXCEPT
 		{
 			EASTL_ATOMIC_STATIC_ASSERT_VOLATILE_MEM_FN(T);
 		}
 
-		void store(T desired) volatile EASTL_NOEXCEPT
+		void store(T /*desired*/) volatile EASTL_NOEXCEPT
 		{
 			EASTL_ATOMIC_STATIC_ASSERT_VOLATILE_MEM_FN(T);
 		}
@@ -111,13 +117,13 @@ namespace internal
 	public: /* load */
 
 		template <typename Order>
-		T load(Order order) const EASTL_NOEXCEPT
+		T load(Order /*order*/) const EASTL_NOEXCEPT
 		{
 			EASTL_ATOMIC_STATIC_ASSERT_INVALID_MEMORY_ORDER(T);
 		}
 
 		template <typename Order>
-		T load(Order order) const volatile EASTL_NOEXCEPT
+		T load(Order /*order*/) const volatile EASTL_NOEXCEPT
 		{
 			EASTL_ATOMIC_STATIC_ASSERT_VOLATILE_MEM_FN(T);
 		}
@@ -130,18 +136,18 @@ namespace internal
 	public: /* exchange */
 
 		template <typename Order>
-		T exchange(T desired, Order order) EASTL_NOEXCEPT
+		T exchange(T /*desired*/, Order /*order*/) EASTL_NOEXCEPT
 		{
 			EASTL_ATOMIC_STATIC_ASSERT_INVALID_MEMORY_ORDER(T);
 		}
 
 		template <typename Order>
-		T exchange(T desired, Order order) volatile EASTL_NOEXCEPT
+		T exchange(T /*desired*/, Order /*order*/) volatile EASTL_NOEXCEPT
 		{
 			EASTL_ATOMIC_STATIC_ASSERT_VOLATILE_MEM_FN(T);
 		}
 
-		T exchange(T desired) volatile EASTL_NOEXCEPT
+		T exchange(T /*desired*/) volatile EASTL_NOEXCEPT
 		{
 			EASTL_ATOMIC_STATIC_ASSERT_VOLATILE_MEM_FN(T);
 		}
@@ -156,13 +162,13 @@ namespace internal
 
 	public: /* assignment operator */
 
-		T operator =(T desired) volatile EASTL_NOEXCEPT
+		T operator=(T /*desired*/) volatile EASTL_NOEXCEPT
 		{
 			EASTL_ATOMIC_STATIC_ASSERT_VOLATILE_MEM_FN(T);
 		}
 
-		atomic_size_aligned& operator =(const atomic_size_aligned&)          EASTL_NOEXCEPT = delete;
-		atomic_size_aligned& operator =(const atomic_size_aligned&) volatile EASTL_NOEXCEPT = delete;
+		atomic_size_aligned& operator=(const atomic_size_aligned&)          EASTL_NOEXCEPT = delete;
+		atomic_size_aligned& operator=(const atomic_size_aligned&) volatile EASTL_NOEXCEPT = delete;
 
 	protected: /* Accessors */
 
@@ -186,14 +192,14 @@ namespace internal
 		EASTL_ALIGN(sizeof(T)) mutable T mAtomic;
 	};
 
+EA_RESTORE_VC_WARNING();
+
+EA_RESTORE_CLANG_WARNING();
+
 
 } // namespace internal
 
 
 } // namespace eastl
-
-
-#include "atomic_pop_compiler_options.h"
-
 
 #endif /* EASTL_ATOMIC_INTERNAL_SIZE_ALIGNED_H */

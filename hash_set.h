@@ -94,7 +94,7 @@ namespace eastl
 	///
 	/// Example find_as usage (namespaces omitted for brevity):
 	///     hashSet<string> hashSet;
-	///     i = hashSet.find_as("hello", hash<char*>(), equal_to_2<string, char*>());
+	///     i = hashSet.find_as("hello", hash<char*>(), equal_to<>());
 	///
 	template <typename Value, typename Hash = eastl::hash<Value>, typename Predicate = eastl::equal_to<Value>, 
 			  typename Allocator = EASTLAllocatorType, bool bCacheHashCode = false>
@@ -117,8 +117,19 @@ namespace eastl
 		/// hashSet
 		///
 		/// Default constructor.
-		/// 
-		explicit hashSet(const allocator_type& allocator = EASTL_HASH_SET_DEFAULT_ALLOCATOR)
+		///
+		hashSet()
+			: this_type(EASTL_HASH_SET_DEFAULT_ALLOCATOR)
+		{
+			// Empty
+		}
+
+
+		/// hashSet
+		///
+		/// Constructor which creates an empty container with allocator.
+		///
+		explicit hashSet(const allocator_type& allocator)
 			: base_type(0, Hash(), mod_range_hashing(), default_ranged_hash(), Predicate(), eastl::useSelf<Value>(), allocator)
 		{
 			// Empty
@@ -207,8 +218,9 @@ namespace eastl
 	///
 	/// https://en.cppreference.com/w/cpp/container/unordered_set/erase_if
 	template <typename Value, typename Hash, typename Predicate, typename Allocator, bool bCacheHashCode, typename UserPredicate>
-	void erase_if(eastl::hashSet<Value, Hash, Predicate, Allocator, bCacheHashCode>& c, UserPredicate predicate)
+	typename eastl::hashSet<Value, Hash, Predicate, Allocator, bCacheHashCode>::size_type erase_if(eastl::hashSet<Value, Hash, Predicate, Allocator, bCacheHashCode>& c, UserPredicate predicate)
 	{
+		auto oldSize = c.size();
 		// Erases all elements that satisfy the predicate pred from the container.
 		for (auto i = c.begin(), last = c.end(); i != last;)
 		{
@@ -221,6 +233,7 @@ namespace eastl
 				++i;
 			}
 		}
+		return oldSize - c.size();
 	}
 
 
@@ -341,8 +354,9 @@ namespace eastl
 	///
 	/// https://en.cppreference.com/w/cpp/container/unordered_multiset/erase_if
 	template <typename Value, typename Hash, typename Predicate, typename Allocator, bool bCacheHashCode, typename UserPredicate>
-	void erase_if(eastl::hashMultiset<Value, Hash, Predicate, Allocator, bCacheHashCode>& c, UserPredicate predicate)
+	typename eastl::hashMultiset<Value, Hash, Predicate, Allocator, bCacheHashCode>::size_type erase_if(eastl::hashMultiset<Value, Hash, Predicate, Allocator, bCacheHashCode>& c, UserPredicate predicate)
 	{
+		auto oldSize = c.size();
 		// Erases all elements that satisfy the predicate pred from the container.
 		for (auto i = c.begin(), last = c.end(); i != last;)
 		{
@@ -355,6 +369,7 @@ namespace eastl
 				++i;
 			}
 		}
+		return oldSize - c.size();
 	}
 
 
@@ -386,13 +401,14 @@ namespace eastl
 		return true;
 	}
 
+#if !defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
 	template <typename Value, typename Hash, typename Predicate, typename Allocator, bool bCacheHashCode>
 	inline bool operator!=(const hashSet<Value, Hash, Predicate, Allocator, bCacheHashCode>& a, 
 						   const hashSet<Value, Hash, Predicate, Allocator, bCacheHashCode>& b)
 	{
 		return !(a == b);
 	}
-
+#endif
 
 	template <typename Value, typename Hash, typename Predicate, typename Allocator, bool bCacheHashCode>
 	inline bool operator==(const hashMultiset<Value, Hash, Predicate, Allocator, bCacheHashCode>& a, 
@@ -443,12 +459,14 @@ namespace eastl
 		return true;
 	}
 
+#if !defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
 	template <typename Value, typename Hash, typename Predicate, typename Allocator, bool bCacheHashCode>
 	inline bool operator!=(const hashMultiset<Value, Hash, Predicate, Allocator, bCacheHashCode>& a, 
 						   const hashMultiset<Value, Hash, Predicate, Allocator, bCacheHashCode>& b)
 	{
 		return !(a == b);
 	}
+#endif
 
 } // namespace eastl
 

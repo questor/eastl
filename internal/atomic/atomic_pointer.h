@@ -11,9 +11,6 @@
 #endif
 
 
-#include "atomic_push_compiler_options.h"
-
-
 namespace eastl
 {
 
@@ -22,23 +19,34 @@ namespace internal
 {
 
 
+// 'class' : multiple assignment operators specified
+EA_DISABLE_VC_WARNING(4522);
+
+// misaligned atomic operation may incur significant performance penalty
+// The above warning is emitted in earlier versions of clang incorrectly.
+// All eastl::atomic<T> objects are size aligned.
+// This is static and runtime asserted.
+// Thus we disable this warning.
+EA_DISABLE_CLANG_WARNING(-Watomic-alignment);
+
+
 	template <typename T, unsigned width = sizeof(T)>
 	struct atomic_pointer_base;
 
 #define EASTL_ATOMIC_POINTER_STATIC_ASSERT_FUNCS_IMPL(funcName)		\
 	template <typename Order>										\
-	T* funcName(ptrdiff_t arg, Order order) EASTL_NOEXCEPT				\
+	T* funcName(ptrdiff_t /*arg*/, Order /*order*/) EASTL_NOEXCEPT		\
 	{																\
 		EASTL_ATOMIC_STATIC_ASSERT_INVALID_MEMORY_ORDER(T);			\
 	}																\
 																	\
 	template <typename Order>										\
-	T* funcName(ptrdiff_t arg, Order order) volatile EASTL_NOEXCEPT	\
+	T* funcName(ptrdiff_t /*arg*/, Order /*order*/) volatile EASTL_NOEXCEPT	\
 	{																\
 		EASTL_ATOMIC_STATIC_ASSERT_VOLATILE_MEM_FN(T);				\
 	}																\
 																	\
-	T* funcName(ptrdiff_t arg) volatile EASTL_NOEXCEPT					\
+	T* funcName(ptrdiff_t /*arg*/) volatile EASTL_NOEXCEPT				\
 	{																\
 		EASTL_ATOMIC_STATIC_ASSERT_VOLATILE_MEM_FN(T);				\
 	}
@@ -55,7 +63,7 @@ namespace internal
 	}
 
 #define EASTL_ATOMIC_POINTER_STATIC_ASSERT_ASSIGNMENT_OPERATOR_IMPL(operatorOp) \
-	T* operator operatorOp(ptrdiff_t arg) volatile EASTL_NOEXCEPT			\
+	T* operator operatorOp(ptrdiff_t /*arg*/) volatile EASTL_NOEXCEPT		\
 	{																	\
 		EASTL_ATOMIC_STATIC_ASSERT_VOLATILE_MEM_FN(T);					\
 	}
@@ -70,19 +78,21 @@ namespace internal
 
 	public: /* ctors */
 
-		atomic_pointer_base(T* desired) EASTL_NOEXCEPT
+		EA_CONSTEXPR atomic_pointer_base(T* desired) EASTL_NOEXCEPT
 			: Base{ desired }
 		{
 		}
 
-		atomic_pointer_base() EASTL_NOEXCEPT = default;
+		EA_CONSTEXPR atomic_pointer_base() EASTL_NOEXCEPT = default;
+
+		atomic_pointer_base(const atomic_pointer_base&) EASTL_NOEXCEPT = delete;
 
 	public: /* assignment operators */
 
-		using Base::operator =;
+		using Base::operator=;
 
-		atomic_pointer_base& operator =(const atomic_pointer_base&)          EASTL_NOEXCEPT = delete;
-		atomic_pointer_base& operator =(const atomic_pointer_base&) volatile EASTL_NOEXCEPT = delete;
+		atomic_pointer_base& operator=(const atomic_pointer_base&)          EASTL_NOEXCEPT = delete;
+		atomic_pointer_base& operator=(const atomic_pointer_base&) volatile EASTL_NOEXCEPT = delete;
 
 	public: /* fetch_add */
 
@@ -201,19 +211,21 @@ namespace internal
 																		\
 	public: /* ctors */													\
 																		\
-		atomic_pointer_width(T* desired) EASTL_NOEXCEPT					\
+		EA_CONSTEXPR atomic_pointer_width(T* desired) EASTL_NOEXCEPT		\
 			: Base{ desired }											\
 		{																\
 		}																\
 																		\
-		atomic_pointer_width() EASTL_NOEXCEPT = default;					\
+		EA_CONSTEXPR atomic_pointer_width() EASTL_NOEXCEPT = default;		\
+																		\
+		atomic_pointer_width(const atomic_pointer_width&) EASTL_NOEXCEPT = delete; \
 																		\
 	public: /* assignment operators */									\
 																		\
-		using Base::operator =;											\
+		using Base::operator=;											\
 																		\
-		atomic_pointer_width& operator =(const atomic_pointer_width&)          EASTL_NOEXCEPT = delete; \
-		atomic_pointer_width& operator =(const atomic_pointer_width&) volatile EASTL_NOEXCEPT = delete; \
+		atomic_pointer_width& operator=(const atomic_pointer_width&)          EASTL_NOEXCEPT = delete; \
+		atomic_pointer_width& operator=(const atomic_pointer_width&) volatile EASTL_NOEXCEPT = delete; \
 																		\
 	public: /* fetch_add */												\
 																		\
@@ -264,14 +276,14 @@ namespace internal
 	EASTL_ATOMIC_POINTER_WIDTH_SPECIALIZE(8, 64)
 #endif
 
+EA_RESTORE_VC_WARNING();
+
+EA_RESTORE_CLANG_WARNING();
+
 
 } // namespace internal
 
 
 } // namespace eastl
-
-
-#include "atomic_pop_compiler_options.h"
-
 
 #endif /* EASTL_ATOMIC_INTERNAL_POINTER_H */

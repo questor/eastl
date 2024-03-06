@@ -111,7 +111,7 @@ namespace eastl
 			inline explicit optional_storage(in_place_t, Args&&... args)
 			    : engaged(true)
 			{
-				::new (eastl::addressof(val)) T{std::forward<Args>(args)...};
+				::new (eastl::addressof(val)) T{eastl::forward<Args>(args)...};
 			}
 
 			template <typename U,
@@ -219,6 +219,10 @@ namespace eastl
 		}
 
 		optional(const optional& other)
+			// This silences the warning about the base class not being explicitly initialised in the copy constructor
+			// We call the default constructor instead of the copy constructor because we're about to stomp the memory
+			// that would be copied
+			: base_type()
 		{
 			engaged = other.engaged;
 
@@ -230,6 +234,8 @@ namespace eastl
 		}
 
 		optional(optional&& other)
+			// See comments above
+			: base_type()
 		{
 			engaged = other.engaged;
 
@@ -552,6 +558,17 @@ namespace eastl
 	inline EA_CONSTEXPR bool operator>=(const optional<T>& lhs, const optional<T>& rhs)
 		{ return !(lhs < rhs);	}
 
+#if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
+	template <class T, class U=T> requires std::three_way_comparable_with<T, U>
+	inline EA_CONSTEXPR std::compare_three_way_result_t<T, U> operator<=>(const optional<T>& lhs, const optional<U>& rhs)
+		{
+		    if (lhs && rhs)
+		    {
+		        return *lhs <=> *rhs;
+		    }
+		    return lhs.has_value() <=> rhs.has_value();
+		}
+#endif
 
     ///////////////////////////////////////////////////////////////////////////////
 	// Compare an optional object with a nullopt
@@ -559,7 +576,11 @@ namespace eastl
     template <class T>
     inline EA_CONSTEXPR bool operator==(const optional<T>& opt, eastl::nullopt_t) EASTL_NOEXCEPT
 		{ return !opt; }
-
+#if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
+    template <class T>
+    inline EA_CONSTEXPR std::strong_ordering operator<=>(const optional<T>& opt, eastl::nullopt_t) EASTL_NOEXCEPT
+		{ return opt.has_value() <=> false; }
+#else
     template <class T>
     inline EA_CONSTEXPR bool operator==(eastl::nullopt_t, const optional<T>& opt) EASTL_NOEXCEPT
 		{ return !opt; }
@@ -603,7 +624,7 @@ namespace eastl
     template <class T>
     inline EA_CONSTEXPR bool operator>=(eastl::nullopt_t, const optional<T>& opt) EASTL_NOEXCEPT
 		{ return !opt; }
-
+#endif
 
     ///////////////////////////////////////////////////////////////////////////////
     // Compare an optional object with a T
@@ -656,6 +677,11 @@ namespace eastl
     inline EA_CONSTEXPR bool operator>=(const T& value, const optional<T>& opt)
 		{ return !(value < opt);  }
 
+#if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
+    template <class T, class U=T> requires std::three_way_comparable_with<T, U>
+    inline EA_CONSTEXPR std::compare_three_way_result_t<T, U> operator<=>(const optional<T>& opt, const U& value)
+		{ return (opt.has_value()) ? *opt <=> value : std::strong_ordering::less; }
+#endif
 
     ///////////////////////////////////////////////////////////////////////////////
 	/// hash
@@ -663,10 +689,10 @@ namespace eastl
 	template <typename T>
 	struct hash<eastl::optional<T>>
 	{
-		typedef eastl::optional<T> argument_type;
-		typedef size_t result_type;
+		EASTL_REMOVE_AT_2024_APRIL typedef eastl::optional<T> argument_type;
+		EASTL_REMOVE_AT_2024_APRIL typedef size_t result_type;
 
-	    result_type operator()(const argument_type& opt) const EASTL_NOEXCEPT
+		size_t operator()(const eastl::optional<T>& opt) const EASTL_NOEXCEPT
 	    {
 		    if (opt)
 			    return eastl::hash<T>()(*opt);

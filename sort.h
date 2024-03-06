@@ -288,9 +288,8 @@ namespace eastl
 
 		if(first != last)
 		{
-			RandomAccessIterator iCurrent, iBack, iSorted, iInsertFirst;
-			difference_type      nSize  = last - first;
-			difference_type      nSpace = 1; // nSpace is the 'h' value of the ShellSort algorithm.
+			const difference_type   nSize  = last - first;
+			difference_type         nSpace = 1; // nSpace is the 'h' value of the ShellSort algorithm.
 
 			while(nSpace < nSize)
 				nSpace = (nSpace * 3) + 1; // This is the Knuth 'h' sequence: 1, 4, 13, 40, 121, 364, 1093, 3280, 9841, 29524, 88573, 265720, 797161, 2391484, 7174453, 21523360, 64570081, 193710244, 
@@ -299,13 +298,18 @@ namespace eastl
 			{
 				for(difference_type i = 0; i < nSpace; i++)
 				{
-					iInsertFirst = first + i;
+					const RandomAccessIterator iInsertFirst = first + i;
 
-					for(iSorted = iInsertFirst + nSpace; iSorted < last; iSorted += nSpace)
+					// Note: we can only move the iterator forward if we know we won't overrun the
+					// end(), otherwise we can invoke undefined behaviour.  So we need to check we
+					// have enough space before moving the iterator.
+					RandomAccessIterator iSorted = iInsertFirst;
+					while(distance(iSorted, last) > nSpace)
 					{
-						iBack = iCurrent = iSorted;
-						
-						for(iBack -= nSpace; (iCurrent != iInsertFirst) && compare(*iCurrent, *iBack); iCurrent = iBack, iBack -= nSpace)
+						iSorted += nSpace;
+
+						RandomAccessIterator iCurrent = iSorted;
+						for(RandomAccessIterator iBack = iSorted - nSpace; (iCurrent != iInsertFirst) && compare(*iCurrent, *iBack); iCurrent = iBack, iBack -= nSpace)
 						{
 							EASTL_VALIDATE_COMPARE(!compare(*iBack, *iCurrent)); // Validate that the compare function is sane.
 							eastl::iterSwap(iCurrent, iBack);
@@ -439,7 +443,7 @@ namespace eastl
 
 			if (lastSortedEnd < 1)
 			{
-				lastSortedEnd = isSorted_until<RandomAccessIterator, StrictWeakOrdering>(first, last, compare) - first;
+				lastSortedEnd = eastl::isSorted_until<RandomAccessIterator, StrictWeakOrdering>(first, last, compare) - first;
 			}
 
 			// Sort the region unless lastSortedEnd indicates it is already sorted.
@@ -1178,7 +1182,7 @@ namespace eastl
 				{
 					for(;; ++curr)
 					{
-						if(curr == (size - 1)) // If we are at the end of the data... this run is done.
+						if(curr >= (size - 1)) // If we are at the end of the data... this run is done.
 							break;
 
 						if(compare(*(first + curr), *(first + curr - 1))) // If this item is not in order... this run is done.
@@ -1189,7 +1193,7 @@ namespace eastl
 				{
 					for(;; ++curr)
 					{
-						if(curr == (size - 1))  // If we are at the end of the data... this run is done.
+						if(curr >= (size - 1))  // If we are at the end of the data... this run is done.
 							break;
 
 						if(!compare(*(first + curr), *(first + curr - 1)))  // If this item is not in order... this run is done.
@@ -1540,9 +1544,17 @@ namespace eastl
 
 		// To consider: Convert the implementation to use first/last instead of first/size.
 		const intptr_t size = (intptr_t)(last - first);
-
-		if(size < 64)
+		if (size == 0)
+		{
+			// This branch is necessary because the expression `first + 1` below is undefined
+			// behaviour when first is nullptr (for example when it is the begin() iterator of an
+			// empty vector).
+			return;
+		}
+		else if (size < 64)
+		{
 			insertionSort_already_started(first, first + size, first + 1, compare);
+		}
 		else
 		{
 			tim_sort_run   run_stack[kTimSortStackSize];
@@ -1653,8 +1665,8 @@ namespace eastl
 			IntegerType)
 		{
 			RandomAccessIterator srcFirst = first;
-			constexpr size_t numBuckets = 1 << DigitBits;
-			constexpr IntegerType bucketMask = numBuckets - 1;
+			EA_CONSTEXPR_OR_CONST size_t numBuckets = 1 << DigitBits;
+			EA_CONSTEXPR_OR_CONST IntegerType bucketMask = numBuckets - 1;
 
 			// The alignment of this variable isn't required; it merely allows the code below to be faster on some platforms.
 			uint32_t EASTL_PREFIX_ALIGN(EASTL_PLATFORM_PREFERRED_ALIGNMENT) bucketSize[numBuckets];
@@ -1662,10 +1674,10 @@ namespace eastl
 
 			RandomAccessIterator temp;
 			uint32_t i;
-
 			bool doSeparateHistogramCalculation = true;
-			uint32_t j;
-			for (j = 0; j < (8 * sizeof(IntegerType)); j += DigitBits)
+
+			constexpr uint32_t kMaxDigitBits = 8 * sizeof(IntegerType);
+			for (uint32_t j = 0; j < kMaxDigitBits; j += DigitBits)
 			{
 				if (doSeparateHistogramCalculation)
 				{
@@ -1688,7 +1700,8 @@ namespace eastl
 					doSeparateHistogramCalculation = false;
 
 					// If this is the last digit position, then don't calculate a histogram
-					if (j == (8 * sizeof(IntegerType) - DigitBits))
+					const uint32_t jNext = j + DigitBits;
+					if (jNext >= kMaxDigitBits)
 					{
 						bucketPosition[0] = 0;
 						for (i = 0; i < numBuckets - 1; i++)
@@ -1712,16 +1725,16 @@ namespace eastl
 							bucketPosition[i + 1] = bucketPosition[i] + bucketSize[i];
 							bucketSize[i] = 0;	// Clear the bucket for the next pass
 						}
+						bucketSize[numBuckets - 1] = 0; 
 
-						uint32_t jNext = j + DigitBits;
 						for (temp = srcFirst; temp != last; ++temp)
 						{
-							IntegerType key = extractKey(*temp);
+							const IntegerType key = extractKey(*temp);
 							const size_t digit = (key >> j) & bucketMask;
 							buffer[bucketPosition[digit]++] = *temp;
 
 							// Update histogram for the next scatter operation
-							++bucketSize[(extractKey(*temp) >> jNext) & bucketMask];
+							++bucketSize[(key >> jNext) & bucketMask];
 						}
 					}
 

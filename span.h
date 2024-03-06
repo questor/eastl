@@ -54,6 +54,16 @@ namespace eastl
 		//
 		template<size_t Extent, size_t Offset, size_t Count>
 		struct SubspanExtent : eastl::integral_constant<size_t, (Count != dynamic_extent ? Count : (Extent != dynamic_extent ? (Extent - Offset) : dynamic_extent))> {};
+
+		// is_eastl_array<PossiblyArray, T>
+		// 
+		// is an eastl::array<T, N> with elements T?
+		// NOT the same as is_array, which is a type trait for the C-style array type.
+		template<typename PossiblyArray, typename T>
+		struct is_eastl_array : public eastl::false_type {};
+
+		template<typename T, size_t N>
+		struct is_eastl_array<eastl::array<T, N>, T> : public eastl::true_type {};
 	}
 
 	template <typename T, size_t Extent = eastl::dynamic_extent>
@@ -76,7 +86,7 @@ namespace eastl
 		static EA_CONSTEXPR size_t extent = Extent;
 
 		// constructors / destructor
-		EA_CONSTEXPR span() EASTL_NOEXCEPT = default;
+		EA_CONSTEXPR span() EASTL_NOEXCEPT;
 		EA_CONSTEXPR span(const span& other) EASTL_NOEXCEPT = default;
 		EA_CONSTEXPR span(pointer ptr, index_type count);
 		EA_CONSTEXPR span(pointer pBegin, pointer pEnd);
@@ -86,15 +96,20 @@ namespace eastl
 		EA_CPP14_CONSTEXPR span& operator=(const span& other) EASTL_NOEXCEPT = default;
 
 		// conversion constructors for c-array and eastl::array
-		template <size_t N> EA_CONSTEXPR span(element_type (&arr)[N]) EASTL_NOEXCEPT;
-		template <size_t N> EA_CONSTEXPR span(eastl::array<value_type, N>& arr) EASTL_NOEXCEPT;
-		template <size_t N> EA_CONSTEXPR span(const eastl::array<value_type, N>& arr) EASTL_NOEXCEPT;
+		template <size_t N, typename = enable_if_t<(Extent == eastl::dynamic_extent || N == Extent)>> 
+		EA_CONSTEXPR span(element_type (&arr)[N]) EASTL_NOEXCEPT;
+
+		template <size_t N, typename = enable_if_t<(Extent == eastl::dynamic_extent || N == Extent)>>
+		EA_CONSTEXPR span(eastl::array<value_type, N>& arr) EASTL_NOEXCEPT;
+		
+		template <size_t N, typename = enable_if_t<(Extent == eastl::dynamic_extent || N == Extent)>>
+		EA_CONSTEXPR span(const eastl::array<value_type, N>& arr) EASTL_NOEXCEPT;
 
 		// SfinaeForGenericContainers
 		//
 		template <typename Container>
 		using SfinaeForGenericContainers =
-		    enable_if_t<!is_same_v<Container, span> && !is_same_v<Container, array<value_type>> &&
+		    enable_if_t<!is_same_v<Container, span> && !Internal::is_eastl_array<Container, value_type>::value &&
 		                !is_array_v<Container> &&
 		                Internal::HasSizeAndData<Container>::value &&
 		                is_convertible_v<remove_pointer_t<decltype(eastl::data(eastl::declval<Container&>()))> (*)[], element_type (*)[]>>;
@@ -198,34 +213,43 @@ namespace eastl
 	// ctor implementations
 	///////////////////////////////////////////////////////////////////////////
 
+
+	template <typename T, size_t Extent>
+	EA_CONSTEXPR span<T, Extent>::span() EASTL_NOEXCEPT
+	{
+		static_assert(Extent == dynamic_extent || Extent == 0, "impossible to default construct a span with a fixed Extent different than 0");
+	}
+
 	template <typename T, size_t Extent>
 	EA_CONSTEXPR span<T, Extent>::span(pointer ptr, index_type size)
 	    : mpData(ptr), mnSize(size)
 	{
+		EASTL_ASSERT_MSG(Extent == dynamic_extent || Extent == mnSize, "impossible to create a span with a fixed Extent different than the size of the supplied buffer");
 	}
 
 	template <typename T, size_t Extent>
 	EA_CONSTEXPR span<T, Extent>::span(pointer pBegin, pointer pEnd)
 	    : mpData(pBegin), mnSize(static_cast<index_type>(pEnd - pBegin))
 	{
+		EASTL_ASSERT_MSG(Extent == dynamic_extent || Extent == mnSize, "impossible to create a span with a fixed Extent different than the size of the supplied buffer");
 	}
 
 	template <typename T, size_t Extent>
-	template <size_t N>
+	template <size_t N, typename>
 	EA_CONSTEXPR span<T, Extent>::span(element_type(&arr)[N]) EASTL_NOEXCEPT 
 		: span(arr, static_cast<index_type>(N))
 	{
 	}
 
 	template <typename T, size_t Extent>
-	template <size_t N>
+	template <size_t N, typename>
 	EA_CONSTEXPR span<T, Extent>::span(eastl::array<value_type, N> &arr) EASTL_NOEXCEPT 
 		: span(arr.data(), arr.size())
 	{
 	}
 
 	template <typename T, size_t Extent>
-	template <size_t N>
+	template <size_t N, typename>
 	EA_CONSTEXPR span<T, Extent>::span(const eastl::array<value_type, N>& arr) EASTL_NOEXCEPT
 		: span(arr.data(), arr.size())
 	{
@@ -368,7 +392,7 @@ namespace eastl
 	template <size_t Count>
 	EA_CPP14_CONSTEXPR span<typename span<T, Extent>::element_type, Count> span<T, Extent>::first() const
 	{
-		EASTL_ASSERT_MSG(bounds_check(Count), "undefined behavior accessing out of bounds");
+		EASTL_ASSERT_MSG(Count <= size(), "undefined behavior accessing out of bounds");
 		return {data(), static_cast<index_type>(Count)};
 	}
 
@@ -376,7 +400,7 @@ namespace eastl
 	EA_CPP14_CONSTEXPR span<typename span<T, Extent>::element_type, dynamic_extent> 
 	span<T, Extent>::first(size_t sz) const
 	{
-		EASTL_ASSERT_MSG(bounds_check(sz), "undefined behavior accessing out of bounds");
+		EASTL_ASSERT_MSG(sz <= size(), "undefined behavior accessing out of bounds");
 		return {data(), static_cast<index_type>(sz)};
 	}
 
@@ -384,7 +408,7 @@ namespace eastl
 	template <size_t Count>
 	EA_CPP14_CONSTEXPR span<typename span<T, Extent>::element_type, Count> span<T, Extent>::last() const
 	{
-		EASTL_ASSERT_MSG(bounds_check(Count), "undefined behavior accessing out of bounds");
+		EASTL_ASSERT_MSG(Count <= size(), "undefined behavior accessing out of bounds");
 		return {data() + size() - Count, static_cast<index_type>(Count)};
 	}
 
@@ -392,7 +416,7 @@ namespace eastl
 	EA_CPP14_CONSTEXPR span<typename span<T, Extent>::element_type, dynamic_extent> 
 	span<T, Extent>::last(size_t sz) const
 	{
-		EASTL_ASSERT_MSG(bounds_check(sz), "undefined behavior accessing out of bounds");
+		EASTL_ASSERT_MSG(sz <= size(), "undefined behavior accessing out of bounds");
 		return {data() + size() - sz, static_cast<index_type>(sz)};
 	}
 
@@ -401,7 +425,7 @@ namespace eastl
 	EA_CONSTEXPR span<typename span<T, Extent>::element_type, Internal::SubspanExtent<Extent, Offset, Count>::value>
 	span<T, Extent>::subspan() const
 	{
-		EASTL_ASSERT_MSG(bounds_check(Offset),                                  "undefined behaviour accessing out of bounds");
+		EASTL_ASSERT_MSG(Offset <= size(),                                       "undefined behaviour accessing out of bounds");
 		EASTL_ASSERT_MSG(Count == dynamic_extent || Count <= (size() - Offset), "undefined behaviour exceeding size of span");
 
 		return {data() + Offset, eastl_size_t(Count == dynamic_extent ? size() - Offset : Count)};
@@ -411,16 +435,16 @@ namespace eastl
 	EA_CONSTEXPR span<typename span<T, Extent>::element_type, dynamic_extent>
 	span<T, Extent>::subspan(size_t offset, size_t count) const
 	{
-		EASTL_ASSERT_MSG(bounds_check(offset),                                  "undefined behaviour accessing out of bounds");
+		EASTL_ASSERT_MSG(offset <= size(),                                      "undefined behaviour accessing out of bounds");
 		EASTL_ASSERT_MSG(count == dynamic_extent || count <= (size() - offset), "undefined behaviour exceeding size of span");
 
 		return {data() + offset, eastl_size_t(count == dynamic_extent ? size() - offset : count)};
 	}
 
 	template <typename T, size_t Extent>
-	EA_CONSTEXPR bool span<T, Extent>::bounds_check(size_t sz) const
+	EA_CONSTEXPR bool span<T, Extent>::bounds_check(size_t offset) const
 	{
-		return (sz >= 0 && sz < size());
+		return offset < size();
 	}
 }
 

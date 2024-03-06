@@ -186,5 +186,5 @@ extra\fart -r *.h,*.cpp make_pair makePair
 
 extra\fart -r *.h,*.cpp "<EASTL/" "<eastl/"
 extra\fart -r *.h,*.cpp "<EABase/" "<eastl/EABase/"
-                                                 
+
 extra\fart -r *.h,*.cpp "eastl/fixedAllocator.h" "eastl/fixed_allocator.h"

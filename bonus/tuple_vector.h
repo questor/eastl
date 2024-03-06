@@ -270,8 +270,8 @@ struct TupleVecLeaf
 
 	void DoInsertRange(T* pSrcBegin, T* pSrcEnd, T* pDestBegin, size_type numDataElements)
 	{
-		size_type pos = pDestBegin - mpData;
-		size_type n = pSrcEnd - pSrcBegin;
+		size_type pos = static_cast<size_type>(pDestBegin - mpData);
+		size_type n = static_cast<size_type>(pSrcEnd - pSrcBegin);
 		T* pDataEnd = mpData + numDataElements;
 		const size_type nExtra = numDataElements - pos;
 		if (n < nExtra) // If the inserted values are entirely within initialized memory (i.e. are before mpEnd)...
@@ -340,13 +340,10 @@ struct TupleVecIterCompatible<TupleTypes<Us...>, TupleTypes<Ts...>> :
 // storing - and harmoniously updating on each modification - a full tuple of pointers to the tupleVec's data
 template <eastl_size_t... Indices, typename... Ts>
 struct TupleVecIter<index_sequence<Indices...>, Ts...>
-	: public iterator<random_access_iterator_tag, tuple<Ts...>, eastl_size_t, tuple<Ts*...>, tuple<Ts&...>>
 {
 private:
 	typedef TupleVecIter<index_sequence<Indices...>, Ts...> this_type;
 	typedef eastl_size_t size_type;
-
-	typedef iterator<random_access_iterator_tag, tuple<Ts...>, eastl_size_t, tuple<Ts*...>, tuple<Ts&...>> iter_type;
 
 	template<typename U, typename... Us> 
 	friend struct TupleVecIter;
@@ -357,11 +354,11 @@ private:
 	template<typename U>
 	friend class move_iterator;
 public:
-	typedef typename iter_type::iterator_category iterator_category;
-	typedef typename iter_type::value_type value_type;
-	typedef typename iter_type::difference_type difference_type;
-	typedef typename iter_type::pointer pointer;
-	typedef typename iter_type::reference reference;
+	typedef EASTL_ITC_NS::random_access_iterator_tag iterator_category;
+	typedef tuple<Ts...> value_type;
+	typedef eastl_size_t difference_type;
+	typedef tuple<Ts*...> pointer;
+	typedef tuple<Ts&... > reference;
 
 	TupleVecIter() = default;
 
@@ -648,7 +645,7 @@ public:
 		if (EASTL_UNLIKELY(first > last || first == nullptr || last == nullptr))
 			EASTL_FAIL_MSG("tuple_vector::assign from tuple array -- invalid ptrs");
 #endif
-		size_type newNumElements = last - first;
+        size_type newNumElements = static_cast<size_type>(last - first);
 		if (newNumElements > mNumCapacity)
 		{
 			this_type temp(first, last, getAllocator());
@@ -728,7 +725,7 @@ public:
 		{
 			if (newNumElements > oldNumCapacity)
 			{
-				const size_type newCapacity = max(GetNewCapacity(oldNumCapacity), newNumElements);
+				const size_type newCapacity = eastl::max(GetNewCapacity(oldNumCapacity), newNumElements);
 
 				void* ppNewLeaf[sizeof...(Ts)];
 				pair<void*, size_type> allocation =	TupleRecurser<Ts...>::template DoAllocate<allocator_type, 0, index_sequence_type, Ts...>(
@@ -774,7 +771,7 @@ public:
 		{
 			if (newNumElements > oldNumCapacity)
 			{
-				const size_type newCapacity = max(GetNewCapacity(oldNumCapacity), newNumElements);
+				const size_type newCapacity = eastl::max(GetNewCapacity(oldNumCapacity), newNumElements);
 
 				void* ppNewLeaf[sizeof...(Ts)];
 				pair<void*, size_type> allocation = TupleRecurser<Ts...>::template DoAllocate<allocator_type, 0, index_sequence_type, Ts...>(
@@ -826,7 +823,7 @@ public:
 		{
 			if (newNumElements > oldNumCapacity)
 			{
-				const size_type newCapacity = max(GetNewCapacity(oldNumCapacity), newNumElements);
+				const size_type newCapacity = eastl::max(GetNewCapacity(oldNumCapacity), newNumElements);
 
 				void* ppNewLeaf[sizeof...(Ts)];
 				pair<void*, size_type> allocation = TupleRecurser<Ts...>::template DoAllocate<allocator_type, 0, index_sequence_type, Ts...>(
@@ -871,7 +868,7 @@ public:
 			EASTL_FAIL_MSG("tuple_vector::insert -- invalid source pointers");
 #endif
 		size_type posIdx = pos - cbegin();
-		size_type numToInsert = last - first;
+		size_type numToInsert = static_cast<size_type>(last - first);
 		size_type oldNumElements = mNumElements;
 		size_type newNumElements = oldNumElements + numToInsert;
 		size_type oldNumCapacity = mNumCapacity;
@@ -880,7 +877,7 @@ public:
 		{
 			if (newNumElements > oldNumCapacity)
 			{
-				const size_type newCapacity = max(GetNewCapacity(oldNumCapacity), newNumElements);
+				const size_type newCapacity = eastl::max(GetNewCapacity(oldNumCapacity), newNumElements);
 
 				void* ppNewLeaf[sizeof...(Ts)];
 				pair<void*, size_type> allocation = TupleRecurser<Ts...>::template DoAllocate<allocator_type, 0, index_sequence_type, Ts...>(
@@ -986,7 +983,7 @@ public:
 			{
 				DoReallocate(oldNumElements, eastl::max<size_type>(GetNewCapacity(oldNumCapacity), n));
 			}
-			swallow((eastl::uninitialized_default_fillN(TupleVecLeaf<Indices, Ts>::mpData + oldNumElements, n - oldNumElements), 0)...);
+			swallow((eastl::uninitialized_value_construct_n(TupleVecLeaf<Indices, Ts>::mpData + oldNumElements, n - oldNumElements), 0)...);
 		}
 		else
 		{
@@ -1330,7 +1327,7 @@ protected:
 	{
 		DoConditionalReallocate(0, mNumCapacity, n);
 		mNumElements = n;
-		swallow((eastl::uninitialized_default_fillN(TupleVecLeaf<Indices, Ts>::mpData, n), 0)...);
+		swallow((eastl::uninitialized_value_construct_n(TupleVecLeaf<Indices, Ts>::mpData, n), 0)...);
 	}
 
 	void DoInitFromTupleArray(const value_tuple* first, const value_tuple* last)
@@ -1339,7 +1336,7 @@ protected:
 		if (EASTL_UNLIKELY(first > last || first == nullptr || last == nullptr))
 			EASTL_FAIL_MSG("tuple_vector::ctor from tuple array -- invalid ptrs");
 #endif
-		size_type newNumElements = last - first;
+		size_type newNumElements = static_cast<size_type>(last - first);
 		DoConditionalReallocate(0, mNumCapacity, newNumElements);
 		mNumElements = newNumElements;
 		DoUninitializedCopyFromTupleArray(begin(), end(), first);
@@ -1411,7 +1408,6 @@ class move_iterator<TupleVecInternal::TupleVecIter<index_sequence<Indices...>, T
 {
 public:
 	typedef TupleVecInternal::TupleVecIter<index_sequence<Indices...>, Ts...> iterator_type;
-	typedef iterator_type wrapped_iterator_type; // This is not in the C++ Standard; it's used by use to identify it as
 												 // a wrapping iterator type.
 	typedef iterator_traits<iterator_type> traits_type;
 	typedef typename traits_type::iterator_category iterator_category;
@@ -1477,6 +1473,13 @@ private:
 	{
 		return reference(eastl::move(((Ts*)mIterator.mpData[Indices])[mIterator.mIndex])...);
 	}
+
+	// Unwrapping interface, not part of the public API.
+	iterator_type unwrap() const { return mIterator; }
+
+	// The unwrapper helpers need access to unwrap().
+	friend is_iterator_wrapper_helper<this_type, true>;
+	friend is_iterator_wrapper<this_type>;
 };
 
 template <typename AllocatorA, typename AllocatorB, typename Indices, typename... Ts>

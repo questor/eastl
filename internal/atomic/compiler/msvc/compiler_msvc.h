@@ -12,7 +12,6 @@
 
 
 EA_DISABLE_ALL_VC_WARNINGS();
-#include <Windows.h>
 #include <intrin.h>
 EA_RESTORE_ALL_VC_WARNINGS();
 
@@ -33,12 +32,41 @@ EA_RESTORE_ALL_VC_WARNINGS();
 /////////////////////////////////////////////////////////////////////////////////
 
 
+#define EASTL_COMPILER_ATOMIC_FIXED_WIDTH_TYPE_8 char
+#define EASTL_COMPILER_ATOMIC_FIXED_WIDTH_TYPE_16 short
+#define EASTL_COMPILER_ATOMIC_FIXED_WIDTH_TYPE_32 long
+#define EASTL_COMPILER_ATOMIC_FIXED_WIDTH_TYPE_64 __int64
+
+namespace eastl
+{
+
+namespace internal
+{
+
+struct FixedWidth128
+{
+	__int64 value[2];
+};
+
+} // namespace internal
+
+} // namespace eastl
+
+#define EASTL_COMPILER_ATOMIC_FIXED_WIDTH_TYPE_128 eastl::internal::FixedWidth128
+
+
+/////////////////////////////////////////////////////////////////////////////////
+
+
 /**
  * NOTE:
+ *
  * Unfortunately MSVC Intrinsics depend on the architecture
  * that we are compiling for.
  * These are some indirection macros to make our lives easier and
  * ensure the least possible amount of copy-paste to reduce programmer errors.
+ *
+ * All compiler implementations end up deferring to the below macros.
  */
 #if defined(EA_PROCESSOR_X86) || defined(EA_PROCESSOR_X86_64)
 
@@ -53,7 +81,7 @@ EA_RESTORE_ALL_VC_WARNINGS();
 		ret = Intrinsic(ptr, exchange, comparand)
 
 	#define EASTL_MSVC_ATOMIC_CMPXCHG_STRONG_128_OP(ret, ptr, comparandResult, exchangeHigh, exchangeLow, MemoryOrder) \
-		ret = _InterlockedCompareExchange128(ptr, exchangeHigh, exchangeLow, comparandResult)
+		ret = _InterlockedCompareExchange128_np(ptr, exchangeHigh, exchangeLow, comparandResult)
 
 
 #elif defined(EA_PROCESSOR_ARM32) || defined(EA_PROCESSOR_ARM64)
@@ -144,6 +172,16 @@ EA_RESTORE_ALL_VC_WARNINGS();
 		}																\
 	}
 
+/**
+ * In my own opinion, I found the wording on Microsoft docs a little confusing.
+ * ExchangeHigh means the top 8 bytes so (ptr + 8).
+ * ExchangeLow means the low 8 butes so (ptr).
+ * Endianness does not matter since we are just loading data and comparing data.
+ * Thought of as memcpy() and memcmp() function calls whereby the layout of the
+ * data itself is irrelevant.
+ * Only after we type pun back to the original type, and load from memory does
+ * the layout of the data matter again.
+ */
 #define EASTL_MSVC_ATOMIC_CMPXCHG_STRONG_INTRIN_128(type, ret, ptr, expected, desired, MemoryOrder) \
 	{																	\
 		union TypePun													\
@@ -152,9 +190,7 @@ EA_RESTORE_ALL_VC_WARNINGS();
 																		\
 			struct exchange128											\
 			{															\
-				EASTL_SYSTEM_BIG_ENDIAN_STATEMENT(__int64 hi, lo);		\
-																		\
-				EASTL_SYSTEM_LITTLE_ENDIAN_STATEMENT(__int64 lo, hi);	\
+				__int64 value[2];										\
 			};															\
 																		\
 			struct exchange128 exchangePun;								\
@@ -165,7 +201,7 @@ EA_RESTORE_ALL_VC_WARNINGS();
 		unsigned char cmpxchgRetChar;									\
 		cmpxchgRetChar = EASTL_MSVC_ATOMIC_CMPXCHG_STRONG_128_OP(cmpxchgRetChar, EASTL_ATOMIC_VOLATILE_TYPE_CAST(__int64, (ptr)), \
 																 EASTL_ATOMIC_TYPE_CAST(__int64, (expected)), \
-																 typePun.exchangePun.hi, typePun.exchangePun.lo, \
+																 typePun.exchangePun.value[1], typePun.exchangePun.value[0], \
 																 MemoryOrder); \
 																		\
 		ret = static_cast<bool>(cmpxchgRetChar);						\

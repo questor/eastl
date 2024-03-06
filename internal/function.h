@@ -5,6 +5,8 @@
 #ifndef EASTL_FUNCTION_H
 #define EASTL_FUNCTION_H
 
+#include <eastl/internal/config.h>
+
 #if defined(EASTL_PRAGMA_ONCE_SUPPORTED)
 	#pragma once
 #endif
@@ -131,7 +133,7 @@ namespace eastl
 	{
 		return !f;
 	}
-
+#if !defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
 	template <typename R, typename... Args>
 	bool operator==(std::nullptr_t, const function<R(Args...)>& f) EASTL_NOEXCEPT
 	{
@@ -149,12 +151,20 @@ namespace eastl
 	{
 		return !!f;
 	}
-
+#endif
 	template <typename R, typename... Args>
 	void swap(function<R(Args...)>& lhs, function<R(Args...)>& rhs)
 	{
 		lhs.swap(rhs);
 	}
+
+#ifdef __cpp_deduction_guides
+	template<typename ReturnType, typename... Args>
+	function(ReturnType(*)(Args...)) -> function<ReturnType(Args...)>;
+
+	template<typename Callable>
+	function(Callable) -> function<internal::extract_signature_from_callable_t<decltype(&Callable::operator())>>;
+#endif
 
 } // namespace eastl
 

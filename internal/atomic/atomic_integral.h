@@ -11,9 +11,6 @@
 #endif
 
 
-#include "atomic_push_compiler_options.h"
-
-
 namespace eastl
 {
 
@@ -22,20 +19,31 @@ namespace internal
 {
 
 
+// 'class' : multiple assignment operators specified
+EA_DISABLE_VC_WARNING(4522);
+
+// misaligned atomic operation may incur significant performance penalty
+// The above warning is emitted in earlier versions of clang incorrectly.
+// All eastl::atomic<T> objects are size aligned.
+// This is static and runtime asserted.
+// Thus we disable this warning.
+EA_DISABLE_CLANG_WARNING(-Watomic-alignment);
+
+
 #define EASTL_ATOMIC_INTEGRAL_STATIC_ASSERT_FUNCS_IMPL(funcName)	\
 	template <typename Order>										\
-	T funcName(T arg, Order order) EASTL_NOEXCEPT						\
+	T funcName(T /*arg*/, Order /*order*/) EASTL_NOEXCEPT				\
 	{																\
 		EASTL_ATOMIC_STATIC_ASSERT_INVALID_MEMORY_ORDER(T);			\
 	}																\
 																	\
 	template <typename Order>										\
-	T funcName(T arg, Order order) volatile EASTL_NOEXCEPT				\
+	T funcName(T /*arg*/, Order /*order*/) volatile EASTL_NOEXCEPT		\
 	{																\
 		EASTL_ATOMIC_STATIC_ASSERT_VOLATILE_MEM_FN(T);				\
 	}																\
 																	\
-	T funcName(T arg) volatile EASTL_NOEXCEPT							\
+	T funcName(T /*arg*/) volatile EASTL_NOEXCEPT						\
 	{																\
 		EASTL_ATOMIC_STATIC_ASSERT_VOLATILE_MEM_FN(T);				\
 	}
@@ -54,7 +62,7 @@ namespace internal
 
 
 #define EASTL_ATOMIC_INTEGRAL_STATIC_ASSERT_ASSIGNMENT_OPERATOR_IMPL(operatorOp) \
-	T operator operatorOp(T arg) volatile EASTL_NOEXCEPT					\
+	T operator operatorOp(T /*arg*/) volatile EASTL_NOEXCEPT				\
 	{																	\
 		EASTL_ATOMIC_STATIC_ASSERT_VOLATILE_MEM_FN(T);					\
 	}
@@ -69,21 +77,21 @@ namespace internal
 
 	public: /* ctors */
 
-		atomic_integral_base(T desired) EASTL_NOEXCEPT
+		EA_CONSTEXPR atomic_integral_base(T desired) EASTL_NOEXCEPT
 			: Base{ desired }
 		{
 		}
 
-		atomic_integral_base() EASTL_NOEXCEPT = default;
+		EA_CONSTEXPR atomic_integral_base() EASTL_NOEXCEPT = default;
 
 		atomic_integral_base(const atomic_integral_base&) EASTL_NOEXCEPT = delete;
 
 	public: /* assignment operator */
 
-		using Base::operator =;
+		using Base::operator=;
 
-		atomic_integral_base& operator =(const atomic_integral_base&)          EASTL_NOEXCEPT = delete;
-		atomic_integral_base& operator =(const atomic_integral_base&) volatile EASTL_NOEXCEPT = delete;
+		atomic_integral_base& operator=(const atomic_integral_base&)          EASTL_NOEXCEPT = delete;
+		atomic_integral_base& operator=(const atomic_integral_base&) volatile EASTL_NOEXCEPT = delete;
 
 	public: /* fetch_add */
 
@@ -156,7 +164,7 @@ namespace internal
 	struct atomic_integral_width;
 
 #define EASTL_ATOMIC_INTEGRAL_FUNC_IMPL(op, bits)						\
-	T retVal;															\
+	EASTL_ATOMIC_DEFAULT_INIT(T, retVal);	             				\
 	EASTL_PREPROCESSOR_JOIN(op, bits)(T, retVal, this->GetAtomicAddress(), arg); \
 	return retVal;
 
@@ -227,21 +235,21 @@ namespace internal
 																		\
 	public: /* ctors */													\
 																		\
-		atomic_integral_width(T desired) EASTL_NOEXCEPT					\
+		EA_CONSTEXPR atomic_integral_width(T desired) EASTL_NOEXCEPT		\
 			: Base{ desired }											\
 		{																\
 		}																\
 																		\
-		atomic_integral_width() EASTL_NOEXCEPT = default;					\
+		EA_CONSTEXPR atomic_integral_width() EASTL_NOEXCEPT = default;		\
 																		\
 		atomic_integral_width(const atomic_integral_width&) EASTL_NOEXCEPT = delete; \
 																		\
 	public: /* assignment operator */									\
 																		\
-		using Base::operator =;											\
+		using Base::operator=;											\
 																		\
-		atomic_integral_width& operator =(const atomic_integral_width&)          EASTL_NOEXCEPT = delete; \
-		atomic_integral_width& operator =(const atomic_integral_width&) volatile EASTL_NOEXCEPT = delete; \
+		atomic_integral_width& operator=(const atomic_integral_width&)          EASTL_NOEXCEPT = delete; \
+		atomic_integral_width& operator=(const atomic_integral_width&) volatile EASTL_NOEXCEPT = delete; \
 																		\
 	public: /* fetch_add */												\
 																		\
@@ -330,14 +338,14 @@ namespace internal
 	EASTL_ATOMIC_INTEGRAL_WIDTH_SPECIALIZE(16, 128)
 #endif
 
+EA_RESTORE_VC_WARNING();
+
+EA_RESTORE_CLANG_WARNING();
+
 
 } // namespace internal
 
 
 } // namespace eastl
-
-
-#include "atomic_pop_compiler_options.h"
-
 
 #endif /* EASTL_ATOMIC_INTERNAL_INTEGRAL_H */

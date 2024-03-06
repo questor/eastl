@@ -29,7 +29,7 @@ find, and remove.<br></td>
 <td>An associative container is a variable-sized container that supports efficient retrieval of elements (values) based
 on keys. It supports insertion and removal of elements, but differs from a sequence in that it does not provide a
 mechanism for inserting an element at a specific position. Associative containers include map, multimap, set, multiset,
-hash_map, hash_multimap, hash_set, hash_multiset.</td>
+hashMap, hashMultimap, hashSet, hashMultiset.</td>
 </tr>
 <tr>
 <td>array</td>
@@ -37,7 +37,7 @@ hash_map, hash_multimap, hash_set, hash_multiset.</td>
 to it.</td>
 </tr>
 <tr>
-<td>basic_string</td>
+<td>basicString</td>
 <td>A templated string class which is usually used to store char or wchar_t strings.</td>
 </tr>
 <tr>
@@ -130,9 +130,9 @@ more efficient than checking for size() == 0.</td>
 <td>The function used by all conventional containers to return one-past the last item in the container.</td>
 </tr>
 <tr>
-<td>equal_range</td>
-<td>equal_range is a version of binary search: it attempts to find the element value in an ordered range [first, last).
-The value returned by equal_range is essentially a combination of the values returned by lower_bound and upper_bound:
+<td>equalRange</td>
+<td>equalRange is a version of binary search: it attempts to find the element value in an ordered range [first, last).
+The value returned by equalRange is essentially a combination of the values returned by lowerBound and upperBound:
 it returns a pair of iterators i and j such that i is the first position where value could be inserted without
 violating the ordering and j is the last position where value could be inserted without violating the ordering. It
 follows that every element in the range [i, j) is equivalent to value, and that [i, j) is the largest subrange of
@@ -167,7 +167,7 @@ defined.</td>
 <td>A function which takes no arguments and returns a value (which will usually be assigned to an object).</td>
 </tr>
 <tr>
-<td>hash_map, hash_multimap, hash_set, hash_multiset</td>
+<td>hashMap, hashMultimap, hashSet, hashMultiset</td>
 <td>The hash containers are implementations of map, multimap, set, and multiset via a hashtable instead of via a tree.
 Searches are O(1) (fast) but the container is not sorted.</td>
 </tr>
@@ -182,7 +182,7 @@ at the top. A heap is synonymous with a priority queue and has numerous applicat
 direction.</td>
 </tr>
 <tr>
-<td>intrusive_list, intrusive_hash_map, etc.</td>
+<td>intrusive_list, intrusive_hashMap, etc.</td>
 <td>Intrusive containers are containers which don't allocate memory but instead use their contained object to manage
 the container's memory. While list allocates nodes (with mpPrev/mpNext pointers) that contain the list items,
 intrusive_list doesn't allocate nodes but instead the container items have the mpPrev/mpNext pointers.</td>
@@ -210,7 +210,7 @@ each of these for more information.Iterator category is synonymous with <span st
 </tr>
 <tr>
 <td>key_type, Key</td>
-<td>A Key or key_type is the identifier used by associative (a.k.a. dictionary) containers (e.g. map, hash_map) to
+<td>A Key or key_type is the identifier used by associative (a.k.a. dictionary) containers (e.g. map, hashMap) to
 identify the type used to index the mapped_type. If you have a dictionary of strings that you access by an integer id,
 the ids are the keys and the strings are the mapped types.</td>
 </tr>
@@ -235,8 +235,8 @@ the iterators themselves will not be invalidated or made to point to different e
 mutation is explicit.</td>
 </tr>
 <tr>
-<td>lower_bound</td>
-<td>lower_bound is a version of binary search: it attempts to find the element value in an ordered range [first, last).
+<td>lowerBound</td>
+<td>lowerBound is a version of binary search: it attempts to find the element value in an ordered range [first, last).
 Specifically, it returns the first position where value could be inserted without violating the ordering.</td>
 </tr>
 <tr>
@@ -404,7 +404,7 @@ less than c then a is less than c, and so on.</td>
 </tr>
 <tr>
 <td>string</td>
-<td>See basic_string.</td>
+<td>See basicString.</td>
 </tr>
 <tr>
 <td>T</td>
@@ -443,8 +443,8 @@ following expression is a type and not a value. It is used extensively in EASTL,
 <td>A function which takes one argument and returns a value (which will usually be assigned to second object).</td>
 </tr>
 <tr>
-<td>upper_bound</td>
-<td>upper_bound is a version of binary search: it attempts to find the element value in an ordered range [first, last).
+<td>upperBound</td>
+<td>upperBound is a version of binary search: it attempts to find the element value in an ordered range [first, last).
 Specifically, it returns the last position where value could be inserted without violating the ordering.</td>
 </tr>
 <tr>

@@ -12,6 +12,7 @@
 
 
 #include <eastl/internal/config.h>
+#include <eastl/internal/move_help.h>
 #include <eastl/internal/memory_base.h>
 #include <eastl/type_traits.h>
 
@@ -34,18 +35,17 @@
 
 /**
  * NOTE:
- * All of the actual implemention is done via the ATOMIC_MACROS in the compiler or arch sub folders.
+ *
+ * All of the actual implementation is done via the ATOMIC_MACROS in the compiler or arch sub folders.
  * The C++ code is merely boilerplate around these macros that actually implement the atomic operations.
  * The C++ boilerplate is also hidden behind macros.
  * This may seem more complicated but this is all meant to reduce copy-pasting and to ensure all operations
  * all end up going down to one macro that does the actual implementation.
  * The reduced code duplication makes it easier to verify the implementation and reason about it.
  * Ensures we do not have to re-implement the same code for compilers that do not support generic builtins such as MSVC.
+ * Ensures for compilers that have separate intrinsics for different widths, that C++ boilerplate isn't copy-pasted leading to programmer errors.
  * Ensures if we ever have to implement a new platform, only the low-level leaf macros have to be implemented, everything else will be generated for you.
  */
-
-
-#include "atomic_push_compiler_options.h"
 
 
 namespace eastl
@@ -56,10 +56,21 @@ namespace internal
 {
 
 
+// 'class' : multiple assignment operators specified
+EA_DISABLE_VC_WARNING(4522);
+
+// misaligned atomic operation may incur significant performance penalty
+// The above warning is emitted in earlier versions of clang incorrectly.
+// All eastl::atomic<T> objects are size aligned.
+// This is static and runtime asserted.
+// Thus we disable this warning.
+EA_DISABLE_CLANG_WARNING(-Watomic-alignment);
+
+
 	template <typename T>
 	struct is_atomic_lockfree_size
 	{
-		static EASTL_CPP17_INLINE_VARIABLE constexpr bool value = false ||
+		static EASTL_CPP17_INLINE_VARIABLE EA_CONSTEXPR_OR_CONST bool value = false ||
 		#if defined(EASTL_ATOMIC_HAS_8BIT)
 			sizeof(T) == 1 ||
 		#endif
@@ -80,18 +91,9 @@ namespace internal
 
 
 	template <typename T>
-	struct is_user_type_constrained
-	{
-		static EASTL_CPP17_INLINE_VARIABLE constexpr bool value =
-			eastl::is_trivially_copyable<T>::value && eastl::is_copy_constructible<T>::value && eastl::is_move_constructible<T>::value &&
-			eastl::is_copy_assignable<T>::value && eastl::is_move_assignable<T>::value;
-	};
-
-
-	template <typename T>
 	struct is_user_type_suitable_for_primary_template
 	{
-		static EASTL_CPP17_INLINE_VARIABLE constexpr bool value = eastl::internal::is_atomic_lockfree_size<T>::value && eastl::internal::is_user_type_constrained<T>::value;
+		static EASTL_CPP17_INLINE_VARIABLE EA_CONSTEXPR_OR_CONST bool value = eastl::internal::is_atomic_lockfree_size<T>::value;
 	};
 
 
@@ -122,23 +124,23 @@ namespace internal
 																		\
 	public:																\
 																		\
-		static EASTL_CPP17_INLINE_VARIABLE constexpr bool is_always_lock_free = eastl::internal::is_atomic_lockfree_size<type>::value; \
+		static EASTL_CPP17_INLINE_VARIABLE EA_CONSTEXPR_OR_CONST bool is_always_lock_free = eastl::internal::is_atomic_lockfree_size<type>::value; \
 																		\
 	public: /* deleted ctors && assignment operators */					\
 																		\
 		atomic(const atomic&) EASTL_NOEXCEPT = delete;						\
 																		\
-		atomic& operator =(const atomic&)          EASTL_NOEXCEPT = delete; \
-		atomic& operator =(const atomic&) volatile EASTL_NOEXCEPT = delete; \
+		atomic& operator=(const atomic&)          EASTL_NOEXCEPT = delete; \
+		atomic& operator=(const atomic&) volatile EASTL_NOEXCEPT = delete; \
 																		\
 	public: /* ctors */													\
 																		\
-		atomic(type desired) EASTL_NOEXCEPT								\
+		EA_CONSTEXPR atomic(type desired) EASTL_NOEXCEPT					\
 			: Base{ desired }											\
 		{																\
 		}																\
 																		\
-		atomic() EASTL_NOEXCEPT = default;									\
+		EA_CONSTEXPR atomic() EASTL_NOEXCEPT_IF(eastl::is_nothrow_default_constructible_v<type>) = default; \
 																		\
 	public:																\
 																		\
@@ -154,60 +156,68 @@ namespace internal
 		}
 
 
-
 #define EASTL_ATOMIC_USING_ATOMIC_BASE(type)		\
 	public:											\
-	using Base::operator=;							\
-	using Base::store;								\
-	using Base::load;								\
-	using Base::exchange;							\
-	using Base::compare_exchange_weak;				\
-	using Base::compare_exchange_strong;			\
+													\
+		using Base::operator=;						\
+		using Base::store;							\
+		using Base::load;							\
+		using Base::exchange;						\
+		using Base::compare_exchange_weak;			\
+		using Base::compare_exchange_strong;		\
 													\
 	public:											\
 													\
-	operator type() const volatile EASTL_NOEXCEPT		\
-	{												\
-		EASTL_ATOMIC_STATIC_ASSERT_VOLATILE_MEM_FN(T); \
-	}												\
+		operator type() const volatile EASTL_NOEXCEPT	\
+		{											\
+			EASTL_ATOMIC_STATIC_ASSERT_VOLATILE_MEM_FN(T); \
+		}											\
 													\
-	operator type() const EASTL_NOEXCEPT				\
-	{												\
-		return load(eastl::memory_order_seq_cst);	\
-	}
+		operator type() const EASTL_NOEXCEPT			\
+		{											\
+			return load(eastl::memory_order_seq_cst); \
+		}
 
 
-#define EASTL_ATOMIC_USING_ATOMIC_INTEGRAL()		\
-	public:											\
-	using Base::fetch_add;							\
-	using Base::add_fetch;							\
-	using Base::fetch_sub;							\
-	using Base::sub_fetch;							\
-	using Base::fetch_and;							\
-	using Base::and_fetch;							\
-	using Base::fetch_or;							\
-	using Base::or_fetch;							\
-	using Base::fetch_xor;							\
-	using Base::xor_fetch;							\
-	using Base::operator++;							\
-	using Base::operator--;							\
-	using Base::operator+=;							\
-	using Base::operator-=;							\
-	using Base::operator&=;							\
-	using Base::operator|=;							\
-	using Base::operator^=;
+#define EASTL_ATOMIC_USING_ATOMIC_INTEGRAL()	\
+	public:										\
+												\
+		using Base::fetch_add;					\
+		using Base::add_fetch;					\
+												\
+		using Base::fetch_sub;					\
+		using Base::sub_fetch;					\
+												\
+		using Base::fetch_and;					\
+		using Base::and_fetch;					\
+												\
+		using Base::fetch_or;					\
+		using Base::or_fetch;					\
+												\
+		using Base::fetch_xor;					\
+		using Base::xor_fetch;					\
+												\
+		using Base::operator++;					\
+		using Base::operator--;					\
+		using Base::operator+=;					\
+		using Base::operator-=;					\
+		using Base::operator&=;					\
+		using Base::operator|=;					\
+		using Base::operator^=;
 
 
 #define EASTL_ATOMIC_USING_ATOMIC_POINTER()		\
 	public:										\
-	using Base::fetch_add;						\
-	using Base::add_fetch;						\
-	using Base::fetch_sub;						\
-	using Base::sub_fetch;						\
-	using Base::operator++;						\
-	using Base::operator--;						\
-	using Base::operator+=;						\
-	using Base::operator-=;
+												\
+		using Base::fetch_add;					\
+		using Base::add_fetch;					\
+		using Base::fetch_sub;					\
+		using Base::sub_fetch;					\
+												\
+		using Base::operator++;					\
+		using Base::operator--;					\
+		using Base::operator+=;					\
+		using Base::operator-=;
 
 
 template <typename T, typename = void>
@@ -241,10 +251,10 @@ struct atomic<T*> : protected eastl::internal::atomic_pointer_width<T*>
 };
 
 
+EA_RESTORE_VC_WARNING();
+
+EA_RESTORE_CLANG_WARNING();
+
 } // namespace eastl
-
-
-#include "atomic_pop_compiler_options.h"
-
 
 #endif /* EASTL_ATOMIC_INTERNAL_H */
