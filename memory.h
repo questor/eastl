@@ -28,11 +28,6 @@
 //    uninitializedFillN
 //    uninitialized_value_construct
 //    uninitialized_value_construct_n
-//    uninitializedCopyPtr            - Extention to standard functionality.
-//    uninitializedMove_ptr            - Extention to standard functionality.
-//    uninitializedMove_ptr_if_noexcept- Extention to standard functionality.
-//    uninitializedFillPtr            - Extention to standard functionality.
-//    uninitializedFillNPtr          - Extention to standard functionality.
 //    uninitializedCopyFill           - Extention to standard functionality.
 //    uninitializedFillCopy           - Extention to standard functionality.
 //    uninitializedCopyCopy           - Extention to standard functionality.
@@ -57,9 +52,17 @@
 //    pointer_traits
 // 
 // Deprecations:
+// (EASTL_REMOVE_AT_2024_APRIL)
 //    uninitialized_relocate            - Use one of the other uninitialized_xxxx functions with move semantics.
 //    uninitialized_default_fill        - Use uninitialized_value_construct instead.
 //    uninitialized_default_fillN      - Use uninitialized_value_construct_n instead.
+// 
+// (EASTL_REMOVE_AT_2024_SEPT)
+//    uninitializedCopyPtr            - Use uninitializedCopy instead.
+//    uninitializedMove_ptr            - Use uninitializedMove instead.
+//    uninitializedMove_ptr_if_noexcept- Use uninitializedMove_if_noexcept instead.
+//    uninitializedFillPtr            - Use uninitializedFill instead.
+//    uninitializedFillNPtr          - Use uninitializedFillN instead.
 // 
 // Deprecated in C++17:
 //    getTemporaryBuffer
@@ -73,7 +76,6 @@
 
 #include <eastl/internal/config.h>
 #include <eastl/internal/memory_base.h>
-#include <eastl/internal/generic_iterator.h>
 #include <eastl/internal/pair_fwd_decls.h>
 #include <eastl/internal/functional_base.h>
 #include <eastl/algorithm.h>
@@ -360,15 +362,15 @@ namespace eastl
 			return *this;
 		}
 
-		raw_storage_iterator<OutputIterator, T>& operator++()
+		raw_storage_iterator& operator++()
 		{
 			++mIterator;
 			return *this;
 		}
 
-		raw_storage_iterator<OutputIterator, T> operator++(int)
+		raw_storage_iterator operator++(int)
 		{
-			raw_storage_iterator<OutputIterator, T> tempIterator = *this;
+			raw_storage_iterator tempIterator = *this;
 			++mIterator;
 			return tempIterator;
 		}
@@ -730,9 +732,9 @@ namespace eastl
 	///
 	/// This is a specialization of uninitializedCopy for iterators that are pointers. We use it because 
 	/// internally it uses generic_iterator to make pointers act like regular eastl::iterator.
-	///
+	/// 
 	template <typename First, typename Last, typename Result>
-	inline Result uninitializedCopyPtr(First first, Last last, Result result)
+	EASTL_REMOVE_AT_2024_SEPT inline Result uninitializedCopyPtr(First first, Last last, Result result)
 	{
 		return eastl::uninitializedCopy(first, last, result);
 	}
@@ -743,58 +745,11 @@ namespace eastl
 	///
 	/// This is a specialization of uninitializedMove for iterators that are pointers. We use it because 
 	/// internally it uses generic_iterator to make pointers act like regular eastl::iterator.
-	///
-	namespace Internal
-	{
-		template <typename InputIterator, typename ForwardIterator>
-		inline ForwardIterator uninitializedMove_impl(InputIterator first, InputIterator last, ForwardIterator dest, true_type)
-		{
-			return eastl::copy(first, last, dest); // The copy() in turn will use memcpy for trivially copyable types.
-		}
-
-		template <typename InputIterator, typename ForwardIterator>
-		inline ForwardIterator uninitializedMove_impl(InputIterator first, InputIterator last, ForwardIterator dest, false_type)
-		{
-			typedef typename eastl::iterator_traits<ForwardIterator>::value_type value_type;
-			ForwardIterator currentDest(dest);
-
-			// We must run a loop over every element and move-construct it at the new location.
-			#if EASTL_EXCEPTIONS_ENABLED
-				try
-				{
-			#endif
-					for(; first != last; ++first, ++currentDest)
-						::new((void*)eastl::addressof(*currentDest)) value_type(eastl::move(*first)); // If value_type has a move constructor then it will be used here.
-			#if EASTL_EXCEPTIONS_ENABLED
-				}
-				catch(...)
-				{
-					// We have a problem here: If an exception occurs while doing the loop below then we will
-					// have values that were moved from the source to the dest that may need to be moved back 
-					// in the catch. What does the C++11 Standard say about this? And what happens if there's an 
-					// exception while moving them back? We may want to trace through a conforming C++11 Standard
-					// Library to see what it does and do something similar. Given that rvalue references are 
-					// objects that are going away, we may not need to move the values back, though that has the 
-					// side effect of a certain kind of lost elements problem.
-					for(; dest < currentDest; ++dest)
-						(*dest).~value_type();
-					throw;
-				}
-			#endif
-
-			return currentDest;
-		}
-	}
-
+	/// 
 	template <typename First, typename Last, typename Result>
-	inline Result uninitializedMove_ptr(First first, Last last, Result dest)
+	EASTL_REMOVE_AT_2024_SEPT inline Result uninitializedMove_ptr(First first, Last last, Result dest)
 	{
-		typedef typename eastl::iterator_traits<generic_iterator<Result, void> >::value_type value_type;
-		const generic_iterator<Result, void> i(Internal::uninitializedMove_impl(eastl::generic_iterator<First, void>(first), // generic_iterator makes a pointer act like an iterator.
-																				 eastl::generic_iterator<Last, void>(last), 
-																				 eastl::generic_iterator<Result, void>(dest), 
-																				 eastl::is_trivially_copyable<value_type>())); // is_trivially_copyable identifies if (non-overlapping) objects may be safely copied by means of memcpy/memmove.
-		return i.base();
+		return uninitializedMove(first, last, dest);
 	}
 
 
@@ -831,20 +786,20 @@ namespace eastl
 	template <typename InputIterator, typename ForwardIterator>
 	inline ForwardIterator uninitializedMove_if_noexcept(InputIterator first, InputIterator last, ForwardIterator dest)
 	{
+#if EASTL_EXCEPTIONS_ENABLED
 		return eastl::uninitializedCopy(eastl::make_move_if_noexcept_iterator(first), eastl::make_move_if_noexcept_iterator(last), dest);
+#else
+		return eastl::uninitializedMove(first, last, dest);
+#endif
 	}
 
 
 	/// uninitializedMove_ptr_if_noexcept
 	///
 	template <typename First, typename Last, typename Result>
-	inline Result uninitializedMove_ptr_if_noexcept(First first, Last last, Result dest)
+	EASTL_REMOVE_AT_2024_SEPT inline Result uninitializedMove_ptr_if_noexcept(First first, Last last, Result dest)
 	{
-		#if EASTL_EXCEPTIONS_ENABLED
-			return eastl::uninitializedMove_if_noexcept(first, last, dest);
-		#else
-			return eastl::uninitializedMove_ptr(first, last, dest);
-		#endif
+		return eastl::uninitializedMove_if_noexcept(first, last, dest);
 	}
 
 
@@ -1142,12 +1097,9 @@ namespace eastl
 	/// can't do with a pointer by itself.
 	///
 	template <typename T>
-	inline void uninitializedFillPtr(T* first, T* last, const T& value)
+	EASTL_REMOVE_AT_2024_SEPT inline void uninitializedFillPtr(T* first, T* last, const T& value)
 	{
-		typedef typename eastl::iterator_traits<eastl::generic_iterator<T*, void> >::value_type value_type;
-		Internal::uninitializedFill_impl(eastl::generic_iterator<T*, void>(first),
-		                                  eastl::generic_iterator<T*, void>(last), value,
-		                                  eastl::is_trivially_copy_assignable<value_type>());
+		uninitializedFill(first, last, value);
 	}
 
 	/// uninitializedFillN
@@ -1163,13 +1115,14 @@ namespace eastl
 	namespace Internal
 	{
 		template <typename ForwardIterator, typename Count, typename T>
-		inline void uninitializedFillN_impl(ForwardIterator first, Count n, const T& value, true_type)
+		inline void uninitializedFillN_impl(ForwardIterator first, Count n, const T& value, true_type /* is_trivially_copy_assignable */)
 		{
+			// todo: implementation uses operator = but should instead be using the copy constructor, as documented.
 			eastl::fillN(first, n, value);
 		}
 
 		template <typename ForwardIterator, typename Count, typename T>
-		void uninitializedFillN_impl(ForwardIterator first, Count n, const T& value, false_type)
+		void uninitializedFillN_impl(ForwardIterator first, Count n, const T& value, false_type /* is_trivially_copy_assignable */)
 		{
 			typedef typename eastl::iterator_traits<ForwardIterator>::value_type value_type;
 			ForwardIterator currentDest(first);
@@ -1208,10 +1161,9 @@ namespace eastl
 	/// can't do with a pointer by itself.
 	///
 	template <typename T, typename Count>
-	inline void uninitializedFillNPtr(T* first, Count n, const T& value)
+	EASTL_REMOVE_AT_2024_SEPT inline void uninitializedFillNPtr(T* first, Count n, const T& value)
 	{
-		typedef typename eastl::iterator_traits<generic_iterator<T*, void> >::value_type value_type;
-		Internal::uninitializedFillN_impl(eastl::generic_iterator<T*, void>(first), n, value, eastl::is_trivially_copy_assignable<value_type>());
+		uninitializedFillN(first, n, value);
 	}
 
 

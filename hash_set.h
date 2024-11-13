@@ -142,6 +142,7 @@ namespace eastl
 		/// We default to a small nBucketCount value, though the user really should manually 
 		/// specify an appropriate value in order to prevent memory from being reallocated.
 		///
+		/// note: difference in explicit keyword from the standard.
 		explicit hashSet(size_type nBucketCount, const Hash& hashFunction = Hash(), const Predicate& predicate = Predicate(), 
 						  const allocator_type& allocator = EASTL_HASH_SET_DEFAULT_ALLOCATOR)
 			: base_type(nBucketCount, hashFunction, mod_range_hashing(), default_ranged_hash(), predicate, eastl::useSelf<Value>(), allocator)
@@ -149,11 +150,16 @@ namespace eastl
 			// Empty
 		}
 
+		// hashSet(size_type nBucketCount, const allocator_type& allocator)
+		// hashSet(size_type nBucketCount, const Hash& hashFunction, const allocator_type& allocator)
+
 
 		hashSet(const this_type& x)
 		  : base_type(x)
 		{
 		}
+
+		// hashSet(const this_type& x, const allocator_type& allocator)
 
 
 		hashSet(this_type&& x)
@@ -180,6 +186,17 @@ namespace eastl
 			// Empty
 		}
 
+		hashSet(std::initializer_list<value_type> ilist, const allocator_type& allocator)
+			: base_type(ilist.begin(), ilist.end(), 0, Hash(), mod_range_hashing(), default_ranged_hash(), Predicate(), eastl::useSelf<Value>(), allocator)
+		{
+			// Empty
+		}
+
+		// hashSet(std::initializer_list<value_type> ilist, size_type nBucketCount, const allocator_type& allocator)
+
+		// hashSet(std::initializer_list<value_type> ilist, size_type nBucketCount, const Hash& hashFunction,
+		// 	const allocator_type& allocator)
+
 
 		/// hashSet
 		///
@@ -193,6 +210,12 @@ namespace eastl
 		{
 			// Empty
 		}
+
+		// template <typename ForwardIterator>
+		// hashSet(ForwardIterator first, ForwardIterator last, size_type nBucketCount, const allocator_type& allocator)
+
+		// template <typename ForwardIterator>
+		// hashSet(ForwardIterator first, ForwardIterator last, size_type nBucketCount, const Hash& hashFunction, const allocator_type& allocator)
 
 
 		this_type& operator=(const this_type& x)
@@ -278,6 +301,7 @@ namespace eastl
 		/// We default to a small nBucketCount value, though the user really should manually 
 		/// specify an appropriate value in order to prevent memory from being reallocated.
 		///
+		/// note: difference in explicit keyword from the standard.
 		explicit hashMultiset(size_type nBucketCount, const Hash& hashFunction = Hash(), 
 							   const Predicate& predicate = Predicate(), const allocator_type& allocator = EASTL_HASH_MULTISET_DEFAULT_ALLOCATOR)
 			: base_type(nBucketCount, hashFunction, mod_range_hashing(), default_ranged_hash(), predicate, eastl::useSelf<Value>(), allocator)
@@ -285,11 +309,16 @@ namespace eastl
 			// Empty
 		}
 
+		// hashMultiset(size_type nBucketCount, const allocator_type& allocator)
+		// hashMultiset(size_type nBucketCount, const Hash& hashFunction, const allocator_type& allocator)
+
 
 		hashMultiset(const this_type& x)
 		  : base_type(x)
 		{
 		}
+
+		// hashMultiset(const this_type& x, const allocator_type& allocator)
 
 
 		hashMultiset(this_type&& x)
@@ -316,6 +345,17 @@ namespace eastl
 			// Empty
 		}
 
+		hashMultiset(std::initializer_list<value_type> ilist, const allocator_type& allocator)
+			: base_type(ilist.begin(), ilist.end(), 0, Hash(), mod_range_hashing(), default_ranged_hash(), Predicate(), eastl::useSelf<Value>(), allocator)
+		{
+			// Empty
+		}
+
+		// hashMultiset(std::initializer_list<value_type> ilist, size_type nBucketCount, const allocator_type& allocator)
+
+		// hashMultiset(std::initializer_list<value_type> ilist, size_type nBucketCount, const Hash& hashFunction,
+		// 	const allocator_type& allocator)
+
 
 		/// hashMultiset
 		///
@@ -329,6 +369,12 @@ namespace eastl
 		{
 			// Empty
 		}
+
+		// template <typename ForwardIterator>
+		// hashMultiset(ForwardIterator first, ForwardIterator last, size_type nBucketCount, const allocator_type& allocator)
+
+		// template <typename ForwardIterator>
+		// hashMultiset(ForwardIterator first, ForwardIterator last, size_type nBucketCount, const Hash& hashFunction, const allocator_type& allocator)
 
 
 		this_type& operator=(const this_type& x)
