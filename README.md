@@ -18,6 +18,11 @@ EASTL stands for Electronic Arts Standard Template Library. It is a C++ template
 - added pattern-defeating-quicksort
 
 
+## IDEAS FOR FURTHER OPTIMIZATIONS
+- from https://github.com/wolfpld/tracy/blob/da60684b9f61b34afa5aa243a7838d6e79096783/server/TracyVector.hpp
+   use short_ptr and uint8_t for capacity (expressed in powers of two) to get the structure from 24bytes to 11bytes
+
+
 ## Usage
 
 If you are familiar with the C++ STL or have worked with other templated container/algorithm libraries, you probably don't need to read this. If you have no familiarity with C++ templates at all, then you probably will need more than this document to get you up to speed. In this case, you need to understand that templates, when used properly, are powerful vehicles for the ease of creation of optimized C++ code. A description of C++ templates is outside the scope of this documentation, but there is plenty of such documentation on the Internet.
