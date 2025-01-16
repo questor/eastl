@@ -11,6 +11,11 @@ EASTL stands for Electronic Arts Standard Template Library. It is a C++ template
    - Fixed a bug when inserting elements referenced to own array, BUT ONLY WHEN EXCEPTIONS ARE DISABLED! with exceptions the error is NOT fixed
      (https://github.com/electronicarts/EASTL/issues/524)
    - growth-factor is NOT 2.0 but 1.618 (https://blog.demofox.org/2016/05/18/who-cares-about-dynamic-array-growth-strategies/)
+- hash-function for float/double/..
+   - in functional.h use bit_cast and not static_cast as the later would map all values between 0..1 to the same value for example (https://github.com/electronicarts/EASTL/issues/538)
+- in string-view use manual search method to guarantee const-expr handling
+   - in string-view.h add manual search method to find-function
+- added pattern-defeating-quicksort
 
 
 ## Usage

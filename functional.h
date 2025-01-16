@@ -1188,13 +1188,13 @@ namespace eastl
 		{ size_t operator()(unsigned long long val) const { return static_cast<size_t>(val); } };
 
 	template <> struct hash<float>
-		{ size_t operator()(float val) const { return static_cast<size_t>(val); } };
+		{ size_t operator()(float val) const { return bit_cast<size_t>(val); } };
 
 	template <> struct hash<double>
-		{ size_t operator()(double val) const { return static_cast<size_t>(val); } };
+		{ size_t operator()(double val) const { return bit_cast<size_t>(val); } };
 
 	template <> struct hash<long double>
-		{ size_t operator()(long double val) const { return static_cast<size_t>(val); } };
+		{ size_t operator()(long double val) const { return bit_cast<size_t>(val); } };
 
 	#if defined(EA_HAVE_INT128) && EA_HAVE_INT128
 	template <> struct hash<uint128_t>
