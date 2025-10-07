@@ -71,6 +71,7 @@ namespace eastl
 	///
 	/// Our adapter for the comparison function in the template parameters.
 	///
+	/// todo: deprecate this. shouldn't have all these member functions available (including constructor) and shouldn't be a public type.
 	template <typename Key, typename Value, typename Compare>
 	class multimap_value_compare : public Compare
 	{
@@ -91,6 +92,30 @@ namespace eastl
 			{ return Compare::operator()(a, b); }
 
 	}; // multimap_value_compare
+
+	namespace internal {
+	template <typename Value, typename Compare>
+	struct equalRange_comp
+	{
+		const Compare& comp;
+
+		explicit equalRange_comp(const Compare& x)
+			: comp(x) {}
+
+		template<typename KX>
+		bool operator()(const KX& lhs, const Value& rhs) const
+		{
+			return comp(lhs, rhs.first);
+		}
+
+		template<typename KX>
+		bool operator()(const Value& lhs, const KX& rhs) const
+		{
+			return comp(lhs.first, rhs);
+		}
+
+	}; // equalRange_comp
+	}
 
 	/// vector_multimap
 	///
@@ -224,13 +249,23 @@ namespace eastl
 
 		iterator  erase(const_iterator position);
 		iterator  erase(const_iterator first, const_iterator last);
-		size_type erase(const key_type& k);
+		size_type erase(const key_type& k) { return DoErase(k); }
 
 		reverse_iterator erase(const_reverse_iterator position);
 		reverse_iterator erase(const_reverse_iterator first, const_reverse_iterator last);
 
-		iterator       find(const key_type& k);
-		const_iterator find(const key_type& k) const;
+		template<typename KX, typename Cmp = Compare,
+			eastl::enable_if_t<!(eastl::is_convertible_v<KX&&, iterator> || eastl::is_convertible_v<KX&&, const_iterator>)
+			&& eastl::detail::is_transparent_comparison_v<Cmp>, bool> = true>
+		size_type erase(KX&& k) { return DoErase(eastl::forward<KX>(k)); }
+
+		iterator       find(const key_type& k) { return DoFind(k); }
+		const_iterator find(const key_type& k) const { return DoFind(k); }
+
+		template<typename KX, typename Cmp = Compare, eastl::enable_if_t<eastl::detail::is_transparent_comparison_v<Cmp>, bool> = true>
+		iterator       find(const KX& k) { return DoFind(k); }
+		template<typename KX, typename Cmp = Compare, eastl::enable_if_t<eastl::detail::is_transparent_comparison_v<Cmp>, bool> = true>
+		const_iterator find(const KX& k) const { return DoFind(k); }
 
 		template <typename U, typename BinaryPredicate>
 		iterator       find_as(const U& u, BinaryPredicate predicate);
@@ -238,32 +273,50 @@ namespace eastl
 		template <typename U, typename BinaryPredicate>
 		const_iterator find_as(const U& u, BinaryPredicate predicate) const;
 
-		size_type count(const key_type& k) const;
+		bool contains(const key_type& key) const { return DoFind(key) != end(); }
 
-		iterator       lowerBound(const key_type& k);
-		const_iterator lowerBound(const key_type& k) const;
+		template<typename KX, typename Cmp = Compare, eastl::enable_if_t<eastl::detail::is_transparent_comparison_v<Cmp>, bool> = true>
+		bool contains(const KX& key) const { return DoFind(key) != end(); }
 
-		iterator       upperBound(const key_type& k);
-		const_iterator upperBound(const key_type& k) const;
+		size_type count(const key_type& k) const { return DoCount(k); }
 
-		eastl::pair<iterator, iterator>             equalRange(const key_type& k);
-		eastl::pair<const_iterator, const_iterator> equalRange(const key_type& k) const;
+		template<typename KX, typename Cmp = Compare, eastl::enable_if_t<eastl::detail::is_transparent_comparison_v<Cmp>, bool> = true>
+		size_type count(const KX& k) const { return DoCount(k); }
+
+		iterator       lowerBound(const key_type& k) { return DoLowerBound(k); }
+		const_iterator lowerBound(const key_type& k) const { return DoLowerBound(k); }
+
+		template<typename KX, typename Cmp = Compare, eastl::enable_if_t<eastl::detail::is_transparent_comparison_v<Cmp>, bool> = true>
+		iterator       lowerBound(const KX& k) { return DoLowerBound(k); }
+		template<typename KX, typename Cmp = Compare, eastl::enable_if_t<eastl::detail::is_transparent_comparison_v<Cmp>, bool> = true>
+		const_iterator lowerBound(const KX& k) const { return DoLowerBound(k); }
+
+		iterator       upperBound(const key_type& k) { return DoUpperBound(k); }
+		const_iterator upperBound(const key_type& k) const { return DoUpperBound(k); }
+
+		template<typename KX, typename Cmp = Compare, eastl::enable_if_t<eastl::detail::is_transparent_comparison_v<Cmp>, bool> = true>
+		iterator       upperBound(const KX& k) { return DoUpperBound(k); }
+		template<typename KX, typename Cmp = Compare, eastl::enable_if_t<eastl::detail::is_transparent_comparison_v<Cmp>, bool> = true>
+		const_iterator upperBound(const KX& k) const { return DoUpperBound(k); }
+
+		eastl::pair<iterator, iterator>             equalRange(const key_type& k) { return DoEqualRange(k); }
+		eastl::pair<const_iterator, const_iterator> equalRange(const key_type& k) const { return DoEqualRange(k); }
+
+		template<typename KX, typename Cmp = Compare, eastl::enable_if_t<eastl::detail::is_transparent_comparison_v<Cmp>, bool> = true>
+		eastl::pair<iterator, iterator>             equalRange(const KX& key) { return DoEqualRange(key); }
+		template<typename KX, typename Cmp = Compare, eastl::enable_if_t<eastl::detail::is_transparent_comparison_v<Cmp>, bool> = true>
+		eastl::pair<const_iterator, const_iterator> equalRange(const KX& key) const { return DoEqualRange(key); }
 
 		/// equalRange_small
 		/// This is a special version of equalRange which is optimized for the 
 		/// case of there being few or no duplicated keys in the tree.
-		eastl::pair<iterator, iterator>             equalRange_small(const key_type& k)
-		{
-			// Defined inline because VC7.1 is broken for when it's defined outside.
-			const iterator itLower(lowerBound(k));
-			iterator       itUpper(itLower);
+		eastl::pair<iterator, iterator>             equalRange_small(const key_type& k) { return DoEqualRangeSmall(k); }
+		eastl::pair<const_iterator, const_iterator> equalRange_small(const key_type& k) const { return DoEqualRangeSmall(k); }
 
-			while((itUpper != end()) && !value_compare::operator()(k, *itUpper))
-				++itUpper;
-
-			return eastl::pair<iterator, iterator>(itLower, itUpper);
-		}
-		eastl::pair<const_iterator, const_iterator> equalRange_small(const key_type& k) const;
+		template<typename KX, typename Cmp = Compare, eastl::enable_if_t<eastl::detail::is_transparent_comparison_v<Cmp>, bool> = true>
+		eastl::pair<iterator, iterator>             equalRange_small(const KX& k) { return DoEqualRangeSmall(k); }
+		template<typename KX, typename Cmp = Compare, eastl::enable_if_t<eastl::detail::is_transparent_comparison_v<Cmp>, bool> = true>
+		eastl::pair<const_iterator, const_iterator> equalRange_small(const KX& k) const { return DoEqualRangeSmall(k); }
 
 		// Functions which are disallowed due to being unsafe. 
 		void      pushBack(const value_type& value) = delete;
@@ -287,6 +340,37 @@ namespace eastl
 		template <typename... Args> decltype(auto) emplace_back_unsorted(Args&&... args) 
 			{ return base_type::emplace_back(eastl::forward<Args>(args)...); }
 
+	private:
+		template<typename KX>
+		size_type        DoErase(KX&& k);
+
+		template<typename KX>
+		iterator DoFind(const KX& key);
+		template<typename KX>
+		const_iterator DoFind(const KX& key) const;
+
+		template<typename KX>
+		size_type DoCount(const KX& k) const;
+
+		template<typename KX>
+		eastl::pair<iterator, iterator>             DoEqualRange(const KX& key);
+		template<typename KX>
+		eastl::pair<const_iterator, const_iterator> DoEqualRange(const KX& key) const;
+
+		template<typename KX>
+		iterator       DoLowerBound(const KX& k);
+		template<typename KX>
+		const_iterator DoLowerBound(const KX& k) const;
+
+		template<typename KX>
+		iterator       DoUpperBound(const KX& k);
+		template<typename KX>
+		const_iterator DoUpperBound(const KX& k) const;
+
+		template<typename KX>
+		eastl::pair<iterator, iterator>             DoEqualRangeSmall(const KX& key);
+		template<typename KX>
+		eastl::pair<const_iterator, const_iterator> DoEqualRangeSmall(const KX& key) const;
 	}; // vector_multimap
 
 
@@ -591,8 +675,9 @@ namespace eastl
 
 
 	template <typename K, typename T, typename C, typename A, typename RAC>
+	template <typename KX>
 	inline typename vector_multimap<K, T, C, A, RAC>::size_type
-	vector_multimap<K, T, C, A, RAC>::erase(const key_type& k)
+	vector_multimap<K, T, C, A, RAC>::DoErase(KX&& k)
 	{
 		const eastl::pair<iterator, iterator> pairIts(equalRange(k));
 
@@ -620,8 +705,9 @@ namespace eastl
 
 
 	template <typename K, typename T, typename C, typename A, typename RAC>
+	template <typename KX>
 	inline typename vector_multimap<K, T, C, A, RAC>::iterator
-	vector_multimap<K, T, C, A, RAC>::find(const key_type& k)
+	vector_multimap<K, T, C, A, RAC>::DoFind(const KX& k)
 	{
 		const eastl::pair<iterator, iterator> pairIts(equalRange(k));
 
@@ -632,8 +718,9 @@ namespace eastl
 
 
 	template <typename K, typename T, typename C, typename A, typename RAC>
+	template <typename KX>
 	inline typename vector_multimap<K, T, C, A, RAC>::const_iterator
-	vector_multimap<K, T, C, A, RAC>::find(const key_type& k) const
+	vector_multimap<K, T, C, A, RAC>::DoFind(const KX& k) const
 	{
 		const eastl::pair<const_iterator, const_iterator> pairIts(equalRange(k));
 
@@ -648,8 +735,7 @@ namespace eastl
 	inline typename vector_multimap<K, T, C, A, RAC>::const_iterator
 	vector_multimap<K, T, C, A, RAC>::find_as(const U& u, BinaryPredicate predicate) const
 	{
-		multimap_value_compare<U, value_type, BinaryPredicate> predicate_cmp(predicate);
-		const eastl::pair<const_iterator, const_iterator> pairIts(eastl::equalRange(begin(), end(), u, predicate_cmp));
+		const eastl::pair<const_iterator, const_iterator> pairIts(eastl::equalRange(begin(), end(), u, internal::equalRange_comp<value_type, BinaryPredicate>(predicate)));
 		return (pairIts.first != pairIts.second) ? pairIts.first : end();
 	}
 
@@ -659,15 +745,15 @@ namespace eastl
 	inline typename vector_multimap<K, T, C, A, RAC>::iterator
 	vector_multimap<K, T, C, A, RAC>::find_as(const U& u, BinaryPredicate predicate)
 	{
-		multimap_value_compare<U, value_type, BinaryPredicate> predicate_cmp(predicate);
-		const eastl::pair<iterator, iterator> pairIts(eastl::equalRange(begin(), end(), u, predicate_cmp));
+		const eastl::pair<iterator, iterator> pairIts(eastl::equalRange(begin(), end(), u, internal::equalRange_comp<value_type, BinaryPredicate>(predicate)));
 		return (pairIts.first != pairIts.second) ? pairIts.first : end();
 	}
 
 
 	template <typename K, typename T, typename C, typename A, typename RAC>
+	template <typename KX>
 	inline typename vector_multimap<K, T, C, A, RAC>::size_type
-	vector_multimap<K, T, C, A, RAC>::count(const key_type& k) const
+	vector_multimap<K, T, C, A, RAC>::DoCount(const KX& k) const
 	{
 		const eastl::pair<const_iterator, const_iterator> pairIts(equalRange(k));
 		return (size_type)eastl::distance(pairIts.first, pairIts.second); 
@@ -675,78 +761,87 @@ namespace eastl
 
 
 	template <typename K, typename T, typename C, typename A, typename RAC>
+	template <typename KX>
 	inline typename vector_multimap<K, T, C, A, RAC>::iterator
-	vector_multimap<K, T, C, A, RAC>::lowerBound(const key_type& k)
+	vector_multimap<K, T, C, A, RAC>::DoLowerBound(const KX& k)
 	{
-		return eastl::lowerBound(begin(), end(), k, static_cast<value_compare&>(*this));
+		auto comp = [this](const value_type& value, const KX& key) { return static_cast<const key_compare&>(*this)(value.first, key); };
+		return eastl::lowerBound(begin(), end(), k, comp);
 	}
 
 
 	template <typename K, typename T, typename C, typename A, typename RAC>
+	template <typename KX>
 	inline typename vector_multimap<K, T, C, A, RAC>::const_iterator
-	vector_multimap<K, T, C, A, RAC>::lowerBound(const key_type& k) const
+	vector_multimap<K, T, C, A, RAC>::DoLowerBound(const KX& k) const
 	{
-		return eastl::lowerBound(begin(), end(), k, static_cast<const value_compare&>(*this));
+		auto comp = [this](const value_type& value, const KX& key) { return static_cast<const key_compare&>(*this)(value.first, key); };
+		return eastl::lowerBound(begin(), end(), k, comp);
 	}
 
 
 	template <typename K, typename T, typename C, typename A, typename RAC>
+	template <typename KX>
 	inline typename vector_multimap<K, T, C, A, RAC>::iterator
-	vector_multimap<K, T, C, A, RAC>::upperBound(const key_type& k)
+	vector_multimap<K, T, C, A, RAC>::DoUpperBound(const KX& k)
 	{
-		return eastl::upperBound(begin(), end(), k, static_cast<value_compare&>(*this));
+		auto comp = [this](const KX& key, const value_type& value) { return static_cast<const key_compare&>(*this)(key, value.first); };
+		return eastl::upperBound(begin(), end(), k, comp);
 	}
 
 
 	template <typename K, typename T, typename C, typename A, typename RAC>
+	template <typename KX>
 	inline typename vector_multimap<K, T, C, A, RAC>::const_iterator 
-	vector_multimap<K, T, C, A, RAC>::upperBound(const key_type& k) const
+	vector_multimap<K, T, C, A, RAC>::DoUpperBound(const KX& k) const
 	{
-		return eastl::upperBound(begin(), end(), k, static_cast<const value_compare&>(*this));
+		auto comp = [this](const KX& key, const value_type& value) { return static_cast<const key_compare&>(*this)(key, value.first); };
+		return eastl::upperBound(begin(), end(), k, comp);
 	}
 
 
 	template <typename K, typename T, typename C, typename A, typename RAC>
+	template <typename KX>
 	inline eastl::pair<typename vector_multimap<K, T, C, A, RAC>::iterator, typename vector_multimap<K, T, C, A, RAC>::iterator>
-	vector_multimap<K, T, C, A, RAC>::equalRange(const key_type& k)
+	vector_multimap<K, T, C, A, RAC>::DoEqualRange(const KX& k)
 	{
-		return eastl::equalRange(begin(), end(), k, static_cast<value_compare&>(*this));
+		return eastl::equalRange(begin(), end(), k, internal::equalRange_comp<value_type, key_compare>(*this));
 	}
 
 
 	template <typename K, typename T, typename C, typename A, typename RAC>
+	template <typename KX>
 	inline eastl::pair<typename vector_multimap<K, T, C, A, RAC>::const_iterator, typename vector_multimap<K, T, C, A, RAC>::const_iterator>
-	vector_multimap<K, T, C, A, RAC>::equalRange(const key_type& k) const
+	vector_multimap<K, T, C, A, RAC>::DoEqualRange(const KX& k) const
 	{
-		return eastl::equalRange(begin(), end(), k, static_cast<const value_compare&>(*this));
+		return eastl::equalRange(begin(), end(), k, internal::equalRange_comp<value_type, key_compare>(*this));
 	}
 
 
-	/*
-	// VC++ fails to compile this when defined here, saying the function isn't a member of vector_multimap.
 	template <typename K, typename T, typename C, typename A, typename RAC>
+	template <typename KX>
 	inline eastl::pair<typename vector_multimap<K, T, C, A, RAC>::iterator, typename vector_multimap<K, T, C, A, RAC>::iterator>
-	vector_multimap<K, T, C, A, RAC>::equalRange_small(const key_type& k)
+	vector_multimap<K, T, C, A, RAC>::DoEqualRangeSmall(const KX& k)
 	{
 		const iterator itLower(lowerBound(k));
 		iterator       itUpper(itLower);
 
-		while((itUpper != end()) && !value_compare::operator()(k, *itUpper))
+		while((itUpper != end()) && !static_cast<key_compare&>(*this)(k, itUpper->first))
 			++itUpper;
 
 		return eastl::pair<iterator, iterator>(itLower, itUpper);
 	}
-	*/
 
 
 	template <typename K, typename T, typename C, typename A, typename RAC>
+	template <typename KX>
 	inline eastl::pair<typename vector_multimap<K, T, C, A, RAC>::const_iterator, typename vector_multimap<K, T, C, A, RAC>::const_iterator>
-	vector_multimap<K, T, C, A, RAC>::equalRange_small(const key_type& k) const
+	vector_multimap<K, T, C, A, RAC>::DoEqualRangeSmall(const KX& k) const
 	{
 		const const_iterator itLower(lowerBound(k));
 		const_iterator       itUpper(itLower);
 
-		while((itUpper != end()) && !value_compare::operator()(k, *itUpper))
+		while((itUpper != end()) && !static_cast<const key_compare&>(*this)(k, itUpper->first))
 			++itUpper;
 
 		return eastl::pair<const_iterator, const_iterator>(itLower, itUpper);

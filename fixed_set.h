@@ -112,6 +112,8 @@ namespace eastl
 		const overflow_allocator_type& getOverflowAllocator() const EASTL_NOEXCEPT;
 		overflow_allocator_type&       getOverflowAllocator() EASTL_NOEXCEPT;
 		void                           setOverflowAllocator(const overflow_allocator_type& allocator);
+
+		static constexpr bool can_overflow() { return bEnableOverflow; }
 	}; // fixedSet
 
 
@@ -178,6 +180,8 @@ namespace eastl
 		const overflow_allocator_type& getOverflowAllocator() const EASTL_NOEXCEPT;
 		overflow_allocator_type&       getOverflowAllocator() EASTL_NOEXCEPT;
 		void                           setOverflowAllocator(const overflow_allocator_type& allocator);
+
+		static constexpr bool can_overflow() { return bEnableOverflow; }
 	}; // fixedMultiset
 
 
@@ -201,9 +205,6 @@ namespace eastl
 	inline fixedSet<Key, nodeCount, bEnableOverflow, Compare, OverflowAllocator>::fixedSet(const overflow_allocator_type& overflowAllocator)
 		: base_type(fixedAllocator_type(mBuffer, overflowAllocator))
 	{
-		#if EASTL_NAME_ENABLED
-			mAllocator.setName(EASTL_FIXED_SET_DEFAULT_NAME);
-		#endif
 	}
 
 
@@ -263,10 +264,6 @@ namespace eastl
 	fixedSet<Key, nodeCount, bEnableOverflow, Compare, OverflowAllocator>::fixedSet(std::initializer_list<value_type> ilist, const overflow_allocator_type& overflowAllocator)
 		: base_type(fixedAllocator_type(mBuffer, overflowAllocator))
 	{
-		#if EASTL_NAME_ENABLED
-			mAllocator.setName(EASTL_FIXED_SET_DEFAULT_NAME);
-		#endif
-
 		insert(ilist.begin(), ilist.end());
 	}
 
@@ -391,9 +388,6 @@ namespace eastl
 	inline fixedMultiset<Key, nodeCount, bEnableOverflow, Compare, OverflowAllocator>::fixedMultiset(const overflow_allocator_type& overflowAllocator)
 		: base_type(fixedAllocator_type(mBuffer, overflowAllocator))
 	{
-		#if EASTL_NAME_ENABLED
-			mAllocator.setName(EASTL_FIXED_MULTISET_DEFAULT_NAME);
-		#endif
 	}
 
 
@@ -453,10 +447,6 @@ namespace eastl
 	fixedMultiset<Key, nodeCount, bEnableOverflow, Compare, OverflowAllocator>::fixedMultiset(std::initializer_list<value_type> ilist, const overflow_allocator_type& overflowAllocator)
 		: base_type(fixedAllocator_type(mBuffer, overflowAllocator))
 	{
-		#if EASTL_NAME_ENABLED
-			mAllocator.setName(EASTL_FIXED_MULTISET_DEFAULT_NAME);
-		#endif
-
 		insert(ilist.begin(), ilist.end());
 	}
 
