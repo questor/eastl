@@ -538,7 +538,14 @@ namespace eastl
 
 		if((itLower == end()) || compare(key, (*itLower).first))
 		{
-			itLower = base_type::DoInsertKey(true_type(), itLower, key);
+			//from https://github.com/electronicarts/EASTL/pull/603/changes/5848b0715985ab89cbc420dfa5d12d9a5846931f
+			// key goes immediately before itLower. The rbtree insertion hint must be the element
+			// before the insertion point, so pass the predecessor of itLower. If itLower is begin()
+			// (including the empty map case), the new node simply becomes the leftmost node.
+			if(itLower == begin())
+				itLower = base_type::DoInsertKeyImpl(base_type::mAnchor.mpNodeLeft, true, key); // mAnchor.mpNodeLeft is begin().
+			else
+				itLower = base_type::DoInsertKey(true_type(), eastl::prev(itLower), key);
 		}
 
 		return (*itLower).second;
@@ -556,7 +563,14 @@ namespace eastl
 
 		if((itLower == end()) || compare(key, (*itLower).first))
 		{
-			itLower = base_type::DoInsertKey(true_type(), itLower, eastl::move(key));
+			//from https://github.com/electronicarts/EASTL/pull/603/changes/5848b0715985ab89cbc420dfa5d12d9a5846931f
+			// key goes immediately before itLower. The rbtree insertion hint must be the element
+			// before the insertion point, so pass the predecessor of itLower. If itLower is begin()
+			// (including the empty map case), the new node simply becomes the leftmost node.
+			if(itLower == begin())
+				itLower = base_type::DoInsertKeyImpl(base_type::mAnchor.mpNodeLeft, true, key); // mAnchor.mpNodeLeft is begin().
+			else
+				itLower = base_type::DoInsertKey(true_type(), eastl::prev(itLower), eastl::move(key));
 		}
 
 		return (*itLower).second;
